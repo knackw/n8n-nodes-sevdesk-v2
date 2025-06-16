@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-sevdesk-v2",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "This is an n8n community node. It let's you interact with the sevDesk v2 API. SevDesk is an accounting tool based in germany. You'll find more information on their [website](https://sevdesk.de/).",
   "keywords": [
     "n8n-community-node-package"
