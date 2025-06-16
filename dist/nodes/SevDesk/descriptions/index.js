@@ -23,6 +23,7 @@ __exportStar(require("./ContactDescription"), exports);
 __exportStar(require("./ContactAddressDescription"), exports);
 __exportStar(require("./CountryDescription"), exports);
 __exportStar(require("./InvoiceDescription"), exports);
+__exportStar(require("./InvoicePosDescription"), exports);
 __exportStar(require("./OrderDescription"), exports);
 __exportStar(require("./OrderPoDescription"), exports);
 __exportStar(require("./OrderPosDescription"), exports);
