@@ -23,7 +23,6 @@ export * from './CreditNoteDescription';
 export * from './CreditNotePosDescription';
 export * from './ExportDescription';
 export * from './TagDescription';
-export * from './InvoicePosDescription';
 export * from './LayoutDescription';
 export * from './ReportDescription';
 export * from './TagRelationDescription';

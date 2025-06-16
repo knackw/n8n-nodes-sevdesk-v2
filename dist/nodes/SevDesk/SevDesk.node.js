@@ -44,6 +44,10 @@ class SevDesk {
                             value: 'accountingContact',
                         },
                         {
+                            name: 'Basic',
+                            value: 'basics',
+                        },
+                        {
                             name: 'Category',
                             value: 'category',
                         },
@@ -88,7 +92,7 @@ class SevDesk {
                             value: 'creditNote',
                         },
                         {
-                            name: 'Credit Note Pos',
+                            name: 'Credit Note Po',
                             value: 'creditNotePos',
                         },
                         {
@@ -96,28 +100,12 @@ class SevDesk {
                             value: 'export',
                         },
                         {
-                            name: 'Tag',
-                            value: 'tag',
-                        },
-                        {
-                            name: 'Tag Relation',
-                            value: 'tagRelation',
-                        },
-                        {
                             name: 'Invoice',
                             value: 'invoice',
                         },
                         {
-                            name: 'Invoice Position',
-                            value: 'invoicePos',
-                        },
-                        {
                             name: 'Layout',
                             value: 'layout',
-                        },
-                        {
-                            name: 'Report',
-                            value: 'report',
                         },
                         {
                             name: 'Order',
@@ -136,6 +124,18 @@ class SevDesk {
                             value: 'part',
                         },
                         {
+                            name: 'Report',
+                            value: 'report',
+                        },
+                        {
+                            name: 'Tag',
+                            value: 'tag',
+                        },
+                        {
+                            name: 'Tag Relation',
+                            value: 'tagRelation',
+                        },
+                        {
                             name: 'Unit',
                             value: 'unit',
                         },
@@ -146,14 +146,6 @@ class SevDesk {
                         {
                             name: 'VoucherPo',
                             value: 'voucherPo',
-                        },
-                        {
-                            name: 'VoucherPos',
-                            value: 'voucherPos',
-                        },
-                        {
-                            name: 'Basics',
-                            value: 'basics',
                         },
                     ],
                 },
@@ -200,8 +192,6 @@ class SevDesk {
                 ...descriptions_1.tagRelationFields,
                 ...descriptions_1.invoiceOperations,
                 ...descriptions_1.invoiceFields,
-                ...descriptions_1.invoicePosOperations,
-                ...descriptions_1.invoicePosFields,
                 ...descriptions_1.layoutOperations,
                 ...descriptions_1.layoutFields,
                 ...descriptions_1.reportOperations,

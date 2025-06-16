@@ -27,24 +27,44 @@ export const orderOperations: INodeProperties[] = [
 					},
 					output: {
 						postReceive: [
-							{ type: 'rootProperty', properties: { property: 'objects' } },
-							{ type: 'rootProperty', properties: { property: 'order' } },
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'objects',
+								},
+							},
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'order',
+								},
+							},
 						],
 					},
 				},
 			},
 			{
-				name: 'Update',
-				value: 'update',
-				action: 'Update an order',
+				name: 'Create Invoice',
+				value: 'createInvoice',
+				action: 'Create an invoice from an order',
 				routing: {
 					request: {
-						method: 'PUT',
-						url: '/Order/{{$parameter.orderId}}',
+						method: 'POST',
+						url: '/Order/Factory/createInvoice',
 						body: {
-							contact: '={{$parameter.contactId}}',
-							contactPerson: '={{$parameter.contactPersonId}}',
+							order: '={"id": "{{$parameter.orderId}}", "objectName": "Order"}',
+							'part-sum': '={{$parameter.partSum}}',
 						},
+					},
+					output: {
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'invoice',
+								},
+							},
+						],
 					},
 				},
 			},
@@ -60,6 +80,17 @@ export const orderOperations: INodeProperties[] = [
 				},
 			},
 			{
+				name: 'Download PDF',
+				value: 'downloadPdf',
+				action: 'Download order as pdf',
+				routing: {
+					request: {
+						method: 'GET',
+						url: '/Order/{{$parameter.orderId}}/getPdf',
+					},
+				},
+			},
+			{
 				name: 'Get',
 				value: 'get',
 				action: 'Get an order',
@@ -69,7 +100,14 @@ export const orderOperations: INodeProperties[] = [
 						url: '/Order/{{$parameter.orderId}}',
 					},
 					output: {
-						postReceive: [{ type: 'rootProperty', properties: { property: 'objects' } }],
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'objects',
+								},
+							},
+						],
 					},
 				},
 			},
@@ -91,7 +129,14 @@ export const orderOperations: INodeProperties[] = [
 						},
 					},
 					output: {
-						postReceive: [{ type: 'rootProperty', properties: { property: 'objects' } }],
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'objects',
+								},
+							},
+						],
 					},
 				},
 			},
@@ -112,38 +157,17 @@ export const orderOperations: INodeProperties[] = [
 				},
 			},
 			{
-				name: 'Create Invoice',
-				value: 'createInvoice',
-				action: 'Create an invoice from an order',
+				name: 'Update',
+				value: 'update',
+				action: 'Update an order',
 				routing: {
 					request: {
-						method: 'POST',
-						url: '/Order/Factory/createInvoice',
+						method: 'PUT',
+						url: '/Order/{{$parameter.orderId}}',
 						body: {
-							order: '={\"id\": \"{{$parameter.orderId}}\", \"objectName\": \"Order\"}',
-							'part-sum': '={{$parameter.partSum}}',
+							contact: '={{$parameter.contactId}}',
+							contactPerson: '={{$parameter.contactPersonId}}',
 						},
-					},
-					output: {
-						postReceive: [
-							{
-								type: 'rootProperty',
-								properties: {
-									property: 'invoice',
-								},
-							},
-						],
-					},
-				},
-			},
-			{
-				name: 'Download PDF',
-				value: 'downloadPdf',
-				action: 'Download order as pdf',
-				routing: {
-					request: {
-						method: 'GET',
-						url: '/Order/{{$parameter.orderId}}/getPdf',
 					},
 				},
 			},
@@ -253,7 +277,7 @@ export const orderFields: INodeProperties[] = [
 					send: {
 						type: 'body',
 						property: 'contact',
-						value: '={\"id\": {{$value}}, \"objectName\": \"Contact\"}',
+						value: '={"id": {{$value}}, "objectName": "Contact"}',
 					},
 				},
 			},
@@ -266,7 +290,7 @@ export const orderFields: INodeProperties[] = [
 					send: {
 						type: 'body',
 						property: 'contactPerson',
-						value: '={\"id\": {{$value}}, \"objectName\": \"SevUser\"}',
+						value: '={"id": {{$value}}, "objectName": "SevUser"}',
 					},
 				},
 			},
@@ -333,8 +357,8 @@ export const orderFields: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'values',
 				displayName: 'Position',
+				name: 'values',
 				type: 'collection',
 				default: {},
 				options: [
@@ -347,7 +371,7 @@ export const orderFields: INodeProperties[] = [
 							send: {
 								type: 'body',
 								property: 'part',
-								value: '={\"id\": {{$value}}, \"objectName\": \"Part\"}',
+								value: '={"id": {{$value}}, "objectName": "Part"}',
 							},
 						},
 					},

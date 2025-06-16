@@ -147,7 +147,7 @@ exports.contactOperations = [
             {
                 name: 'Get Number of Items',
                 value: 'getNumberOfItems',
-                description: 'Get number of all invoices, orders, etc. of a specified contact',
+                description: 'Get number of all invoices, orders, etc. of a specified contact.',
                 action: 'Get number of items',
                 routing: {
                     request: {
@@ -214,7 +214,6 @@ const contactCreateAndUpdateFields = [
         name: 'customerNumber',
         type: 'string',
         default: '',
-        description: 'The customer number',
     },
     {
         displayName: 'Parent',
@@ -233,14 +232,14 @@ const contactCreateAndUpdateFields = [
         name: 'surename',
         type: 'string',
         default: '',
-        description: 'The first name of the contact.',
+        description: 'The first name of the contact',
     },
     {
         displayName: 'Familyname',
         name: 'familyname',
         type: 'string',
         default: '',
-        description: 'The last name of the contact.',
+        description: 'The last name of the contact',
     },
     {
         displayName: 'Title',
@@ -260,7 +259,7 @@ const contactCreateAndUpdateFields = [
             { displayName: 'ID', name: 'id', type: 'string', default: '' },
             { displayName: 'Object Name', name: 'objectName', type: 'string', default: 'Category' },
         ],
-        description: 'Category of the contact.',
+        description: 'Category of the contact',
     },
     { displayName: 'Description', name: 'description', type: 'string', default: '' },
     {
@@ -354,7 +353,7 @@ exports.contactFields = [
                 name: 'id',
                 type: 'string',
                 default: '',
-                description: 'ID of ContactCustomFieldSetting for which the value has to be checked.',
+                description: 'ID of ContactCustomFieldSetting for which the value has to be checked',
             },
             {
                 displayName: 'Object Name',
@@ -377,7 +376,7 @@ exports.contactFields = [
                 operation: ['findByCustomFieldValue'],
             },
         },
-        description: 'The value to be checked.',
+        description: 'The value to be checked',
     },
     {
         displayName: 'Filters',

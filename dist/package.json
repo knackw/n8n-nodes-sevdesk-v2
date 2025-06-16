@@ -1,19 +1,19 @@
 {
-    "name": "n8n-nodes-sevdesk",
+    "name": "n8n-nodes-sevdesk-v2",
     "version": "0.1.0",
-    "description": "This is an n8n community node. It let's you interact with the sevDesk API. SevDesk is an accounting tool based in germany. You'll find more information on their [website](https://sevdesk.de/).",
+    "description": "This is an n8n community node. It let's you interact with the sevDesk v2 API. SevDesk is an accounting tool based in germany. You'll find more information on their [website](https://sevdesk.de/).",
     "keywords": [
         "n8n-community-node-package"
     ],
     "license": "MIT",
-    "homepage": "https://nicokowalczyk.de",
+    "homepage": "https://schwankl.info",
     "author": {
-        "name": "Nico Kowalczyk",
-        "email": "kontakt@nicokowalczyk.de"
+        "name": "Harald Schwankl",
+        "email": "harald@schwankl.info"
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/nico-kow/n8n-nodes-sevdesk.git"
+        "url": "https://github.com/knackw/n8n-nodes-sevdesk-v2.git"
     },
     "main": "index.js",
     "scripts": {

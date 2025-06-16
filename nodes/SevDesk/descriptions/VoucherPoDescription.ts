@@ -55,7 +55,7 @@ export const voucherPoFields: INodeProperties[] = [
 				name: 'voucherId',
 				type: 'string',
 				default: '',
-				description: 'The ID of the voucher to get positions for.',
+				description: 'The ID of the voucher to get positions for',
 			},
 		],
 	},

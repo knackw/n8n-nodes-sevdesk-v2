@@ -13,27 +13,29 @@ export const tagOperations: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Get Many',
-				value: 'getMany',
-				action: 'Get many tags',
+				name: 'Create',
+				value: 'create',
+				action: 'Create a tag',
 				routing: {
 					request: {
-						method: 'GET',
-						url: '/Tag',
-						qs: {
-							id: '={{$parameter.filters.id}}',
-							name: '={{$parameter.filters.name}}',
+						method: 'POST',
+						url: '/Tag/Factory/createTag',
+						body: {
+							name: '={{$parameter.name}}',
+							object:
+								'={"id": "{{$parameter.objectId}}", "objectName": "{{$parameter.objectName}}"}',
 						},
 					},
-					output: {
-						postReceive: [
-							{
-								type: 'rootProperty',
-								properties: {
-									property: 'objects',
-								},
-							},
-						],
+				},
+			},
+			{
+				name: 'Delete',
+				value: 'delete',
+				action: 'Delete a tag',
+				routing: {
+					request: {
+						method: 'DELETE',
+						url: '=/Tag/{{$parameter.id}}',
 					},
 				},
 			},
@@ -59,17 +61,27 @@ export const tagOperations: INodeProperties[] = [
 				},
 			},
 			{
-				name: 'Create',
-				value: 'create',
-				action: 'Create a tag',
+				name: 'Get Many',
+				value: 'getMany',
+				action: 'Get many tags',
 				routing: {
 					request: {
-						method: 'POST',
-						url: '/Tag/Factory/createTag',
-						body: {
-							name: '={{$parameter.name}}',
-							object: '={\"id\": \"{{$parameter.objectId}}\", \"objectName\": \"{{$parameter.objectName}}\"}'
+						method: 'GET',
+						url: '/Tag',
+						qs: {
+							id: '={{$parameter.filters.id}}',
+							name: '={{$parameter.filters.name}}',
 						},
+					},
+					output: {
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'objects',
+								},
+							},
+						],
 					},
 				},
 			},
@@ -84,17 +96,6 @@ export const tagOperations: INodeProperties[] = [
 						body: {
 							name: '={{$parameter.name}}',
 						},
-					},
-				},
-			},
-			{
-				name: 'Delete',
-				value: 'delete',
-				action: 'Delete a tag',
-				routing: {
-					request: {
-						method: 'DELETE',
-						url: '=/Tag/{{$parameter.id}}',
 					},
 				},
 			},

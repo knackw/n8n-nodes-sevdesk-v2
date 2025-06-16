@@ -81,6 +81,14 @@ export const layoutFields: INodeProperties[] = [
 		type: 'options',
 		options: [
 			{
+				name: 'Contract',
+				value: 'Contract',
+			},
+			{
+				name: 'Credit Note',
+				value: 'Creditnote',
+			},
+			{
 				name: 'Invoice',
 				value: 'Invoice',
 			},
@@ -89,24 +97,16 @@ export const layoutFields: INodeProperties[] = [
 				value: 'Invoicecorrection',
 			},
 			{
-				name: 'Order',
-				value: 'Order',
-			},
-			{
-				name: 'Contract',
-				value: 'Contract',
-			},
-			{
-				name: 'Packing List',
-				value: 'PackingList',
-			},
-			{
 				name: 'Letter',
 				value: 'Letter',
 			},
 			{
-				name: 'Credit Note',
-				value: 'Creditnote',
+				name: 'Order',
+				value: 'Order',
+			},
+			{
+				name: 'Packing List',
+				value: 'PackingList',
 			},
 		],
 		required: true,

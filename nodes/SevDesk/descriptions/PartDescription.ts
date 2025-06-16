@@ -187,7 +187,7 @@ export const partFields: INodeProperties[] = [
 				name: 'stockEnabled',
 				type: 'boolean',
 				default: false,
-				description: 'Defines if the stock should be enabled. Required for create.',
+				description: 'Whether the stock should be enabled. Required for create.',
 			},
 			{
 				displayName: 'Unity',

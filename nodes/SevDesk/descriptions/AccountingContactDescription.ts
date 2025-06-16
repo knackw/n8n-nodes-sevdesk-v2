@@ -131,14 +131,14 @@ export const accountingContactFields: INodeProperties[] = [
 				name: 'id',
 				type: 'string',
 				default: '',
-				description: 'The contact to which this accounting contact belongs.',
+				description: 'The contact to which this accounting contact belongs',
 			},
 			{
 				displayName: 'Object Name',
 				name: 'objectName',
 				type: 'string',
 				default: 'Contact',
-				description: 'Object name is \"Contact\".',
+				description: 'Object name is "Contact"',
 			},
 		],
 	},
@@ -160,7 +160,7 @@ export const accountingContactFields: INodeProperties[] = [
 				name: 'id',
 				type: 'string',
 				default: '',
-				description: 'ID of contact for which you want the accounting contact.',
+				description: 'ID of contact for which you want the accounting contact',
 			},
 			{
 				displayName: 'Object Name',
@@ -182,7 +182,7 @@ export const accountingContactFields: INodeProperties[] = [
 				operation: ['create', 'update'],
 			},
 		},
-		description: 'Debitor number of the accounting contact.',
+		description: 'Debitor number of the accounting contact',
 	},
 	{
 		displayName: 'Creditor Number',
@@ -195,6 +195,6 @@ export const accountingContactFields: INodeProperties[] = [
 				operation: ['create', 'update'],
 			},
 		},
-		description: 'Creditor number of the accounting contact.',
+		description: 'Creditor number of the accounting contact',
 	},
 ];

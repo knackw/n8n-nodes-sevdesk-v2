@@ -25,9 +25,9 @@ export const exportOperations: INodeProperties[] = [
 				},
 			},
 			{
-				name: 'Export DATEV (deprecated)',
+				name: 'Export DATEV (Deprecated)',
 				value: 'exportDatev',
-				action: 'Export DATEV so zip with CSVs',
+				action: 'Export datev so zip with cs vs',
 				routing: {
 					request: {
 						method: 'GET',
@@ -248,7 +248,7 @@ export const exportFields: INodeProperties[] = [
 		default: 0,
 	},
 	{
-		displayName: 'Update Data',
+		displayName: 'Update Fields',
 		name: 'updateData',
 		type: 'collection',
 		placeholder: 'Add Update Data',

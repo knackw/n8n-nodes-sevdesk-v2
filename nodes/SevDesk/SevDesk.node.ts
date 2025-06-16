@@ -1,7 +1,4 @@
-import {
-	INodeType,
-	INodeTypeDescription,
-} from 'n8n-workflow';
+import { INodeType, INodeTypeDescription } from 'n8n-workflow';
 
 import {
 	accountingContactFields,
@@ -102,6 +99,10 @@ export class SevDesk implements INodeType {
 						value: 'accountingContact',
 					},
 					{
+						name: 'Basic',
+						value: 'basics',
+					},
+					{
 						name: 'Category',
 						value: 'category',
 					},
@@ -146,20 +147,12 @@ export class SevDesk implements INodeType {
 						value: 'creditNote',
 					},
 					{
-						name: 'Credit Note Pos',
+						name: 'Credit Note Po',
 						value: 'creditNotePos',
 					},
 					{
 						name: 'Export',
 						value: 'export',
-					},
-					{
-						name: 'Tag',
-						value: 'tag',
-					},
-					{
-						name: 'Tag Relation',
-						value: 'tagRelation',
 					},
 					{
 						name: 'Invoice',
@@ -190,6 +183,14 @@ export class SevDesk implements INodeType {
 						value: 'report',
 					},
 					{
+						name: 'Tag',
+						value: 'tag',
+					},
+					{
+						name: 'Tag Relation',
+						value: 'tagRelation',
+					},
+					{
 						name: 'Unit',
 						value: 'unit',
 					},
@@ -200,14 +201,6 @@ export class SevDesk implements INodeType {
 					{
 						name: 'VoucherPo',
 						value: 'voucherPo',
-					},
-					{
-						name: 'VoucherPos',
-						value: 'voucherPos',
-					},
-					{
-						name: 'Basics',
-						value: 'basics',
 					},
 				],
 			},

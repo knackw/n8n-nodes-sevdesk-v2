@@ -58,15 +58,14 @@ export const creditNotePosFields: INodeProperties[] = [
 				name: 'creditNote[id]',
 				type: 'string',
 				default: '',
-				description:
-					'Retrieve all creditNote positions belonging to this creditNote. Must be provided with creditNote[objectName]',
+				description: 'Retrieve all creditNote positions belonging to this creditNote. Must be provided with creditNote[objectName].',
 			},
 			{
 				displayName: 'Credit Note Object Name',
 				name: 'creditNote[objectName]',
 				type: 'string',
 				default: 'CreditNote',
-				description: 'Only required if creditNote[id] was provided. Should be used as value.',
+				description: 'Only required if creditNote[ID] was provided. Should be used as value.',
 			},
 		],
 	},

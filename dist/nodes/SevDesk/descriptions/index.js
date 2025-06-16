@@ -39,7 +39,6 @@ __exportStar(require("./CreditNoteDescription"), exports);
 __exportStar(require("./CreditNotePosDescription"), exports);
 __exportStar(require("./ExportDescription"), exports);
 __exportStar(require("./TagDescription"), exports);
-__exportStar(require("./InvoicePosDescription"), exports);
 __exportStar(require("./LayoutDescription"), exports);
 __exportStar(require("./ReportDescription"), exports);
 __exportStar(require("./TagRelationDescription"), exports);

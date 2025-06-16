@@ -14,6 +14,68 @@ exports.invoiceOperations = [
         },
         options: [
             {
+                name: 'Book Amount',
+                value: 'bookAmount',
+                description: 'Books a payment amount to an invoice',
+                action: 'Book an amount to an invoice',
+                routing: {
+                    request: {
+                        method: 'PUT',
+                        url: '=/Invoice/{{$parameter.invoiceId}}/bookAmount',
+                        body: {
+                            amount: '={{$parameter.amount}}',
+                            date: '={{$parameter.date}}',
+                            type: '={{$parameter.paymentType}}',
+                            checkAccount: '=S{ return { id: $parameter.checkAccountId, objectName: "CheckAccount" }; }',
+                            createFeed: '={{$parameter.createFeed}}',
+                        },
+                    },
+                },
+            },
+            {
+                name: 'Cancel',
+                value: 'cancel',
+                description: 'Cancels an invoice',
+                action: 'Cancel an invoice',
+                routing: {
+                    request: {
+                        method: 'PUT',
+                        url: '=/Invoice/{{$parameter.invoiceId}}/cancelInvoice',
+                        qs: {
+                            cancellationText: '={{$parameter.cancellationText}}',
+                        },
+                    },
+                },
+            },
+            {
+                name: 'Create From Order',
+                value: 'createFromOrder',
+                description: 'Creates an invoice from an order',
+                action: 'Create an invoice from an order',
+                routing: {
+                    request: {
+                        method: 'POST',
+                        url: '/Invoice/Factory/createInvoiceFromOrder',
+                        body: {
+                            order: '={{ { id: $parameter.orderId, objectName: "Order" } }}',
+                            type: '={{$parameter.creationType}}',
+                            amount: '={{$parameter.orderAmount}}',
+                            partialType: '={{$parameter.partialType}}',
+                        },
+                    },
+                    output: {
+                        postReceive: [
+                            {
+                                type: 'rootProperty',
+                                properties: {
+                                    property: 'invoice',
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            {
                 name: 'Create or Update',
                 value: 'createOrUpdate',
                 description: 'Create or update an invoice',
@@ -23,12 +85,84 @@ exports.invoiceOperations = [
                         method: 'POST',
                         url: '/Invoice/Factory/saveInvoice',
                         body: {
-                            invoice: '=S{\n const invoiceData = { ...$parameter.invoice };\n if (invoiceData.contactId) { invoiceData.contact = { id: invoiceData.contactId, objectName: \"Contact\" }; delete invoiceData.contactId; }\n if (invoiceData.contactPersonId) { invoiceData.contactPerson = { id: invoiceData.contactPersonId, objectName: \"SevUser\" }; delete invoiceData.contactPersonId; }\n return invoiceData;\n}',
+                            invoice: '=S{\n const invoiceData = { ...$parameter.invoice };\n if (invoiceData.contactId) { invoiceData.contact = { id: invoiceData.contactId, objectName: "Contact" }; delete invoiceData.contactId; }\n if (invoiceData.contactPersonId) { invoiceData.contactPerson = { id: invoiceData.contactPersonId, objectName: "SevUser" }; delete invoiceData.contactPersonId; }\n return invoiceData;\n}',
                             invoicePosSave: '={{$parameter.invoicePosSave.values}}',
                         },
                     },
                     output: {
-                        postReceive: [{ type: 'rootProperty', properties: { property: 'invoice' } }],
+                        postReceive: [
+                            {
+                                type: 'rootProperty',
+                                properties: {
+                                    property: 'invoice',
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            {
+                name: 'Create Reminder',
+                value: 'createReminder',
+                description: 'Creates a reminder for an invoice',
+                action: 'Create a reminder for an invoice',
+                routing: {
+                    request: {
+                        method: 'POST',
+                        url: '/Invoice/Factory/createReminder',
+                        body: {
+                            invoice: '={{ { id: $parameter.invoiceId, objectName: "Invoice" } }}',
+                        },
+                    },
+                    output: {
+                        postReceive: [
+                            {
+                                type: 'rootProperty',
+                                properties: {
+                                    property: 'invoice',
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            {
+                name: 'Download PDF',
+                value: 'downloadPdf',
+                description: 'Retrieves the PDF document of an invoice',
+                action: 'Download an invoice PDF',
+                routing: {
+                    request: {
+                        method: 'GET',
+                        url: '=/Invoice/{{$parameter.invoiceId}}/getPdf',
+                        qs: {
+                            download: '={{$parameter.download}}',
+                            preventive: '={{$parameter.preventive}}',
+                        },
+                    },
+                },
+            },
+            {
+                name: 'Download XML',
+                value: 'downloadXml',
+                description: 'Retrieves the XML of an e-invoice',
+                action: 'Download an invoice XML',
+                routing: {
+                    request: {
+                        method: 'GET',
+                        url: '=/Invoice/{{$parameter.invoiceId}}/getXml',
+                    },
+                },
+            },
+            {
+                name: 'Enshrine',
+                value: 'enshrine',
+                description: 'Sets the current date and time as a value for the property enshrined',
+                action: 'Enshrine an invoice',
+                routing: {
+                    request: {
+                        method: 'PUT',
+                        url: '=/Invoice/{{$parameter.invoiceId}}/enshrine',
                     },
                 },
             },
@@ -95,80 +229,14 @@ exports.invoiceOperations = [
                         url: '=/Invoice/{{$parameter.invoiceId}}/getPositions',
                     },
                     output: {
-                        postReceive: [{ type: 'rootProperty', properties: { property: 'objects' } }],
-                    },
-                },
-            },
-            {
-                name: 'Book Amount',
-                value: 'bookAmount',
-                description: 'Books a payment amount to an invoice',
-                action: 'Book an amount to an invoice',
-                routing: {
-                    request: {
-                        method: 'PUT',
-                        url: '=/Invoice/{{$parameter.invoiceId}}/bookAmount',
-                        body: {
-                            amount: '={{$parameter.amount}}',
-                            date: '={{$parameter.date}}',
-                            type: '={{$parameter.paymentType}}',
-                            checkAccount: '=S{ return { id: $parameter.checkAccountId, objectName: \"CheckAccount\" }; }',
-                            createFeed: '={{$parameter.createFeed}}',
-                        },
-                    },
-                },
-            },
-            {
-                name: 'Cancel',
-                value: 'cancel',
-                description: 'Cancels an invoice',
-                action: 'Cancel an invoice',
-                routing: {
-                    request: {
-                        method: 'PUT',
-                        url: '=/Invoice/{{$parameter.invoiceId}}/cancelInvoice',
-                        qs: {
-                            cancellationText: '={{$parameter.cancellationText}}',
-                        },
-                    },
-                },
-            },
-            {
-                name: 'Create From Order',
-                value: 'createFromOrder',
-                description: 'Creates an invoice from an order',
-                action: 'Create an invoice from an order',
-                routing: {
-                    request: {
-                        method: 'POST',
-                        url: '/Invoice/Factory/createInvoiceFromOrder',
-                        body: {
-                            order: '={{ { id: $parameter.orderId, objectName: \"Order\" } }}',
-                            type: '={{$parameter.creationType}}',
-                            amount: '={{$parameter.orderAmount}}',
-                            partialType: '={{$parameter.partialType}}',
-                        },
-                    },
-                    output: {
-                        postReceive: [{ type: 'rootProperty', properties: { property: 'invoice' } }],
-                    },
-                },
-            },
-            {
-                name: 'Create Reminder',
-                value: 'createReminder',
-                description: 'Creates a reminder for an invoice',
-                action: 'Create a reminder for an invoice',
-                routing: {
-                    request: {
-                        method: 'POST',
-                        url: '/Invoice/Factory/createReminder',
-                        body: {
-                            invoice: '={{ { id: $parameter.invoiceId, objectName: \"Invoice\" } }}',
-                        },
-                    },
-                    output: {
-                        postReceive: [{ type: 'rootProperty', properties: { property: 'invoice' } }],
+                        postReceive: [
+                            {
+                                type: 'rootProperty',
+                                properties: {
+                                    property: 'objects',
+                                },
+                            },
+                        ],
                     },
                 },
             },
@@ -183,7 +251,14 @@ exports.invoiceOperations = [
                         url: '=/Invoice/{{$parameter.invoiceId}}/isPartiallyPaid',
                     },
                     output: {
-                        postReceive: [{ type: 'rootProperty', properties: { property: 'objects' } }],
+                        postReceive: [
+                            {
+                                type: 'rootProperty',
+                                properties: {
+                                    property: 'objects',
+                                },
+                            },
+                        ],
                     },
                 },
             },
@@ -219,49 +294,9 @@ exports.invoiceOperations = [
                 },
             },
             {
-                name: 'Download PDF',
-                value: 'downloadPdf',
-                description: 'Retrieves the PDF document of an invoice',
-                action: 'Download an invoice PDF',
-                routing: {
-                    request: {
-                        method: 'GET',
-                        url: '=/Invoice/{{$parameter.invoiceId}}/getPdf',
-                        qs: {
-                            download: '={{$parameter.download}}',
-                            preventive: '={{$parameter.preventive}}',
-                        },
-                    },
-                },
-            },
-            {
-                name: 'Download XML',
-                value: 'downloadXml',
-                description: 'Retrieves the XML of an e-invoice',
-                action: 'Download an invoice XML',
-                routing: {
-                    request: {
-                        method: 'GET',
-                        url: '=/Invoice/{{$parameter.invoiceId}}/getXml',
-                    },
-                },
-            },
-            {
-                name: 'Enshrine',
-                value: 'enshrine',
-                description: 'Sets the current date and time as a value for the property enshrined',
-                action: 'Enshrine an invoice',
-                routing: {
-                    request: {
-                        method: 'PUT',
-                        url: '=/Invoice/{{$parameter.invoiceId}}/enshrine',
-                    },
-                },
-            },
-            {
                 name: 'Reset to Draft',
                 value: 'resetToDraft',
-                description: 'Resets the status to \"Draft\" if it has the status \"Open\"',
+                description: 'Resets the status to "Draft" if it has the status "Open"',
                 action: 'Reset an invoice to draft',
                 routing: {
                     request: {
@@ -273,7 +308,7 @@ exports.invoiceOperations = [
             {
                 name: 'Reset to Open',
                 value: 'resetToOpen',
-                description: 'Resets the status to \"Open\" if it has the status \"Paid\"',
+                description: 'Resets the status to "Open" if it has the status "Paid"',
                 action: 'Reset an invoice to open',
                 routing: {
                     request: {
@@ -438,23 +473,122 @@ exports.invoiceFields = [
             },
         },
         options: [
-            { displayName: 'ID', name: 'id', type: 'string', default: '', description: 'Invoice ID, leave empty to create a new one' },
-            { displayName: 'Contact ID', name: 'contactId', type: 'string', required: true, default: '', description: 'ID of the contact' },
-            { displayName: 'Contact Person ID', name: 'contactPersonId', type: 'string', default: '', description: 'ID of the contact person (sevUser)' },
+            {
+                displayName: 'ID',
+                name: 'id',
+                type: 'string',
+                default: '',
+                description: 'Invoice ID, leave empty to create a new one',
+            },
+            {
+                displayName: 'Contact ID',
+                name: 'contactId',
+                type: 'string',
+                required: true,
+                default: '',
+                description: 'ID of the contact',
+            },
+            {
+                displayName: 'Contact Person ID',
+                name: 'contactPersonId',
+                type: 'string',
+                default: '',
+                description: 'ID of the contact person (sevUser)',
+            },
             { displayName: 'Invoice Number', name: 'invoiceNumber', type: 'string', default: '' },
             { displayName: 'Invoice Date', name: 'invoiceDate', type: 'dateTime', default: '' },
             { displayName: 'Delivery Date', name: 'deliveryDate', type: 'dateTime', default: '' },
-            { displayName: 'Status', name: 'status', type: 'options', default: 100, options: [{ name: 'Draft', value: 100 }, { name: 'Open', value: 200 }, { name: 'Paid', value: 1000 }] },
-            { displayName: 'Header Text', name: 'header', type: 'string', default: '', typeOptions: { multiline: true } },
-            { displayName: 'Footer Text', name: 'footText', type: 'string', default: '', typeOptions: { multiline: true } },
-            { displayName: 'Tax Type', name: 'taxType', type: 'options', default: 'default', options: [{ name: 'Default', value: 'default' }, { name: 'EU', value: 'eu' }, { name: 'Non-EU', value: 'noteu' }, { name: 'Custom', value: 'custom' }, { name: 'SS', value: 'ss' }] },
+            {
+                displayName: 'Status',
+                name: 'status',
+                type: 'options',
+                default: 100,
+                options: [
+                    { name: 'Draft', value: 100 },
+                    { name: 'Open', value: 200 },
+                    { name: 'Paid', value: 1000 },
+                ],
+            },
+            {
+                displayName: 'Header Text',
+                name: 'header',
+                type: 'string',
+                default: '',
+                typeOptions: { multiline: true },
+            },
+            {
+                displayName: 'Footer Text',
+                name: 'footText',
+                type: 'string',
+                default: '',
+                typeOptions: { multiline: true },
+            },
+            {
+                displayName: 'Tax Type',
+                name: 'taxType',
+                type: 'options',
+                default: 'default',
+                options: [
+                    {
+                        name: 'Custom',
+                        value: 'custom',
+                    },
+                    {
+                        name: 'Default',
+                        value: 'default',
+                    },
+                    {
+                        name: 'EU',
+                        value: 'eu',
+                    },
+                    {
+                        name: 'Non-EU',
+                        value: 'noteu',
+                    },
+                    {
+                        name: 'SS',
+                        value: 'ss',
+                    },
+                ],
+            },
             { displayName: 'Show Net', name: 'showNet', type: 'boolean', default: false },
             { displayName: 'Small Settlement', name: 'smallSettlement', type: 'boolean', default: false },
             { displayName: 'Currency', name: 'currency', type: 'string', default: 'EUR' },
             { displayName: 'Discount', name: 'discount', type: 'number', default: 0 },
             { displayName: 'Discount Time', name: 'discountTime', type: 'number', default: 0 },
             { displayName: 'Address', name: 'address', type: 'string', default: '' },
-            { displayName: 'Invoice Type', name: 'invoiceType', type: 'options', default: 'RE', options: [{ name: 'Regular Invoice', value: 'RE' }, { name: 'Recurring Invoice', value: 'WKR' }, { name: 'Cancellation Invoice', value: 'SR' }, { name: 'Partial Invoice', value: 'TR' }, { name: 'Advance Invoice', value: 'AR' }, { name: 'Final Invoice', value: 'ER' }] },
+            {
+                displayName: 'Invoice Type',
+                name: 'invoiceType',
+                type: 'options',
+                default: 'RE',
+                options: [
+                    {
+                        name: 'Advance Invoice',
+                        value: 'AR',
+                    },
+                    {
+                        name: 'Cancellation Invoice',
+                        value: 'SR',
+                    },
+                    {
+                        name: 'Final Invoice',
+                        value: 'ER',
+                    },
+                    {
+                        name: 'Partial Invoice',
+                        value: 'TR',
+                    },
+                    {
+                        name: 'Recurring Invoice',
+                        value: 'WKR',
+                    },
+                    {
+                        name: 'Regular Invoice',
+                        value: 'RE',
+                    },
+                ],
+            },
         ],
     },
     {
@@ -466,15 +600,27 @@ exports.invoiceFields = [
         displayOptions: { show: { resource: ['invoice'], operation: ['createOrUpdate'] } },
         typeOptions: { multipleValues: true },
         options: [
-            { name: 'values', displayName: 'Position', type: 'collection', default: {}, options: [
+            {
+                displayName: 'Position',
+                name: 'values',
+                type: 'collection',
+                default: {},
+                options: [
                     { displayName: 'Part ID', name: 'partId', type: 'string', default: '' },
                     { displayName: 'Name', name: 'name', type: 'string', default: '' },
-                    { displayName: 'Text', name: 'text', type: 'string', default: '', typeOptions: { multiline: true } },
+                    {
+                        displayName: 'Text',
+                        name: 'text',
+                        type: 'string',
+                        default: '',
+                        typeOptions: { multiline: true },
+                    },
                     { displayName: 'Quantity', name: 'quantity', type: 'number', default: 1 },
                     { displayName: 'Price', name: 'price', type: 'number', default: 0 },
                     { displayName: 'Discount', name: 'discount', type: 'number', default: 0 },
                     { displayName: 'Tax Rate', name: 'taxRate', type: 'number', default: 19 },
-                ] },
+                ],
+            },
         ],
     },
     {
@@ -557,7 +703,7 @@ exports.invoiceFields = [
         displayName: 'Partial Type',
         name: 'partialType',
         type: 'options',
-        default: 'RE',
+        default: 'TR',
         options: [
             { name: 'Teilrechnung (TR)', value: 'TR' },
             { name: 'Abschlagsrechnung (AR)', value: 'AR' },
@@ -569,6 +715,7 @@ exports.invoiceFields = [
         displayName: 'Email',
         name: 'email',
         type: 'string',
+        placeholder: 'name@email.com',
         required: true,
         default: '',
         displayOptions: { show: { resource: ['invoice'], operation: ['sendByEmail'] } },
@@ -647,11 +794,26 @@ exports.invoiceFields = [
         required: true,
         default: 'VPR',
         options: [
-            { name: 'VPR', value: 'VPR' },
-            { name: 'Print', value: 'print' },
-            { name: 'VP', value: 'VP' },
-            { name: 'VMail', value: 'VMail' },
-            { name: 'VMSC', value: 'VMSC' },
+            {
+                name: 'Print',
+                value: 'print',
+            },
+            {
+                name: 'VMail',
+                value: 'VMail',
+            },
+            {
+                name: 'VMSC',
+                value: 'VMSC',
+            },
+            {
+                name: 'VP',
+                value: 'VP',
+            },
+            {
+                name: 'VPR',
+                value: 'VPR',
+            },
         ],
         displayOptions: { show: { resource: ['invoice'], operation: ['markAsSent'] } },
     },

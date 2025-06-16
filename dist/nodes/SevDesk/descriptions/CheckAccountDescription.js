@@ -190,7 +190,7 @@ exports.checkAccountFields = [
                 operation: ['createClearingAccount', 'createFileImportAccount', 'update'],
             },
         },
-        description: 'The booking account used for this clearing account.',
+        description: 'The booking account used for this clearing account',
     },
     {
         displayName: 'Import Type',
@@ -239,7 +239,7 @@ exports.checkAccountFields = [
                 operation: ['update'],
             },
         },
-        description: 'Type of the check account.',
+        description: 'Type of the check account',
     },
     {
         displayName: 'Currency',
@@ -252,7 +252,7 @@ exports.checkAccountFields = [
                 operation: ['update'],
             },
         },
-        description: 'The currency of the check account.',
+        description: 'The currency of the check account',
     },
     {
         displayName: 'Default Account',
@@ -265,7 +265,7 @@ exports.checkAccountFields = [
                 operation: ['update'],
             },
         },
-        description: 'Define if this check account is the default account.',
+        description: 'Whether this check account is the default account',
     },
     {
         displayName: 'Status',
@@ -282,7 +282,7 @@ exports.checkAccountFields = [
                 operation: ['update'],
             },
         },
-        description: 'Status of the check account.',
+        description: 'Status of the check account',
     },
     {
         displayName: 'Auto Map Transactions',
@@ -295,7 +295,7 @@ exports.checkAccountFields = [
                 operation: ['update'],
             },
         },
-        description: 'Defines if transactions on this account are automatically mapped to invoice and vouchers when imported if possible.',
+        description: 'Whether transactions on this account are automatically mapped to invoice and vouchers when imported if possible',
     },
     {
         displayName: 'Date',

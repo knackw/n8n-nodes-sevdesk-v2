@@ -13,6 +13,24 @@ export const voucherOperations: INodeProperties[] = [
 		},
 		options: [
 			{
+				name: 'Book',
+				value: 'book',
+				action: 'Book a voucher',
+				routing: {
+					request: {
+						method: 'PUT',
+						url: '/Voucher/{{$parameter.voucherId}}/bookAmount',
+						body: {
+							amount: '={{$parameter.amount}}',
+							date: '={{$parameter.date}}',
+							type: '={{$parameter.paymentType}}',
+							checkAccount:
+								'={"id": "{{$parameter.checkAccountId}}", "objectName": "CheckAccount"}',
+						},
+					},
+				},
+			},
+			{
 				name: 'Create',
 				value: 'create',
 				action: 'Create a voucher',
@@ -29,20 +47,19 @@ export const voucherOperations: INodeProperties[] = [
 					},
 					output: {
 						postReceive: [
-							{ type: 'rootProperty', properties: { property: 'objects' } },
-							{ type: 'rootProperty', properties: { property: 'voucher' } },
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'objects',
+								},
+							},
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'voucher',
+								},
+							},
 						],
-					},
-				},
-			},
-			{
-				name: 'Update',
-				value: 'update',
-				action: 'Update a voucher',
-				routing: {
-					request: {
-						method: 'PUT',
-						url: '/Voucher/{{$parameter.voucherId}}',
 					},
 				},
 			},
@@ -67,7 +84,14 @@ export const voucherOperations: INodeProperties[] = [
 						url: '/Voucher/{{$parameter.voucherId}}/enshrine',
 					},
 					output: {
-						postReceive: [{ type: 'rootProperty', properties: { property: 'objects' } }],
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'objects',
+								},
+							},
+						],
 					},
 				},
 			},
@@ -81,7 +105,14 @@ export const voucherOperations: INodeProperties[] = [
 						url: '/Voucher/{{$parameter.voucherId}}',
 					},
 					output: {
-						postReceive: [{ type: 'rootProperty', properties: { property: 'objects' } }],
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'objects',
+								},
+							},
+						],
 					},
 				},
 			},
@@ -104,7 +135,47 @@ export const voucherOperations: INodeProperties[] = [
 						},
 					},
 					output: {
-						postReceive: [{ type: 'rootProperty', properties: { property: 'objects' } }],
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'objects',
+								},
+							},
+						],
+					},
+				},
+			},
+			{
+				name: 'Reset to Draft',
+				value: 'resetToDraft',
+				action: 'Reset a voucher to draft',
+				routing: {
+					request: {
+						method: 'PUT',
+						url: '/Voucher/{{$parameter.voucherId}}/resetToDraft',
+					},
+				},
+			},
+			{
+				name: 'Reset to Open',
+				value: 'resetToOpen',
+				action: 'Reset a voucher to open',
+				routing: {
+					request: {
+						method: 'PUT',
+						url: '/Voucher/{{$parameter.voucherId}}/resetToOpen',
+					},
+				},
+			},
+			{
+				name: 'Update',
+				value: 'update',
+				action: 'Update a voucher',
+				routing: {
+					request: {
+						method: 'PUT',
+						url: '/Voucher/{{$parameter.voucherId}}',
 					},
 				},
 			},
@@ -121,46 +192,14 @@ export const voucherOperations: INodeProperties[] = [
 						},
 					},
 					output: {
-						postReceive: [{ type: 'rootProperty', properties: { property: 'objects' } }],
-					},
-				},
-			},
-			{
-				name: 'Book',
-				value: 'book',
-				action: 'Book a voucher',
-				routing: {
-					request: {
-						method: 'PUT',
-						url: '/Voucher/{{$parameter.voucherId}}/bookAmount',
-						body: {
-							amount: '={{$parameter.amount}}',
-							date: '={{$parameter.date}}',
-							type: '={{$parameter.paymentType}}',
-							checkAccount: '={\"id\": \"{{$parameter.checkAccountId}}\", \"objectName\": \"CheckAccount\"}',
-						},
-					},
-				},
-			},
-			{
-				name: 'Reset to Open',
-				value: 'resetToOpen',
-				action: 'Reset a voucher to open',
-				routing: {
-					request: {
-						method: 'PUT',
-						url: '/Voucher/{{$parameter.voucherId}}/resetToOpen',
-					},
-				},
-			},
-			{
-				name: 'Reset to Draft',
-				value: 'resetToDraft',
-				action: 'Reset a voucher to draft',
-				routing: {
-					request: {
-						method: 'PUT',
-						url: '/Voucher/{{$parameter.voucherId}}/resetToDraft',
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'objects',
+								},
+							},
+						],
 					},
 				},
 			},
@@ -350,7 +389,7 @@ export const voucherFields: INodeProperties[] = [
 				operation: ['create'],
 			},
 		},
-		description: 'Filename of a previously uploaded file which should be attached.',
+		description: 'Filename of a previously uploaded file which should be attached',
 	},
 	{
 		displayName: 'Voucher Positions',
@@ -369,8 +408,8 @@ export const voucherFields: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'values',
 				displayName: 'Position',
+				name: 'values',
 				type: 'collection',
 				default: {},
 				options: [

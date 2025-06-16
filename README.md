@@ -1,8 +1,8 @@
 Currently in testing.
 
-# n8n-nodes-sevdesk
+# n8n-nodes-sevdesk-v2
 
-This is an n8n community node. It let's you interact with the sevDesk API. SevDesk is an accounting tool based in germany. 
+This is an n8n community node. It let's you interact with the sevDesk API V2. SevDesk is an accounting tool based in germany. 
 You'll find more information on their [website](https://sevdesk.de/).
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
