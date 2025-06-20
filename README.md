@@ -24,8 +24,6 @@ Also, if you are looking for some outside help with n8n, I can of course also of
 * Mentoring
 * Support
 
-Please contact me kontakt@nicokowalczyk.de if you want to make use of my services.
-
 For questions or issues with nodes, please open an issue on Github.
 
 ## Installation
