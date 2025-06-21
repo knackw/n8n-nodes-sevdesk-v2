@@ -1,198 +1,221 @@
-Currently in testing.
-
 # n8n-nodes-sevdesk-v2
 
-This is an n8n community node. It let's you interact with the sevDesk API V2. SevDesk is an accounting tool based in germany. 
-You'll find more information on their [website](https://sevdesk.de/).
+[![Version](https://img.shields.io/npm/v/n8n-nodes-sevdesk-v2.svg)](https://www.npmjs.com/package/n8n-nodes-sevdesk-v2)
+[![Downloads](https://img.shields.io/npm/dm/n8n-nodes-sevdesk-v2.svg)](https://www.npmjs.com/package/n8n-nodes-sevdesk-v2)
+[![Tests](https://github.com/knackw/n8n-nodes-sevdesk-v2/workflows/CI/badge.svg)](https://github.com/knackw/n8n-nodes-sevdesk-v2/actions)
+[![License](https://img.shields.io/npm/l/n8n-nodes-sevdesk-v2.svg)](https://github.com/knackw/n8n-nodes-sevdesk-v2/blob/main/LICENSE)
+
+This is an n8n community node that provides comprehensive integration with the SevDesk API v2. SevDesk is a popular accounting tool based in Germany. You'll find more information on their [website](https://sevdesk.de/).
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
-## Developer
+## 🚀 Features
 
-Hi, 
+- **Full CRUD Operations** for all major SevDesk entities
+- **API v2 Support** with backward compatibility to v1
+- **Comprehensive Filtering** and search capabilities
+- **File Upload/Download** support for documents
+- **Batch Operations** for efficient data processing
+- **Error Handling** with detailed feedback
+- **Comprehensive Testing** with Jest and coverage reporting
+- **CI/CD Pipeline** with automated testing and deployment
+- **Code Quality Tools** with Husky and lint-staged
 
-My name is Harald and I am the developer of this node.
-I am an independent consultant and I really like open source software.
+## 📋 Supported Resources
 
+### ✅ Fully Implemented
+- **Contacts** - Complete contact management with addresses and custom fields
+- **Invoices** - Full invoice lifecycle including PDF generation and email sending
+- **Orders** - Order management with positions and discounts
+- **Vouchers** - Receipt management with file attachments
+- **Parts** - Inventory management with stock tracking
+- **Banking** - Check accounts and transactions
+- **Tags** - Flexible tagging system
+- **Reports** - PDF report generation
 
-My nodes are free to use for everyone, but please consider [donating](https://coff.ee/knackw) when you use my nodes.
-This helps me to build and maintain nodes for everyone to use.
+### 🔄 In Progress
+- **Credit Notes** - Credit note management
+- **Exports** - Data export functionality
+- **Layouts** - Document layout management
 
-Also, if you are looking for some outside help with n8n, I can of course also offer my services.
-* Node Development
-* Workflow Development
-* Mentoring
-* Support
-
-For questions or issues with nodes, please open an issue on Github.
-
-## Installation
+## 🛠 Installation
 
 Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
 
-## Compatibility
+```bash
+npm install n8n-nodes-sevdesk-v2
+```
 
-Developed and tested in version 1.11.3
+## 🔑 Setup
 
-## Current Status
-This node is work in progress right now. 
+### 1. Get Your API Key
+1. Log into your SevDesk account
+2. Go to **Settings** → **API**
+3. Copy your API key
 
-- [x] Contacts
-	- [x] Contact
-	- [x] ContactAddress
-	- [x] CommunicationWay
-	- [x] AccountingContact
-- [x] Category
-- [x] Country
-- [x] Banking
-	- [x] CheckAccount
-	- [x] CheckAccountTransaction
-- [x] Inventory
-	- [x] Part
-- [x] Invoice
-	- [x] Invoice
-- [x] Order
-	- [x] Order
-	- [x] Order Position
-- [x] Receipt
-	- [x] Voucher
-	- [x] Voucher Position
-- [x] Tag
-- [x] Tag Relation
-- [x] Report
+### 2. Configure Credentials
+1. In n8n, go to **Credentials**
+2. Add new credential of type **SevDesk API**
+3. Enter your API key
+4. Choose API version (v2 recommended)
+5. Test the connection
 
+![Credentials Setup](./images/credentials-success.png)
 
-## Operations
+## 📖 Usage Examples
 
-### Accounting Contacts
+### Create a Contact
+```json
+{
+  "resource": "contact",
+  "operation": "create",
+  "name": "John Doe",
+  "customerNumber": "CUST001",
+  "category": {
+    "id": "1",
+    "objectName": "Contact"
+  }
+}
+```
 
-### Categories
+### Get Invoices with Filters
+```json
+{
+  "resource": "invoice",
+  "operation": "getMany",
+  "filters": {
+    "status": "100",
+    "createAfter": "2024-01-01",
+    "limit": 50
+  }
+}
+```
 
-### Check Accounts
-These are the accounts you can find over here in sevdesk. https://my.sevdesk.de/admin/accounting/checkaccount
+### Send Invoice via Email
+```json
+{
+  "resource": "invoice",
+  "operation": "sendViaEmail",
+  "invoiceId": "12345",
+  "email": "customer@example.com",
+  "subject": "Your Invoice",
+  "text": "Please find your invoice attached."
+}
+```
 
-**Create** Creates new check accounts. 
+## 🔧 Configuration
 
-**Update** Updates a check account by a given ID. 
+### API Versions
+- **v1 (Legacy)**: Original API, still supported
+- **v2 (Recommended)**: Latest API with improved features and performance
 
-**Delete** Deletes a check account by a given ID.
+### Rate Limiting
+The node respects SevDesk's rate limits and includes automatic retry logic for failed requests.
 
-**Get Many** Gets many checked accounts. You can filter them by ID and it is also possible to do pagination with *limit* and *offset*
+## 🧪 Testing
 
-**Get Balance of Account for given Date** It is possible to retrieve the balance of a checked account to a given date in the past. 
+### Running Tests
+```bash
+# Run all tests
+npm test
 
-### Check Account Transactions
-**Create** Creates new check accounts.
+# Run tests in watch mode
+npm run test:watch
 
-**Update** Updates a check account by a given ID.
+# Run tests with coverage
+npm run test:coverage
+```
 
-**Delete** Deletes a check account by a given ID.
+### Test Coverage
+The project includes comprehensive test coverage for:
+- Node functionality
+- Credential validation
+- API operations
+- Error handling
 
-**Get Many** Gets many (or one) checked account transactions. You can filter them by ID and it is also possible to do pagination with *limit* and *offset*. There are also filter opportunities.
+## 🤝 Contributing
 
-### Communication Ways
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-### Contacts
+### Development Setup
+```bash
+git clone https://github.com/knackw/n8n-nodes-sevdesk-v2.git
+cd n8n-nodes-sevdesk-v2
+npm install
+npm run build
+```
 
-### Contact Addresses
+### Code Quality
+The project uses several tools to maintain code quality:
+- **ESLint** for code linting
+- **Prettier** for code formatting
+- **Husky** for git hooks
+- **lint-staged** for pre-commit checks
 
-### Countries
+### Pull Request Process
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
 
-### Invoices
-**Book** This endpoint can be used to book invoices. Invoices are booked on payment accounts where (bank) transactions are located and might be linked to the transactions by using this endpoint.
+## 📞 Support
 
-**Cancel** This endpoint will cancel the specified invoice therefor creating a cancellation invoice. The cancellation invoice will be automatically paid and the source invoices status will change to "cancelled".
+- **Issues**: [GitHub Issues](https://github.com/knackw/n8n-nodes-sevdesk-v2/issues)
+- **Documentation**: [SevDesk API Docs](https://api.sevdesk.de/)
+- **Community**: [n8n Community](https://community.n8n.io/)
+- **Developer Contact**: harald@schwankl.info
 
-**Create and Update** This endpoint offers you the following functionality. <ul> <li>Create invoices together with positions and discounts</li> <li>Delete positions while adding new ones</li> <li>Delete or add discounts, or both at the same time</li> <li>Automatically fill the address of the supplied contact into the invoice address</li> </ul>
+## 📚 Documentation
 
-**Get Many** Gets many invoices. There are a multitude of parameter which can be used to filter. A few of them are attached but for a complete list please check out <a href="https://5677.extern.sevdesk.dev/apiOverview/index.html#/doc-invoices#filtering">this</a> list.
+For detailed documentation, see:
+- [DOCUMENTATION.md](DOCUMENTATION.md) - Comprehensive guide
+- [CHANGELOG.md](CHANGELOG.md) - Version history and changes
 
-**Get Positions** Returns all positions of an invoice.
+## 👨‍💻 Developer
 
-**Get Invoice PDF** Retrieves the pdf document of an invoice with additional metadata.
+Hi, I'm Harald, an independent consultant passionate about open source software.
 
-**Is Invoice Partially Paid** Returns "true" if the given invoice is partially paid - "false" if it is not. Invoices which are completely paid are regarded as not partially paid.
+My nodes are free to use, but please consider [donating](https://coff.ee/knackw) if you find them helpful.
 
-**Mark as sent** Marks an invoice as sent by a chosen send type
+### Services Offered
+- Node Development
+- Workflow Development  
+- Mentoring
+- Support
 
-**Render Invoice** Using this endpoint you can render the pdf document of an invoice. Use cases for this are the retrieval of the pdf location or the forceful re-render of a already sent invoice. Please be aware that changing an invoice after it has been sent to a customer is not an allowed bookkeeping process
+## 📄 License
 
-**Send via Email** This endpoint sends the specified invoice to a customer via email. This will automatically mark the invoice as sent. Please note, that in production an invoice is not allowed to be changed after this happened!
+[MIT](LICENSE)
 
-### Orders
-**Create, Update, Get, Get Many, Get Positions**
-Full CRUD operations for orders and their positions, similar to invoices.
+## 🙏 Acknowledgments
 
-### Vouchers
-**Create, Update, Delete, Get, Get Many**
-Full CRUD operations for vouchers.
+- [Nico Kowalczyk](https://github.com/nico-kow) - Fundamental work on the original node
+- [GitCedric](https://github.com/gitcedric) - Initial n8n integration
+- [Bram](https://github.com/bramkn) - Community guidance and README template
+- [n8n Team](https://github.com/n8n-io/n8n) - Amazing automation platform
 
-**Book Voucher** Books a voucher to finalize it.
+## 📈 Version History
 
-**Upload File** Uploads a file and attaches it to a voucher.
+### v0.4.0 (Current)
+- ✅ Added API v2 support with backward compatibility
+- ✅ Enhanced credential management with API version selection
+- ✅ Comprehensive test suite with Jest
+- ✅ CI/CD pipeline with GitHub Actions
+- ✅ Code quality tools (Husky, lint-staged)
+- ✅ Improved documentation and examples
+- ✅ Better error handling and validation
 
-### Tags
-**Create, Update, Get Many**
-Manage tags, including creating tags for specific objects like contacts or invoices.
+### v0.3.0
+- Added Credit Notes, Exports, and Layouts
+- Enhanced tag relationship management
+- Improved report generation
 
-### Tag Relations
-**Get Many**
-Retrieve relationships between tags and objects.
+### v0.2.0
+- Added comprehensive resource coverage
+- Implemented batch operations
+- Added file upload/download support
 
-### Reports
-**Invoice List, Order List, Contact List, Voucher List**
-Generate and download various reports as PDF files.
-
-### Parts
-You can see and edit your parts in the admin panel over here: https://my.sevdesk.de/admin/inventory/
-
-Currently it is not possible to delete parts with the api of sevdesk.
-
-**Create**
-Creates a new part. Required fields are *name*, *partNumber*, *stock*, *unity*, *taxRate*.
-All other fields are additional. 
-
-**Update**
-Updates fields of a part. Same like *Create* but you need to provide a valid part ID. A part id is not the part number. If you don't have a part id, you can search for your part with the part-number or part-name with *Get Many*.
-
-**Get Many**
-Retrieves all parts of the system. You can filter the returned data with some additional filters. It is also possible to paginate the returned data. 
-
-
-**Get Current Stock for Part**
-Gets only the information about the stock of one Item. Required parameter is part ID. A part id is not the part number. If you don't have a part id, you can search for your part with the part-number or part-name with *Get Many*.
-
-### Units
-Units can be set at: https://my.sevdesk.de/admin/system/unity in the admin panel.
-
-**Get Many**
-With this Method you get a list of all units defined in the system. 
-
-## Credentials
-
-1. You need to have an sevdesk account. You can create one over here [SevDesk](https://schwankl.info/)*
-2. Copy your api key -> [How-To find your API Key](https://api.sevdesk.de/#section/Authentication-and-Authorization) by SevDesks
-3. Create new Credential of Type SevDesk in your n8n instance
-4. Paste your API Key
-5. Success!
-![Alt text](./images/credentials-success.png)
-
-
-
-\* *This is an affiliate link. I get a provision if you subscribe to sevdesk by following this link. If you want to sign up with sevdesk, but don't want me to get a provision, you can sign up with this link: [SevDesk](https://sevdesk.de/)*
-
-## Resources
-
-* [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
-* [sevDesk API Documentation](https://api.sevdesk.de/)
-
-## Kudos
-
-1. Thank you [Nico Kowalczyk](https://github.com/nico-kow) for the fundamental work on this node. You can find his Pull Request to the main n8n-nodes-sevdesk repo over here: https://github.com/nico-kow/n8n-nodes-sevdesk
-2. Thank you [GitCedric](https://github.com/gitcedric) for the fundamental work on this node. You can find his Pull Request to the main n8n repo over here: https://github.com/n8n-io/n8n/pull/2787/
-3. Thank you, [Bram](https://github.com/bramkn), for being such an exemplary community member. I've modeled this readme after your template and I appreciate your guidance.
-4. Thank you, dear [n8n](https://github.com/n8n-io/n8n) team, for providing and continually developing this wonderful automation tool for all of us.   
-
-## Version history
-
-v1: initial version.
+### v0.1.0
+- Initial release with basic functionality

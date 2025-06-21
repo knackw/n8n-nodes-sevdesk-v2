@@ -24,7 +24,7 @@ class SevDesk {
                 },
             ],
             requestDefaults: {
-                baseURL: 'https://my.sevdesk.de/api/v1/',
+                baseURL: 'https://my.sevdesk.de/api/{{$credentials.apiVersion}}/',
                 url: '',
                 headers: {
                     Accept: 'application/json',
