@@ -243,6 +243,7 @@ Dieses Projekt steht unter der MIT-Lizenz. Details finden Sie in der [LICENSE](L
 - [GitHub Issues](https://github.com/knackw/n8n-nodes-sevdesk-v2/issues)
 - [SevDesk API-Dokumentation](https://api.sevdesk.de/)
 - [n8n Community](https://community.n8n.io/)
+- [Buy Me a Coffee ☕](https://buymeacoffee.com/knackw)
 
 ## 📈 Changelog
 

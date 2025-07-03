@@ -1,5 +1,12 @@
-import { INodeType, INodeTypeDescription } from "n8n-workflow";
+import {
+	IExecuteFunctions,
+	INodeExecutionData,
+	INodeType,
+	INodeTypeDescription
+} from "n8n-workflow";
 
+import { SevDeskResourceManager } from "./SevDeskResourceManager";
+import { ResourceRegistry } from "./ResourceRegistry";
 import {
 	accountingContactFields,
 	accountingContactOperations,
@@ -94,116 +101,7 @@ export class SevDesk implements INodeType {
 				type: "options",
 				noDataExpression: true,
 				default: "contact",
-				options: [
-					{
-						name: "AccountingContact",
-						value: "accountingContact",
-					},
-					{
-						name: "Basic",
-						value: "basics",
-					},
-					{
-						name: "Category",
-						value: "category",
-					},
-					{
-						name: "CheckAccount",
-						value: "checkAccount",
-					},
-					{
-						name: "CheckAccountTransaction",
-						value: "checkAccountTransaction",
-					},
-					{
-						name: "CommunicationWay",
-						value: "communicationWay",
-					},
-					{
-						name: "Contact",
-						value: "contact",
-					},
-					{
-						name: "Contact Address",
-						value: "contactAddress",
-					},
-					{
-						name: "Contact Custom Field",
-						value: "contactCustomField",
-					},
-					{
-						name: "Contact Custom Field Setting",
-						value: "contactCustomFieldSetting",
-					},
-					{
-						name: "Contact Field",
-						value: "contactField",
-					},
-					{
-						name: "Country",
-						value: "country",
-					},
-					{
-						name: "Credit Note",
-						value: "creditNote",
-					},
-					{
-						name: "Credit Note Po",
-						value: "creditNotePos",
-					},
-					{
-						name: "Export",
-						value: "export",
-					},
-					{
-						name: "Invoice",
-						value: "invoice",
-					},
-					{
-						name: "Layout",
-						value: "layout",
-					},
-					{
-						name: "Order",
-						value: "order",
-					},
-					{
-						name: "Order Position",
-						value: "orderPos",
-					},
-					{
-						name: "OrderPo",
-						value: "orderPo",
-					},
-					{
-						name: "Part",
-						value: "part",
-					},
-					{
-						name: "Report",
-						value: "report",
-					},
-					{
-						name: "Tag",
-						value: "tag",
-					},
-					{
-						name: "Tag Relation",
-						value: "tagRelation",
-					},
-					{
-						name: "Unit",
-						value: "unit",
-					},
-					{
-						name: "Voucher",
-						value: "voucher",
-					},
-					{
-						name: "VoucherPo",
-						value: "voucherPo",
-					},
-				],
+				options: ResourceRegistry.getResourceOptions(),
 			},
 			...contactOperations,
 			...contactFields,
@@ -262,4 +160,42 @@ export class SevDesk implements INodeType {
 			...basicsFields,
 		],
 	};
+
+	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+		const items = this.getInputData();
+		const returnData: INodeExecutionData[] = [];
+		const resourceManager = new SevDeskResourceManager(this);
+
+		for (let i = 0; i < items.length; i++) {
+			try {
+				const resource = this.getNodeParameter('resource', i) as string;
+				const operation = this.getNodeParameter('operation', i) as string;
+
+				const result = await resourceManager.executeResourceOperation(
+					resource,
+					operation,
+					i,
+				);
+
+				if (result) {
+					returnData.push(result);
+				}
+			} catch (error) {
+				if (this.continueOnFail()) {
+					returnData.push({
+						json: {
+							error: error.message,
+						},
+						pairedItem: {
+							item: i,
+						},
+					});
+					continue;
+				}
+				throw error;
+			}
+		}
+
+		return [returnData];
+	}
 }
