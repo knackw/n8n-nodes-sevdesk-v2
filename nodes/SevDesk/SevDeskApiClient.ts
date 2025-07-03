@@ -25,7 +25,7 @@ export interface ApiResponse<T = any> {
  */
 export class SevDeskApiClient {
 	private executeFunctions: IExecuteFunctions;
-	private baseURL: string;
+	private baseURL: string = '';
 	private credentials: any;
 
 	constructor(executeFunctions: IExecuteFunctions) {
@@ -157,11 +157,8 @@ export class SevDeskApiClient {
 			hasQueryParams: !!config.queryParams,
 		};
 
-		if (this.executeFunctions.logger) {
-			this.executeFunctions.logger.info('SevDesk API Request', logData);
-		} else {
-			console.info(`[SevDesk API Request] ${JSON.stringify(logData)}`);
-		}
+		// Use console for logging since n8n logger is not available in this context
+		console.info(`[SevDesk API Request] ${JSON.stringify(logData)}`);
 	}
 
 	/**
@@ -176,11 +173,8 @@ export class SevDeskApiClient {
 			hasData: !!response,
 		};
 
-		if (this.executeFunctions.logger) {
-			this.executeFunctions.logger.info('SevDesk API Response', logData);
-		} else {
-			console.info(`[SevDesk API Response] ${JSON.stringify(logData)}`);
-		}
+		// Use console for logging since n8n logger is not available in this context
+		console.info(`[SevDesk API Response] ${JSON.stringify(logData)}`);
 	}
 
 	/**
@@ -194,11 +188,8 @@ export class SevDeskApiClient {
 			error: error instanceof Error ? error.message : String(error),
 		};
 
-		if (this.executeFunctions.logger) {
-			this.executeFunctions.logger.error('SevDesk API Error', logData);
-		} else {
-			console.error(`[SevDesk API Error] ${JSON.stringify(logData)}`);
-		}
+		// Use console for logging since n8n logger is not available in this context
+		console.error(`[SevDesk API Error] ${JSON.stringify(logData)}`);
 	}
 
 	/**

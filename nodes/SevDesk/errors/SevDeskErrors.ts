@@ -19,7 +19,7 @@ export abstract class SevDeskError extends Error {
 		return new NodeApiError(node, {
 			message: this.message,
 			description: this.getDescription(),
-			httpCode: this.httpStatusCode,
+			...(this.httpStatusCode && { httpCode: this.httpStatusCode }),
 		});
 	}
 
@@ -150,6 +150,7 @@ export class SevDeskServerError extends SevDeskError {
  */
 export class SevDeskConnectionError extends SevDeskError {
 	readonly errorCode = 'CONNECTION_ERROR';
+	readonly httpStatusCode = undefined;
 
 	constructor(message: string = 'Connection failed', originalError?: any) {
 		super(message, originalError);
@@ -165,6 +166,7 @@ export class SevDeskConnectionError extends SevDeskError {
  */
 export class SevDeskConfigurationError extends SevDeskError {
 	readonly errorCode = 'CONFIGURATION_ERROR';
+	readonly httpStatusCode = undefined;
 
 	constructor(message: string = 'Configuration error', originalError?: any) {
 		super(message, originalError);

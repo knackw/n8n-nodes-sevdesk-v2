@@ -100,7 +100,7 @@ export class SevDesk implements INodeType {
 				name: "resource",
 				type: "options",
 				noDataExpression: true,
-				default: "contact",
+				default: "",
 				options: ResourceRegistry.getResourceOptions(),
 			},
 			...contactOperations,

@@ -35,7 +35,7 @@ describe('SevDesk Node', () => {
 			const resourceProperty = sevDeskNode.description.properties.find(prop => prop.name === 'resource');
 			expect(resourceProperty).toBeDefined();
 			expect(resourceProperty?.type).toBe('options');
-			expect(resourceProperty?.default).toBe('contact');
+			expect(resourceProperty?.default).toBe('');
 		});
 
 		it('should have all expected resources', () => {
