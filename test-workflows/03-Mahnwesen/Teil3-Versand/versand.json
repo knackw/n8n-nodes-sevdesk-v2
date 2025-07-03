@@ -1,0 +1,228 @@
+{
+  "name": "SevDesk - Mahnwesen - Teil 3: Versand",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mahnwesen-versand",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "mahnwesen-versand"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $request.headers['x-webhook-secret'] }}",
+              "value2": "your-secret-key"
+            }
+          ]
+        }
+      },
+      "name": "Secret prüfen",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"error\": \"Unauthorized\" }",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "name": "Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        650,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Versandkanal basierend auf Mahnstufe bestimmen\nconst reminderData = $node[\"Mahndaten laden\"].json;\nconst reminderLevel = parseInt(reminderData.mahnstufe);\n\n// Versandkanal bestimmen\nlet channel = \"email\";\nlet needsPostalMail = false;\nlet needsRegisteredMail = false;\n\n// Für höhere Mahnstufen andere Kanäle verwenden\nif (reminderLevel >= 3) {\n  channel = \"registered_mail\"; // Einschreiben\n  needsRegisteredMail = true;\n} else if (reminderLevel >= 2) {\n  channel = \"postal_mail\"; // Normaler Brief\n  needsPostalMail = true;\n}\n\n// Kundenspezifische Regeln prüfen (Beispiel)\nif (reminderData.customerNumber === \"ALWAYS_EMAIL\") {\n  channel = \"email\";\n  needsPostalMail = false;\n  needsRegisteredMail = false;\n}\n\n// Betreff und Text je nach Mahnstufe anpassen\nlet subject = \"\";\nswitch (reminderLevel) {\n  case 1:\n    subject = `Zahlungserinnerung: Rechnung ${reminderData.invoiceNumber}`;\n    break;\n  case 2:\n    subject = `Mahnung: Rechnung ${reminderData.invoiceNumber}`;\n    break;\n  case 3:\n    subject = `Letzte Mahnung: Rechnung ${reminderData.invoiceNumber}`;\n    break;\n  default:\n    subject = `Zahlungserinnerung: Rechnung ${reminderData.invoiceNumber}`;\n}\n\nreturn {\n  json: {\n    ...reminderData,\n    channel,\n    needsPostalMail,\n    needsRegisteredMail,\n    emailSubject: subject,\n    // Weitere Daten für den Versand\n    customerEmail: reminderData.email,\n    customerName: reminderData.customerName || `${reminderData.surename} ${reminderData.familyname}`,\n    invoiceNumber: reminderData.invoiceNumber,\n    totalAmount: reminderData.gesamt_betrag\n  }\n};"
+      },
+      "name": "Versandkanal bestimmen",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        850,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.channel }}",
+              "value2": "email"
+            }
+          ]
+        }
+      },
+      "name": "Versandkanal",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "buchhaltung@ihrefirma.de",
+        "fromName": "Buchhaltung Ihre Firma GmbH",
+        "toEmail": "={{ $json.customerEmail }}",
+        "toName": "={{ $json.customerName }}",
+        "subject": "={{ $json.emailSubject }}",
+        "text": "=Sehr geehrte/r {{ $json.customerName }},\n\nwir möchten Sie darauf hinweisen, dass die Rechnung Nr. {{ $json.invoiceNumber }} über {{ $json.sumGross }} € vom {{ $json.invoice_date }} noch nicht beglichen wurde.\n\nBitte überweisen Sie den offenen Betrag von {{ $json.gesamt_betrag }} € (inkl. Verzugszinsen und Mahngebühren) bis spätestens {{ $now.plus({ days: 7 }).format('DD.MM.YYYY') }}.\n\nSollten Sie die Zahlung bereits veranlasst haben, betrachten Sie dieses Schreiben bitte als gegenstandslos.\n\nMit freundlichen Grüßen\nIhre Firma GmbH\nBuchhaltung",
+        "options": {
+          "attachments": "={{ [{\"filename\": `Mahnung_${$json.invoiceNumber}.pdf`, \"url\": $json.pdf_url}] }}"
+        }
+      },
+      "name": "E-Mail versenden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        300
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "8",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.briefversand.de/v1/letters",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "recipient",
+              "value": "={{ $json.customerName }}"
+            },
+            {
+              "name": "street",
+              "value": "={{ $json.street }}"
+            },
+            {
+              "name": "zip",
+              "value": "={{ $json.zip }}"
+            },
+            {
+              "name": "city",
+              "value": "={{ $json.city }}"
+            },
+            {
+              "name": "country",
+              "value": "DE"
+            },
+            {
+              "name": "document_url",
+              "value": "={{ $json.pdf_url }}"
+            },
+            {
+              "name": "registered_mail",
+              "value": "={{ $json.needsRegisteredMail }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Brief versenden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1250,
+        500
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "9",
+          "name": "Briefversand API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "buchhaltung-alerts",
+        "text": "=✉️ Mahnung versendet:\n\nRechnungsnummer: {{ $json.invoiceNumber }}\nKunde: {{ $json.customerName }}\nMahnstufe: {{ $json.mahnstufe }}\nVersandkanal: {{ $json.channel }}\nGesamtbetrag: {{ $json.gesamt_betrag }} €\n\nZahlungsfrist: {{ $now.plus({ days: 7 }).format('DD.MM.YYYY') }}"
+      },
+      "name": "Signal Benachrichtigung",
+      "type": "n8n-nodes-base.signal",
+      "typeVersion": 1,
+      "position": [
+        1650,
+        400
+      ],
+      "credentials": {
+        "signalApi": {
+          "id": "3",
+          "name": "Signal account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": true, \"message\": \"Mahnung erfolgreich versendet\", \"channel\": $json.channel }",
+        "options": {}
+      },
+      "name": "Erfolg",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1850,
+        400
+      ]
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "error-handling"
+  },
+  "staticData": {},
+  "pinData": {},
+  "versionId": "1",
+  "meta": {
+    "instanceId": "SEVDESK_WORKFLOW_INSTANCE"
+  },
+  "tags": [
+    {
+      "name": "sevdesk"
+    },
+    {
+      "name": "buchhaltung"
+    },
+    {
+      "name": "mahnwesen"
+    },
+    {
+      "name": "dsgvo"
+    }
+  ]
+}

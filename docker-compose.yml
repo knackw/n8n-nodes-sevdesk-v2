@@ -1,0 +1,79 @@
+version: '3.1'
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    restart: always
+    user: root
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      - N8N_HOST=${N8N_HOST:-localhost}
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
+      - NODE_ENV=${NODE_ENV:-development}
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_HIRING_BANNER_ENABLED=false
+      - N8N_VERSION_NOTIFICATIONS_ENABLED=false
+      - N8N_EDITOR_BASE_URL=${N8N_PROTOCOL:-http}://${N8N_HOST:-localhost}:${N8N_PORT:-5678}
+      - WEBHOOK_URL=${N8N_PROTOCOL:-http}://${N8N_HOST:-localhost}:${N8N_PORT:-5678}
+      - N8N_LOG_LEVEL=info
+      - N8N_LOG_OUTPUT=console
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_EMAIL_MODE=smtp
+      - N8N_SMTP_HOST=mailhog
+      - N8N_SMTP_PORT=1025
+      - N8N_COMMUNITY_PACKAGES=n8n-nodes-base,n8n-nodes-advanced-flow-blocks,n8n-nodes-puppeteer,n8n-nodes-firecrawl,n8n-nodes-elevenlabs,@brave/n8n-nodes-brave-search
+      - GENERIC_TIMEZONE=Europe/Berlin
+      - N8N_SECURE_COOKIE=false
+      - N8N_NODES_INCLUDE='["/home/node/.n8n/custom","/home/node/.n8n/nodes"]'
+      - N8N_NODES_EXCLUDE='[]'
+      # SevDesk Node Umgebungsvariablen
+      - INSTALL_LOCAL_SEVDESK_NODE=true
+      - SEVDESK_NODE_PATH=/sevdesk-node
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+      - n8n_npm_cache:/root/.npm
+      - ./install-packages.sh:/docker-entrypoint.d/install-packages.sh:ro
+      # Mount des lokalen SevDesk-Node Codes
+      - .:/sevdesk-node:ro
+      # Mount für kompilierten Node (wird zur Laufzeit erstellt)
+      - node_modules_cache:/sevdesk-node/node_modules
+    command: >
+      sh -c "
+        echo '🚀 Starting n8n with SevDesk Node...' &&
+        # Install Node.js build tools
+        apk add --no-cache python3 make g++ &&
+        # Install community packages
+        if [ ! -z \"$$N8N_COMMUNITY_PACKAGES\" ]; then
+          IFS=',' read -ra PACKAGES <<< \"$$N8N_COMMUNITY_PACKAGES\"
+          for package in \"$${PACKAGES[@]}\"; do
+            echo \"📦 Installing $$package...\"
+            npm install -g \"$$package\" || echo \"❌ Failed to install $$package\"
+          done
+        fi &&
+        # Install and build local SevDesk node
+        if [ \"$$INSTALL_LOCAL_SEVDESK_NODE\" = \"true\" ] && [ -d \"$$SEVDESK_NODE_PATH\" ]; then
+          echo '🔧 Building and installing local SevDesk node...' &&
+          cd \"$$SEVDESK_NODE_PATH\" &&
+          # Install dependencies
+          npm install &&
+          # Build the node
+          npm run build &&
+          # Link the node globally
+          npm link &&
+          # Install in n8n custom nodes directory
+          mkdir -p /home/node/.n8n/nodes &&
+          cd /home/node/.n8n/nodes &&
+          npm link n8n-nodes-sevdesk-v2 &&
+          echo '✅ SevDesk node successfully installed!' || echo '❌ Failed to install SevDesk node'
+        fi &&
+        # Set correct permissions
+        chown -R node:node /home/node/.n8n &&
+        echo '🎉 Starting n8n...' &&
+        n8n start
+      "
+
+volumes:
+  n8n_npm_cache:
+  node_modules_cache:

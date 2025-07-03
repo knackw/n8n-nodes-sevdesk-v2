@@ -1,0 +1,99 @@
+{
+  "name": "n8n-nodes-sevdesk-v2",
+  "version": "2.0.0",
+  "description": "n8n community node for SevDesk API v2 integration. Direct API access without external dependencies - simplified, secure, and production-ready for German accounting automation.",
+  "keywords": [
+    "n8n-community-node-package",
+    "sevdesk",
+    "accounting",
+    "invoice",
+    "contact",
+    "german",
+    "api",
+    "automation",
+    "buchhaltung",
+    "rechnung"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/knackw/n8n-nodes-sevdesk-v2",
+  "author": {
+    "name": "Community",
+    "email": "community@n8n-nodes-sevdesk-v2.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/knackw/n8n-nodes-sevdesk-v2.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "start": "node scripts/start-n8n.js",
+    "build": "tsc && gulp build:icons",
+    "dev": "tsc --watch",
+    "format": "prettier nodes credentials --write",
+    "lint": "eslint nodes credentials package.json",
+    "lintfix": "eslint nodes credentials package.json --fix",
+    "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json",
+    "publish": "npm run test && npm run build && npm run lint && npm publish",
+    "publish:patch": "npm version patch && npm run publish",
+    "publish:minor": "npm version minor && npm run publish",
+    "publish:major": "npm version major && npm run publish",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "clean": "rimraf dist",
+    "prebuild": "npm run clean",
+    "prepare": "husky"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/SevDeskApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/SevDesk/SevDesk.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^9.8.0",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.17.9",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-n8n-nodes-base": "^1.16.1",
+    "gulp": "^4.0.2",
+    "husky": "^9.1.7",
+    "jest": "^29.7.0",
+    "lint-staged": "^15.2.10",
+    "n8n-core": "*",
+    "n8n-nodes-base": "*",
+    "n8n-workflow": "*",
+    "prettier": "^3.4.2",
+    "rimraf": "^6.0.1",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  }
+}

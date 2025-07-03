@@ -1,0 +1,491 @@
+{
+  "name": "SevDesk - Belegerfassung - Teil 3: Validierung (v2)",
+  "nodes": [
+    {
+      "parameters": {
+        "text": "## SevDesk - Belegerfassung - Teil 3: Validierung\n\n**Zweck:**\nDieser Workflow ist der finale Schritt der Belegerfassung. Er empfängt den in Teil 2 erstellten Beleg und entscheidet über dessen Freigabe.\n\n**Logik:**\n- **Auto-Validierung:** Wenn konfiguriert, wird der Beleg automatisch in SevDesk freigegeben (gebucht).\n- **Manuelle Validierung:** Falls keine automatische Freigabe erfolgt, wird eine Benachrichtigung an die zuständigen Mitarbeiter gesendet, um eine manuelle Prüfung anzufordern.",
+        "height": 260,
+        "width": 420
+      },
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "document-validation",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "document-validation-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body?.webhook_key }}",
+              "value2": "secret-key"
+            }
+          ]
+        }
+      },
+      "name": "Webhook-Key validieren",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extrahiere die Beleg-Daten aus dem Webhook\nconst webhookData = $input.item.json.body;\nconst data = webhookData.data;\n\n// Konfiguration für die Validierung (kann hier hartcodiert oder aus einer Variablen geladen werden)\nconst autoValidate = true; // Auf `false` setzen, um manuelle Prüfung zu erzwingen\n\n// Bestimme den Validierungsstatus basierend auf der Konfiguration\nconst validationStatus = autoValidate ? 'auto_approved' : 'pending_manual_review';\n\nreturn {\n  json: {\n    ...data,\n    validationStatus,\n    notificationRecipients: ['accounting@example.com']\n  }\n};"
+      },
+      "name": "Validierungsdaten vorbereiten",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "text": "Prüft, ob der Beleg automatisch freigegeben werden soll oder zur manuellen Prüfung geht.",
+        "width": 260
+      },
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.validationStatus }}",
+              "value2": "auto_approved"
+            }
+          ]
+        }
+      },
+      "name": "Auto-Validierung?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "voucher",
+        "operation": "update",
+        "voucherId": "={{ $json.voucherId }}",
+        "status": 1000
+      },
+      "name": "SevDesk - Beleg freigeben",
+      "type": "n8n-nodes-sevdesk-v2.sevDesk",
+      "typeVersion": 1,
+      "position": [
+        1350,
+        200
+      ],
+      "credentials": {
+        "sevDeskApi": {
+          "id": "6",
+          "name": "SevDesk API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "Gibt den Beleg in SevDesk frei (Status 'gebucht').",
+        "width": 200
+      },
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1350,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "accounting@example.com",
+        "toEmail": "={{ $json.notificationRecipients.join(',') }}",
+        "subject": "Beleg zur manuellen Prüfung: {{ $json.supplierName }} - {{ $json.invoiceNumber }}",
+        "text": "=Sehr geehrte(r) Buchhalter(in),\n\nein neuer Beleg wurde erfasst und erfordert Ihre manuelle Prüfung:\n\nLieferant: {{ $json.supplierName }}\nRechnungsnummer: {{ $json.invoiceNumber }}\nDatum: {{ $json.documentDate }}\nBetrag: {{ $json.totalAmount }} {{ $json.currency }}\nSevDesk-ID: {{ $json.voucherId }}\n\nBitte prüfen Sie den Beleg in SevDesk und geben Sie ihn frei.",
+        "options": {}
+      },
+      "name": "Prüfung anfordern",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 3,
+      "position": [
+        1350,
+        400
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "Sendet eine E-Mail an die Buchhaltung, um eine manuelle Prüfung anzustoßen.",
+        "width": 240
+      },
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1350,
+        550
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "accounting-notifications",
+        "text": "={% if $json.validationStatus === 'auto_approved' %}\n✅ Beleg automatisch freigegeben:\n{% else %}\n🔍 Beleg zur manuellen Prüfung:\n{% endif %}\n\nLieferant: {{ $json.supplierName }}\nRechnungsnr: {{ $json.invoiceNumber }}\nBetrag: {{ $json.totalAmount }} {{ $json.currency }}\nSevDesk-ID: {{ $json.voucherId }}"
+      },
+      "name": "Signal-Benachrichtigung",
+      "type": "n8n-nodes-base.signalSend",
+      "typeVersion": 1,
+      "position": [
+        1850,
+        300
+      ],
+      "credentials": {
+        "signalApi": {
+          "id": "11",
+          "name": "Signal API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$node[\"Signal-Benachrichtigung\"].error !== undefined}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Fehler aufgetreten?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2050,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "error-reporting@example.com",
+        "toEmail": "support@example.com",
+        "subject": "Fehler im Belegerfassung-Workflow (Validierung)",
+        "text": "=Es ist ein Fehler im Belegerfassung-Workflow (Teil 3: Validierung) aufgetreten:\n\nFehler: {{ $node[\"Signal-Benachrichtigung\"].error.message }}\n\nDetails: {{ JSON.stringify($node[\"Signal-Benachrichtigung\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
+        "options": {}
+      },
+      "name": "Support benachrichtigen",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 3,
+      "position": [
+        2300,
+        200
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "support-alerts",
+        "text": "=⚠️ FEHLER im Belegerfassung-Workflow (Validierung):\n\n{{$node[\"Signal-Benachrichtigung\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
+      },
+      "name": "Fehler-Signal",
+      "type": "n8n-nodes-base.signalSend",
+      "typeVersion": 1,
+      "position": [
+        2300,
+        400
+      ],
+      "credentials": {
+        "signalApi": {
+          "id": "11",
+          "name": "Signal API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respond": "when",
+        "responseFor": "webhook",
+        "responseCode": 200,
+        "body": "{\n    \"success\": true,\n    \"message\": \"Validierungsprozess abgeschlossen\",\n    \"voucherId\": \"{{ $json.voucherId }}\",\n    \"validationStatus\": \"{{ $json.validationStatus }}\"\n}"
+      },
+      "name": "Erfolgsantwort",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 2,
+      "position": [
+        2050,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "respond": "when",
+        "responseFor": "webhook",
+        "responseCode": 500,
+        "body": "{\n    \"success\": false,\n    \"message\": \"Fehler bei der Validierung\",\n    \"error\": \"{{ $json.error.message }}\"\n}"
+      },
+      "name": "Fehlerantwort",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 2,
+      "position": [
+        2550,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook-Key validieren": {
+      "main": [
+        [
+          {
+            "node": "Webhook Trigger",
+            "output": "main",
+            "index": 0
+          },
+          {
+            "node": "Webhook-Key validieren",
+            "input": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validierungsdaten vorbereiten": {
+      "main": [
+        [
+          {
+            "node": "Webhook-Key validieren",
+            "output": "true",
+            "index": 0
+          },
+          {
+            "node": "Validierungsdaten vorbereiten",
+            "input": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auto-Validierung?": {
+      "main": [
+        [
+          {
+            "node": "Validierungsdaten vorbereiten",
+            "output": "main",
+            "index": 0
+          },
+          {
+            "node": "Auto-Validierung?",
+            "input": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SevDesk - Beleg freigeben": {
+      "main": [
+        [
+          {
+            "node": "Auto-Validierung?",
+            "output": "true",
+            "index": 0
+          },
+          {
+            "node": "SevDesk - Beleg freigeben",
+            "input": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prüfung anfordern": {
+      "main": [
+        [
+          {
+            "node": "Auto-Validierung?",
+            "output": "false",
+            "index": 0
+          },
+          {
+            "node": "Prüfung anfordern",
+            "input": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "SevDesk - Beleg freigeben",
+            "output": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "input": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prüfung anfordern",
+            "output": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "input": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Signal-Benachrichtigung": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "output": "main",
+            "index": 0
+          },
+          {
+            "node": "Signal-Benachrichtigung",
+            "input": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fehler aufgetreten?": {
+      "main": [
+        [
+          {
+            "node": "Signal-Benachrichtigung",
+            "output": "main",
+            "index": 0
+          },
+          {
+            "node": "Fehler aufgetreten?",
+            "input": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Support benachrichtigen": {
+      "main": [
+        [
+          {
+            "node": "Fehler aufgetreten?",
+            "output": "true",
+            "index": 0
+          },
+          {
+            "node": "Support benachrichtigen",
+            "input": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fehler-Signal": {
+      "main": [
+        [
+          {
+            "node": "Fehler aufgetreten?",
+            "output": "true",
+            "index": 0
+          },
+          {
+            "node": "Fehler-Signal",
+            "input": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Erfolgsantwort": {
+      "main": [
+        [
+          {
+            "node": "Signal-Benachrichtigung",
+            "output": "main",
+            "index": 0
+          },
+          {
+            "node": "Erfolgsantwort",
+            "input": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fehlerantwort": {
+      "main": [
+        [
+          {
+            "node": "Fehler aufgetreten?",
+            "output": "true",
+            "index": 0
+          },
+          {
+            "node": "Fehlerantwort",
+            "input": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

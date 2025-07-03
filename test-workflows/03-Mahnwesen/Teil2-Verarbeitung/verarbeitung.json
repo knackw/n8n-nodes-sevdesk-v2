@@ -1,0 +1,197 @@
+{
+  "name": "SevDesk - Mahnwesen - Teil 2: Verarbeitung (v2)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mahnwesen-verarbeitung",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "mahnwesen-verarbeitung"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Validiere den Webhook-Key\nconst payload = $input.item.json;\nconst webhookKey = payload.webhook_key;\nconst data = payload.data;\n\n// Konfiguration wird später geladen, hier nur Validierung\nif (!webhookKey || webhookKey !== 'secret-key') {\n  throw new Error('Ungültiger Webhook-Key');\n}\n\nreturn {\n  json: data\n};"
+      },
+      "name": "Daten validieren",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "dunning",
+        "operation": "create",
+        "invoiceId": "={{ $json.invoice.id }}",
+        "contactId": "={{ $json.customer.id }}",
+        "additionalFields": {
+          "text": "={{ $node[\"KI-Mahntext generieren\"].json.text }}",
+          "dunningLevel": "={{ $json.reminderLevel }}",
+          "dunningDate": "={{ $now.format('YYYY-MM-DD') }}",
+          "price": "={{ $json.reminderFee }}"
+        }
+      },
+      "name": "SevDesk - Mahnung erstellen",
+      "type": "sevDesk",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        300
+      ],
+      "credentials": {
+        "sevDeskApi": {
+          "id": "6",
+          "name": "SevDesk API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "dunning",
+        "operation": "getPdf",
+        "dunningId": "={{ $node[\"SevDesk - Mahnung erstellen\"].json.id }}"
+      },
+      "name": "SevDesk - Mahnungs-PDF",
+      "type": "sevDesk",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        300
+      ],
+      "credentials": {
+        "sevDeskApi": {
+          "id": "6",
+          "name": "SevDesk API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "bucketName": "={{ $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config.cloudStorageBucket || \"documents-archive\" }}",
+        "fileName": "=mahnungen/{{ $json.customer.customerNumber }}/{{ $now.format('YYYY-MM-DD') }}_Mahnung_{{ $json.reminderLevel }}_{{ $json.invoice.invoiceNumber }}.pdf",
+        "binaryPropertyName": "data"
+      },
+      "name": "In Cloud speichern",
+      "type": "n8n-nodes-base.googleCloudStorage",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        300
+      ],
+      "credentials": {
+        "googleCloudStorageOAuth2Api": {
+          "id": "12",
+          "name": "Google Cloud Storage"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config.webhookUrl || \"https://n8n.example.com/webhook/mahnwesen-versand\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "bodyContentType": "multipart-form-data"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "data",
+              "value": "={{ JSON.stringify({...$json, dunningId: $node[\"SevDesk - Mahnung erstellen\"].json.id, pdfUrl: $node[\"In Cloud speichern\"].json.url, pdfData: $node[\"SevDesk - Mahnungs-PDF\"].binary.data}) }}"
+            },
+            {
+              "name": "webhook_key",
+              "value": "={{ $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config.webhookKey || \"secret-key\" }}"
+            }
+          ]
+        }
+      },
+      "name": "Webhook zu Teil 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1850,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8",
+          "name": "Webhook Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $node[\"Webhook zu Teil 3\"].error !== undefined }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Fehler aufgetreten?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2050,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "error-reporting@example.com",
+        "toEmail": "support@example.com",
+        "subject": "Fehler im Mahnwesen-Workflow (Verarbeitung)",
+        "text": "=Es ist ein Fehler im Mahnwesen-Workflow (Teil 2: Verarbeitung) aufgetreten:\n\nFehler: {{ $node[\"Webhook zu Teil 3\"].error.message }}\n\nDetails: {{ JSON.stringify($node[\"Webhook zu Teil 3\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
+        "options": {}
+      },
+      "name": "Support benachrichtigen",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        2450,
+        200
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "support-alerts",
+        "text": "=⚠️ FEHLER im Mahnwesen-Workflow (Verarbeitung):\n\n{{ $node[\"Webhook zu Teil 3\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
+      },
+      "name": "Signal-Benachrichtigung",
+      "type": "n8n-nodes-base.signalSend",
+      "typeVersion": 1,
+      "position": [
+        2450,
+        400
+      ],
+      "credentials": {
+        "signalApi": {
+          "id": "11",
+          "name": "Signal API"
+        }
+      }
+    }
+  ],
+  "connections": {}
+}
