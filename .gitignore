@@ -98,3 +98,4 @@ temp/
 
 # Husky
 .husky/_
+/backup/
