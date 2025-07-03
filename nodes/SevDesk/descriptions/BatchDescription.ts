@@ -64,7 +64,7 @@ export const batchFields: INodeProperties[] = [
 						},
 					},
 					{
-						displayName: "Timeout (ms)",
+						displayName: 'Timeout (Ms)',
 						name: "timeout",
 						type: "number",
 						default: 30000,
@@ -104,6 +104,7 @@ export const batchFields: INodeProperties[] = [
 						displayName: "Resource",
 						name: "resource",
 						type: "options",
+						noDataExpression: true,
 						required: true,
 						default: "contact",
 						options: [
@@ -130,12 +131,17 @@ export const batchFields: INodeProperties[] = [
 						displayName: "Operation Type",
 						name: "operation",
 						type: "options",
+						noDataExpression: true,
 						required: true,
 						default: "create",
 						options: [
 							{
 								name: "Create",
 								value: "create",
+							},
+							{
+								name: "Delete",
+								value: "delete",
 							},
 							{
 								name: "Get",
@@ -149,12 +155,7 @@ export const batchFields: INodeProperties[] = [
 								name: "Update",
 								value: "update",
 							},
-							{
-								name: "Delete",
-								value: "delete",
-							},
 						],
-						description: "The operation to perform on the resource",
 					},
 					{
 						displayName: "Resource ID",
@@ -252,14 +253,14 @@ export const batchFields: INodeProperties[] = [
 				name: "groupByResource",
 				type: "boolean",
 				default: false,
-				description: "Group operations by resource type for optimized processing",
+				description: "Whether to group operations by resource type for optimized processing",
 			},
 			{
 				displayName: "Validate Compatibility",
 				name: "validateCompatibility",
 				type: "boolean",
 				default: true,
-				description: "Validate that operations can be safely batched together",
+				description: "Whether to validate that operations can be safely batched together",
 			},
 			{
 				displayName: "Chunk Size",
@@ -277,7 +278,7 @@ export const batchFields: INodeProperties[] = [
 				name: "returnDetailedResults",
 				type: "boolean",
 				default: true,
-				description: "Include detailed results for each operation in the response",
+				description: "Whether to include detailed results for each operation in the response",
 			},
 		],
 	},

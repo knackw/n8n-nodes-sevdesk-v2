@@ -1,0 +1,417 @@
+husky - DEPRECATED
+Please remove the following two lines from .husky/pre-commit:
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+They WILL FAIL in v10.0.0
+> n8n-nodes-sevdesk-v2@2.0.4 lint
+> eslint nodes credentials package.json
+=============
+WARNING: You are currently running a version of TypeScript which is not officially supported by @typescript-eslint/typescript-estree.
+You may find that it works just fine, or you may not.
+SUPPORTED TYPESCRIPT VERSIONS: >=4.7.4 <5.6.0
+YOUR TYPESCRIPT VERSION: 5.8.3
+Please only submit bug reports when using the officially supported version.
+=============
+> n8n-nodes-sevdesk-v2@2.0.4 test
+> jest
+ PASS  tests/simple-demo.test.ts (12.924 s)
+ PASS  tests/SevDeskApi.credentials.test.ts (13.148 s)
+ FAIL  tests/SevDeskApiClient.test.ts (13.639 s)
+  ● Console
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.681Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:25.769Z","method":"GET","endpoint":"/Contact","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.774Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":true}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:25.775Z","method":"GET","endpoint":"/Contact","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.778Z","method":"POST","endpoint":"/Contact","hasBody":true,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:25.780Z","method":"POST","endpoint":"/Contact","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.784Z","method":"POST","endpoint":"/Contact","hasBody":true,"hasQueryParams":true}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:25.785Z","method":"POST","endpoint":"/Contact","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.788Z","method":"PUT","endpoint":"/Contact/12345","hasBody":true,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:25.789Z","method":"PUT","endpoint":"/Contact/12345","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.791Z","method":"DELETE","endpoint":"/Contact/12345","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:25.792Z","method":"DELETE","endpoint":"/Contact/12345","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.794Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:25.797Z","method":"GET","endpoint":"/Contact","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.799Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:25.799Z","method":"GET","endpoint":"/Contact","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.801Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.error
+      [SevDesk API Error] {"timestamp":"2025-07-03T22:34:25.802Z","method":"GET","endpoint":"/Contact","error":"Unauthorized"}
+      190 |
+      191 |             // Use console for logging since n8n logger is not available in this context
+    > 192 |             console.error(`[SevDesk API Error] ${JSON.stringify(logData)}`);
+          |                     ^
+      193 |     }
+      194 |
+      195 |     /**
+      at SevDeskApiClient.logError (nodes/SevDesk/SevDeskApiClient.ts:192:11)
+      at SevDeskApiClient.request (nodes/SevDesk/SevDeskApiClient.ts:82:9)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.812Z","method":"GET","endpoint":"/Contact/999999","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.error
+      [SevDesk API Error] {"timestamp":"2025-07-03T22:34:25.813Z","method":"GET","endpoint":"/Contact/999999","error":"Not Found"}
+      190 |
+      191 |             // Use console for logging since n8n logger is not available in this context
+    > 192 |             console.error(`[SevDesk API Error] ${JSON.stringify(logData)}`);
+          |                     ^
+      193 |     }
+      194 |
+      195 |     /**
+      at SevDeskApiClient.logError (nodes/SevDesk/SevDeskApiClient.ts:192:11)
+      at SevDeskApiClient.request (nodes/SevDesk/SevDeskApiClient.ts:82:9)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.815Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.error
+      [SevDesk API Error] {"timestamp":"2025-07-03T22:34:25.816Z","method":"GET","endpoint":"/Contact","error":"Too Many Requests"}
+      190 |
+      191 |             // Use console for logging since n8n logger is not available in this context
+    > 192 |             console.error(`[SevDesk API Error] ${JSON.stringify(logData)}`);
+          |                     ^
+      193 |     }
+      194 |
+      195 |     /**
+      at SevDeskApiClient.logError (nodes/SevDesk/SevDeskApiClient.ts:192:11)
+      at SevDeskApiClient.request (nodes/SevDesk/SevDeskApiClient.ts:82:9)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.818Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.error
+      [SevDesk API Error] {"timestamp":"2025-07-03T22:34:25.819Z","method":"GET","endpoint":"/Contact","error":"Request timeout"}
+      190 |
+      191 |             // Use console for logging since n8n logger is not available in this context
+    > 192 |             console.error(`[SevDesk API Error] ${JSON.stringify(logData)}`);
+          |                     ^
+      193 |     }
+      194 |
+      195 |     /**
+      at SevDeskApiClient.logError (nodes/SevDesk/SevDeskApiClient.ts:192:11)
+      at SevDeskApiClient.request (nodes/SevDesk/SevDeskApiClient.ts:82:9)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.946Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.error
+      [SevDesk API Error] {"timestamp":"2025-07-03T22:34:25.948Z","method":"GET","endpoint":"/Contact","error":"Connection refused"}
+      190 |
+      191 |             // Use console for logging since n8n logger is not available in this context
+    > 192 |             console.error(`[SevDesk API Error] ${JSON.stringify(logData)}`);
+          |                     ^
+      193 |     }
+      194 |
+      195 |     /**
+      at SevDeskApiClient.logError (nodes/SevDesk/SevDeskApiClient.ts:192:11)
+      at SevDeskApiClient.request (nodes/SevDesk/SevDeskApiClient.ts:82:9)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.980Z","method":"POST","endpoint":"/Contact","hasBody":true,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:25.981Z","method":"POST","endpoint":"/Contact","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.982Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":true}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:25.985Z","method":"GET","endpoint":"/Contact","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.986Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:25.988Z","method":"GET","endpoint":"/Contact","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.992Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:25.993Z","method":"GET","endpoint":"/Contact","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:25.995Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:26.001Z","method":"GET","endpoint":"/Contact","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:26.011Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:26.012Z","method":"GET","endpoint":"/Contact","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:26.014Z","method":"GET","endpoint":"/Contact","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:26.016Z","method":"POST","endpoint":"/Contact","hasBody":true,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:26.016Z","method":"POST","endpoint":"/Contact","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:26.017Z","method":"GET","endpoint":"/Contact/12345","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:26.018Z","method":"GET","endpoint":"/Contact/12345","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:26.019Z","method":"PUT","endpoint":"/Contact/12345","hasBody":true,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:26.019Z","method":"PUT","endpoint":"/Contact/12345","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+    console.info
+      [SevDesk API Request] {"timestamp":"2025-07-03T22:34:26.020Z","method":"DELETE","endpoint":"/Contact/12345","hasBody":false,"hasQueryParams":false}
+      at SevDeskApiClient.logRequest (nodes/SevDesk/SevDeskApiClient.ts:161:11)
+    console.info
+      [SevDesk API Response] {"timestamp":"2025-07-03T22:34:26.022Z","method":"DELETE","endpoint":"/Contact/12345","statusCode":"unknown","hasData":true}
+      at SevDeskApiClient.logResponse (nodes/SevDesk/SevDeskApiClient.ts:177:11)
+  ● SevDeskApiClient - Functional Tests › Error Handling › should handle network timeout errors
+
+    expect(received).rejects.toThrow(expected)
+
+    Expected substring: "Request timeout"
+    Received message:   "this.executeFunctions.getNode is not a function"
+
+          219 |
+          220 |                 // Convert to NodeApiError for n8n
+        > 221 |                 return sevDeskError.toNodeApiError(this.executeFunctions.getNode());
+              |
+         ^
+          222 |         }
+          223 |
+          224 |         /**
+          at SevDeskApiClient.handleApiError (nodes/SevDesk/SevDeskApiClient.ts:221:60)
+          at SevDeskApiClient.request (nodes/SevDesk/SevDeskApiClient.ts:83:15)
+      254 |                     (mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockRejectedValue(timeoutError);
+      255 |
+    > 256 |                     await expect(apiClient.get('/Contact')).rejects.toThrow('Request timeout');
+          |                                                                     ^
+      257 |             });
+      258 |
+      259 |             it('should handle connection errors', async () => {
+      at Object.toThrow (node_modules/expect/build/index.js:218:22)
+      at Object.<anonymous> (tests/SevDeskApiClient.test.ts:256:52)
+  ● SevDeskApiClient - Functional Tests › Error Handling › should handle connection errors
+    expect(received).rejects.toThrow(expected)
+    Expected substring: "Connection refused"
+    Received message:   "this.executeFunctions.getNode is not a function"
+          219 |
+          220 |                 // Convert to NodeApiError for n8n
+        > 221 |                 return sevDeskError.toNodeApiError(this.executeFunctions.getNode());
+              |
+         ^
+          222 |         }
+          223 |
+          224 |         /**
+          at SevDeskApiClient.handleApiError (nodes/SevDesk/SevDeskApiClient.ts:221:60)
+          at SevDeskApiClient.request (nodes/SevDesk/SevDeskApiClient.ts:83:15)
+      262 |                     (mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockRejectedValue(connectionError);
+      263 |
+    > 264 |                     await expect(apiClient.get('/Contact')).rejects.toThrow('Connection refused');
+          |                                                                     ^
+      265 |             });
+      266 |     });
+      267 |
+      at Object.toThrow (node_modules/expect/build/index.js:218:22)
+      at Object.<anonymous> (tests/SevDeskApiClient.test.ts:264:52)
+ PASS  tests/BaseResourceHandler.test.ts (13.693 s)
+ FAIL  tests/SevDeskResourceManager.test.ts
+  ● Test suite failed to run
+    tests/SevDeskResourceManager.test.ts:22:24 - error TS2339: Property 'getExecutionId' does not exist on type 'Mocked<IExecuteFunctions>'.
+    22   mockExecuteFunctions.getExecutionId = jest.fn();
+                              ~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:24:24 - error TS2339: Property 'getInstanceBaseUrl' does not exist on type 'Mocked<IExecuteFunctions>'.
+    24   mockExecuteFunctions.getInstanceBaseUrl = jest.fn();
+                              ~~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:25:24 - error TS2339: Property 'getInstanceId' does not exist on type 'Mocked<IExecuteFunctions>'.
+    25   mockExecuteFunctions.getInstanceId = jest.fn();
+                              ~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:33:24 - error TS2339: Property 'getNodeInputs' does not exist on type 'Mocked<IExecuteFunctions>'.
+    33   mockExecuteFunctions.getNodeInputs = jest.fn();
+                              ~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:34:24 - error TS2339: Property 'getParentCallbackManager' does not exist on type 'Mocked<IExecuteFunctions>'.
+    34   mockExecuteFunctions.getParentCallbackManager = jest.fn();
+                              ~~~~~~~~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:35:24 - error TS2339: Property 'getChildNodes' does not exist on type 'Mocked<IExecuteFunctions>'.
+    35   mockExecuteFunctions.getChildNodes = jest.fn();
+                              ~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:36:24 - error TS2339: Property 'getKnownEntryPoints' does not exist on type 'Mocked<IExecuteFunctions>'.
+    36   mockExecuteFunctions.getKnownEntryPoints = jest.fn();
+                              ~~~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:37:24 - error TS2339: Property 'addInputData' does not exist on type 'Mocked<IExecuteFunctions>'.
+    37   mockExecuteFunctions.addInputData = jest.fn();
+                              ~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:38:24 - error TS2339: Property 'addOutputData' does not exist on type 'Mocked<IExecuteFunctions>'.
+    38   mockExecuteFunctions.addOutputData = jest.fn();
+                              ~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:39:24 - error TS2339: Property 'getExecutionCancelSignal' does not exist on type 'Mocked<IExecuteFunctions>'.
+    39   mockExecuteFunctions.getExecutionCancelSignal = jest.fn();
+                              ~~~~~~~~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:40:24 - error TS2339: Property 'onExecutionCancellation' does not exist on type 'Mocked<IExecuteFunctions>'.
+    40   mockExecuteFunctions.onExecutionCancellation = jest.fn();
+                              ~~~~~~~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:43:24 - error TS2339: Property 'getResponsePromise' does not exist on type 'Mocked<IExecuteFunctions>'.
+    43   mockExecuteFunctions.getResponsePromise = jest.fn();
+                              ~~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:44:24 - error TS2339: Property 'getSSHClient' does not exist on type 'Mocked<IExecuteFunctions>'.
+    44   mockExecuteFunctions.getSSHClient = jest.fn();
+                              ~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:46:24 - error TS2339: Property 'sendDataToUI' does not exist on type 'Mocked<IExecuteFunctions>'.
+    46   mockExecuteFunctions.sendDataToUI = jest.fn();
+                              ~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:47:24 - error TS2339: Property 'logAiEvent' does not exist on type 'Mocked<IExecuteFunctions>'.
+    47   mockExecuteFunctions.logAiEvent = jest.fn();
+                              ~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:77:45 - error TS2339: Property 'mockRes
+olvedValue' does not exist on type '(requestOptions: IHttpRequestOptions) => Promise<any>'.
+    77    mockExecuteFunctions.helpers.httpRequest.mockResolvedValue({
+                                                   ~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:86:11 - error TS18047: 'result' is possibly 'null'.
+    86    expect(result.length).toBe(1);
+                 ~~~~~~
+    tests/SevDeskResourceManager.test.ts:87:11 - error TS18047: 'result' is possibly 'null'.
+    87    expect(result[0].json).toEqual(mockContact);
+                 ~~~~~~
+    tests/SevDeskResourceManager.test.ts:87:11 - error TS2532: Object is possibly 'undefined'.
+    87    expect(result[0].json).toEqual(mockContact);
+                 ~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:87:21 - error TS2339: Property 'json' d
+oes not exist on type 'number | IDataObject | IBinaryKeyData | IPairedItemData | IPairedItemData[] | NodeApiError | NodeOperationError'.
+      Property 'json' does not exist on type 'number'.
+    87    expect(result[0].json).toEqual(mockContact);
+                           ~~~~
+    tests/SevDeskResourceManager.test.ts:112:45 - error TS2339: Property 'mockRe
+solvedValue' does not exist on type '(requestOptions: IHttpRequestOptions) => Promise<any>'.
+    112    mockExecuteFunctions.helpers.httpRequest.mockResolvedValue({
+                                                    ~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:121:11 - error TS18047: 'result' is possibly 'null'.
+    121    expect(result.length).toBe(2);
+                  ~~~~~~
+    tests/SevDeskResourceManager.test.ts:147:45 - error TS2339: Property 'mockRe
+solvedValue' does not exist on type '(requestOptions: IHttpRequestOptions) => Promise<any>'.
+    147    mockExecuteFunctions.helpers.httpRequest.mockResolvedValue({
+                                                    ~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:155:11 - error TS18047: 'result' is possibly 'null'.
+    155    expect(result[0].json.name).toBe('Updated Company Name');
+                  ~~~~~~
+    tests/SevDeskResourceManager.test.ts:155:11 - error TS2532: Object is possibly 'undefined'.
+    155    expect(result[0].json.name).toBe('Updated Company Name');
+                  ~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:155:21 - error TS2339: Property 'json'
+does not exist on type 'number | IDataObject | IBinaryKeyData | IPairedItemData | IPairedItemData[] | NodeApiError | NodeOperationError'.
+      Property 'json' does not exist on type 'number'.
+    155    expect(result[0].json.name).toBe('Updated Company Name');
+                            ~~~~
+    tests/SevDeskResourceManager.test.ts:176:45 - error TS2339: Property 'mockRe
+solvedValue' does not exist on type '(requestOptions: IHttpRequestOptions) => Promise<any>'.
+    176    mockExecuteFunctions.helpers.httpRequest.mockResolvedValue({
+                                                    ~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:213:45 - error TS2339: Property 'mockRe
+solvedValue' does not exist on type '(requestOptions: IHttpRequestOptions) => Promise<any>'.
+    213    mockExecuteFunctions.helpers.httpRequest.mockResolvedValue({
+                                                    ~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:221:11 - error TS18047: 'result' is possibly 'null'.
+    221    expect(result[0].json).toEqual(mockInvoice);
+                  ~~~~~~
+    tests/SevDeskResourceManager.test.ts:221:11 - error TS2532: Object is possibly 'undefined'.
+    221    expect(result[0].json).toEqual(mockInvoice);
+                  ~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:221:21 - error TS2339: Property 'json'
+does not exist on type 'number | IDataObject | IBinaryKeyData | IPairedItemData | IPairedItemData[] | NodeApiError | NodeOperationError'.
+      Property 'json' does not exist on type 'number'.
+    221    expect(result[0].json).toEqual(mockInvoice);
+                            ~~~~
+    tests/SevDeskResourceManager.test.ts:247:45 - error TS2339: Property 'mockRe
+solvedValue' does not exist on type '(requestOptions: IHttpRequestOptions) => Promise<any>'.
+    247    mockExecuteFunctions.helpers.httpRequest.mockResolvedValue({
+                                                    ~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:255:11 - error TS18047: 'result' is possibly 'null'.
+    255    expect(result[0].json.status).toBe('200');
+                  ~~~~~~
+    tests/SevDeskResourceManager.test.ts:255:11 - error TS2532: Object is possibly 'undefined'.
+    255    expect(result[0].json.status).toBe('200');
+                  ~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:255:21 - error TS2339: Property 'json'
+does not exist on type 'number | IDataObject | IBinaryKeyData | IPairedItemData | IPairedItemData[] | NodeApiError | NodeOperationError'.
+      Property 'json' does not exist on type 'number'.
+    255    expect(result[0].json.status).toBe('200');
+                            ~~~~
+    tests/SevDeskResourceManager.test.ts:294:6 - error TS2339: Property 'mockRes
+olvedValueOnce' does not exist on type '(requestOptions: IHttpRequestOptions) => Promise<any>'.
+    294     .mockResolvedValueOnce({ objects: [mockBatchResults[0]], total: 1 })
+             ~~~~~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:321:45 - error TS2339: Property 'mockRe
+jectedValue' does not exist on type '(requestOptions: IHttpRequestOptions) => Promise<any>'.
+    321    mockExecuteFunctions.helpers.httpRequest.mockRejectedValue(mockError);
+                                                    ~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:350:45 - error TS2339: Property 'mockRe
+jectedValue' does not exist on type '(requestOptions: IHttpRequestOptions) => Promise<any>'.
+    350    mockExecuteFunctions.helpers.httpRequest.mockRejectedValue(timeoutError);
+                                                    ~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:407:45 - error TS2339: Property 'mockRe
+solvedValue' does not exist on type '(requestOptions: IHttpRequestOptions) => Promise<any>'.
+    407    mockExecuteFunctions.helpers.httpRequest.mockResolvedValue(mockApiResponse);
+                                                    ~~~~~~~~~~~~~~~~~
+    tests/SevDeskResourceManager.test.ts:413:11 - error TS18047: 'result' is possibly 'null'.
+    413    expect(result[0]).toHaveProperty('json');
+                  ~~~~~~
+    tests/SevDeskResourceManager.test.ts:414:11 - error TS18047: 'result' is possibly 'null'.
+    414    expect(result[0]).toHaveProperty('pairedItem');
+                  ~~~~~~
+ FAIL  tests/SevDesk.node.test.ts
+  ● Test suite failed to run
+    nodes/SevDesk/batch/BatchOperationHandler.ts:8:2 - error TS6133: 'INodeExecutionData' is declared but its value is never read.
+    8  INodeExecutionData,
+       ~~~~~~~~~~~~~~~~~~
+    nodes/SevDesk/batch/BatchOperationHandler.ts:9:2 - error TS6133: 'NodeApiError' is declared but its value is never read.
+    9  NodeApiError,
+       ~~~~~~~~~~~~
+    nodes/SevDesk/batch/BatchOperationHandler.ts:10:2 - error TS6133: 'IHttpRequestOptions' is declared but its value is never read.
+    10  IHttpRequestOptions,
+        ~~~~~~~~~~~~~~~~~~~
+    nodes/SevDesk/batch/BatchOperationHandler.ts:14:1 - error TS6133: 'SevDeskResponse' is declared but its value is never read.
+    14 import { SevDeskResponse } from "../types/SevDeskApiTypes";
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    nodes/SevDesk/batch/BatchOperationHandler.ts:179:16 - error TS6133: '_executeConcurrently' is declared but its value is never read.
+    179  private async _executeConcurrently<T>(
+                       ~~~~~~~~~~~~~~~~~~~~
+Test Suites: 3 failed, 3 passed, 6 total
+Tests:       2 failed, 57 passed, 59 total
+Snapshots:   0 total
+Time:        17.19 s
+Ran all test suites.
+husky - pre-commit script failed (code 1)
