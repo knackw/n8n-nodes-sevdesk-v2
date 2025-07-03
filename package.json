@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-sevdesk-v2",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "n8n community node for SevDesk API v2 integration. Direct API access without external dependencies - simplified, secure, and production-ready for German accounting automation.",
   "keywords": [
     "n8n-community-node-package",
