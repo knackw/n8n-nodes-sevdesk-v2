@@ -179,6 +179,366 @@ export class TestDataFactory {
       },
     };
   }
+
+  /**
+   * Create mock voucher data
+   */
+  static createMockVoucher(overrides: Partial<any> = {}): Record<string, any> {
+    return {
+      id: '1',
+      objectName: 'Voucher',
+      create: '2023-01-01T00:00:00Z',
+      update: '2023-01-01T00:00:00Z',
+      voucherNumber: 'VOUCH-001',
+      voucherDate: '2023-01-01',
+      supplier: {
+        id: '1',
+        objectName: 'Contact',
+      },
+      supplierName: 'Test Supplier',
+      description: 'Test voucher description',
+      payDate: '2023-01-15',
+      status: '50', // Draft
+      sumNet: '100.00',
+      sumTax: '19.00',
+      sumGross: '119.00',
+      taxType: 'default',
+      creditDebit: 'D', // Debit
+      voucherType: 'VOU',
+      currency: 'EUR',
+      propertyForeignCurrencyDeadline: null,
+      propertyExchangeRate: null,
+      taxSet: {
+        id: '1',
+        objectName: 'TaxSet',
+      },
+      paymentDeadline: '2023-01-31',
+      deliveryDate: '2023-01-01',
+      deliveryDateUntil: null,
+      document: null,
+      costCentre: {
+        id: '1',
+        objectName: 'CostCentre',
+      },
+      ...overrides,
+    };
+  }
+
+  /**
+   * Create mock order data
+   */
+  static createMockOrder(overrides: Partial<any> = {}): Record<string, any> {
+    return {
+      id: '1',
+      objectName: 'Order',
+      create: '2023-01-01T00:00:00Z',
+      update: '2023-01-01T00:00:00Z',
+      orderNumber: 'ORD-001',
+      contact: {
+        id: '1',
+        objectName: 'Contact',
+      },
+      orderDate: '2023-01-01',
+      status: '100', // Draft
+      header: 'Test Order Header',
+      headText: 'Test order head text',
+      footText: 'Test order foot text',
+      addressName: 'Test Company',
+      addressStreet: 'Test Street 123',
+      addressZip: '12345',
+      addressCity: 'Test City',
+      addressCountry: {
+        id: '1',
+        objectName: 'StaticCountry',
+      },
+      createUser: {
+        id: '1',
+        objectName: 'SevUser',
+      },
+      sevClient: {
+        id: '1',
+        objectName: 'SevClient',
+      },
+      deliveryTerms: 'Standard delivery',
+      paymentTerms: 'Net 30',
+      origin: null,
+      version: '1.0',
+      smallSettlement: false,
+      contactPerson: {
+        id: '1',
+        objectName: 'SevUser',
+      },
+      taxRate: '19.00',
+      taxSet: {
+        id: '1',
+        objectName: 'TaxSet',
+      },
+      taxText: 'Umsatzsteuer 19%',
+      taxType: 'default',
+      orderType: 'AN', // Angebot (Quote)
+      sendDate: null,
+      address: 'Test Company\nTest Street 123\n12345 Test City',
+      currency: 'EUR',
+      sumNet: '100.00',
+      sumTax: '19.00',
+      sumGross: '119.00',
+      sumDiscounts: '0.00',
+      sumNetForeignCurrency: '100.00',
+      sumTaxForeignCurrency: '19.00',
+      sumGrossForeignCurrency: '119.00',
+      sumDiscountsForeignCurrency: '0.00',
+      customerInternalNote: null,
+      showNet: true,
+      sendType: 'VPR', // Email
+      ...overrides,
+    };
+  }
+
+  /**
+   * Create mock credit note data
+   */
+  static createMockCreditNote(overrides: Partial<any> = {}): Record<string, any> {
+    return {
+      id: '1',
+      objectName: 'CreditNote',
+      create: '2023-01-01T00:00:00Z',
+      update: '2023-01-01T00:00:00Z',
+      creditNoteNumber: 'CN-001',
+      contact: {
+        id: '1',
+        objectName: 'Contact',
+      },
+      creditNoteDate: '2023-01-01',
+      status: '100', // Draft
+      header: 'Test Credit Note Header',
+      headText: 'Test credit note head text',
+      footText: 'Test credit note foot text',
+      addressName: 'Test Company',
+      addressStreet: 'Test Street 123',
+      addressZip: '12345',
+      addressCity: 'Test City',
+      addressCountry: {
+        id: '1',
+        objectName: 'StaticCountry',
+      },
+      createUser: {
+        id: '1',
+        objectName: 'SevUser',
+      },
+      sevClient: {
+        id: '1',
+        objectName: 'SevClient',
+      },
+      smallSettlement: false,
+      contactPerson: {
+        id: '1',
+        objectName: 'SevUser',
+      },
+      taxRate: '19.00',
+      taxSet: {
+        id: '1',
+        objectName: 'TaxSet',
+      },
+      taxText: 'Umsatzsteuer 19%',
+      taxType: 'default',
+      creditNoteType: 'CN',
+      sendDate: null,
+      address: 'Test Company\nTest Street 123\n12345 Test City',
+      currency: 'EUR',
+      sumNet: '-100.00',
+      sumTax: '-19.00',
+      sumGross: '-119.00',
+      sumDiscounts: '0.00',
+      sumNetForeignCurrency: '-100.00',
+      sumTaxForeignCurrency: '-19.00',
+      sumGrossForeignCurrency: '-119.00',
+      sumDiscountsForeignCurrency: '0.00',
+      customerInternalNote: null,
+      showNet: true,
+      sendType: 'VPR', // Email
+      ...overrides,
+    };
+  }
+
+  /**
+   * Create mock part (product/service) data
+   */
+  static createMockPart(overrides: Partial<any> = {}): Record<string, any> {
+    return {
+      id: '1',
+      objectName: 'Part',
+      create: '2023-01-01T00:00:00Z',
+      update: '2023-01-01T00:00:00Z',
+      name: 'Test Product',
+      partNumber: 'PROD-001',
+      text: 'Test product description',
+      category: {
+        id: '1',
+        objectName: 'Category',
+      },
+      stock: 100,
+      stockEnabled: true,
+      unity: {
+        id: '1',
+        objectName: 'Unity',
+      },
+      price: '50.00',
+      priceNet: '42.02',
+      priceGross: '50.00',
+      taxRate: '19.00',
+      status: 100, // Active
+      internalComment: 'Internal comment for test product',
+      sevClient: {
+        id: '1',
+        objectName: 'SevClient',
+      },
+      ...overrides,
+    };
+  }
+
+  /**
+   * Create mock tag data
+   */
+  static createMockTag(overrides: Partial<any> = {}): Record<string, any> {
+    return {
+      id: '1',
+      objectName: 'Tag',
+      create: '2023-01-01T00:00:00Z',
+      update: '2023-01-01T00:00:00Z',
+      name: 'Test Tag',
+      color: '#FF0000',
+      sevClient: {
+        id: '1',
+        objectName: 'SevClient',
+      },
+      ...overrides,
+    };
+  }
+
+  /**
+   * Create mock category data
+   */
+  static createMockCategory(overrides: Partial<any> = {}): Record<string, any> {
+    return {
+      id: '1',
+      objectName: 'Category',
+      create: '2023-01-01T00:00:00Z',
+      update: '2023-01-01T00:00:00Z',
+      name: 'Test Category',
+      priority: 1,
+      code: 'CAT001',
+      color: '#0000FF',
+      postingAccount: null,
+      sevClient: {
+        id: '1',
+        objectName: 'SevClient',
+      },
+      ...overrides,
+    };
+  }
+
+  /**
+   * Create mock check account data
+   */
+  static createMockCheckAccount(overrides: Partial<any> = {}): Record<string, any> {
+    return {
+      id: '1',
+      objectName: 'CheckAccount',
+      create: '2023-01-01T00:00:00Z',
+      update: '2023-01-01T00:00:00Z',
+      name: 'Test Bank Account',
+      type: 'online',
+      importType: null,
+      currency: 'EUR',
+      defaultAccount: 1,
+      status: 100,
+      autoMapTransactions: 1,
+      accountingSystemNumber: '1200',
+      clientNumber: '12345678',
+      bankServer: 'test-bank.de',
+      bankCode: '12345678',
+      description: 'Test bank account description',
+      sevClient: {
+        id: '1',
+        objectName: 'SevClient',
+      },
+      ...overrides,
+    };
+  }
+
+  /**
+   * Create mock input data for n8n node execution
+   */
+  static createMockInputData(overrides: Partial<any> = {}): INodeExecutionData {
+    return {
+      json: {
+        id: '1',
+        name: 'Test Input Data',
+        ...overrides,
+      },
+      pairedItem: {
+        item: 0,
+      },
+    };
+  }
+
+  /**
+   * Create mock node data for n8n
+   */
+  static createMockNode(overrides: Partial<any> = {}): any {
+    return {
+      id: 'test-node-id',
+      name: 'Test SevDesk Node',
+      type: 'n8n-nodes-sevdesk-v2.sevDesk',
+      typeVersion: 1,
+      position: [100, 200],
+      parameters: {
+        resource: 'contact',
+        operation: 'getAll',
+        ...overrides.parameters,
+      },
+      ...overrides,
+    };
+  }
+
+  /**
+   * Create batch of test data for performance testing
+   */
+  static createBatchTestData(resourceType: string, count: number): any[] {
+    const batch: any[] = [];
+    for (let i = 0; i < count; i++) {
+      switch (resourceType) {
+        case 'contact':
+          batch.push(this.createMockContact({
+            id: (i + 1).toString(),
+            name: `Test Company ${i + 1}`,
+            customerNumber: `CUST-${String(i + 1).padStart(3, '0')}`,
+          }));
+          break;
+        case 'invoice':
+          batch.push(this.createMockInvoice({
+            id: (i + 1).toString(),
+            invoiceNumber: `INV-2023-${String(i + 1).padStart(3, '0')}`,
+          }));
+          break;
+        case 'voucher':
+          batch.push(this.createMockVoucher({
+            id: (i + 1).toString(),
+            voucherNumber: `VOUCH-${String(i + 1).padStart(3, '0')}`,
+          }));
+          break;
+        case 'order':
+          batch.push(this.createMockOrder({
+            id: (i + 1).toString(),
+            orderNumber: `ORD-${String(i + 1).padStart(3, '0')}`,
+          }));
+          break;
+        default:
+          batch.push({ id: (i + 1).toString(), name: `Test ${resourceType} ${i + 1}` });
+      }
+    }
+    return batch;
+  }
 }
 
 /**
@@ -362,23 +722,114 @@ export class IntegrationTestUtils {
   }
 
   /**
-   * Create mock HTTP responses for API testing
+   * Create comprehensive mock HTTP responses for SevDesk API testing
+   * Integrates with SevDeskApiMock for realistic API behavior
    */
   static createMockHttpResponses() {
+    // Import SevDeskApiMock dynamically to avoid circular dependencies
+    const { sevDeskApiMock } = require('./mocks/SevDeskApiMock');
+
     return {
-      success: jest.fn().mockResolvedValue({
-        statusCode: 200,
-        body: TestDataFactory.createMockApiResponse([TestDataFactory.createMockContact()]),
-      }),
-      error: jest.fn().mockRejectedValue({
-        statusCode: 400,
-        body: TestDataFactory.createMockErrorResponse('Bad Request'),
-      }),
-      timeout: jest.fn().mockRejectedValue(new Error('Request timeout')),
-      unauthorized: jest.fn().mockRejectedValue({
-        statusCode: 401,
-        body: TestDataFactory.createMockErrorResponse('Unauthorized', 401),
-      }),
+      // Successful responses for different resources
+      contacts: {
+        getAll: jest.fn().mockImplementation(() =>
+          sevDeskApiMock.mockHttpRequest({ method: 'GET', url: '/api/v2/Contact' })
+        ),
+        getById: jest.fn().mockImplementation((id: string) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'GET', url: `/api/v2/Contact/${id}` })
+        ),
+        create: jest.fn().mockImplementation((data: any) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'POST', url: '/api/v2/Contact', body: data })
+        ),
+        update: jest.fn().mockImplementation((id: string, data: any) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'PUT', url: `/api/v2/Contact/${id}`, body: data })
+        ),
+        delete: jest.fn().mockImplementation((id: string) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'DELETE', url: `/api/v2/Contact/${id}` })
+        ),
+      },
+      invoices: {
+        getAll: jest.fn().mockImplementation(() =>
+          sevDeskApiMock.mockHttpRequest({ method: 'GET', url: '/api/v2/Invoice' })
+        ),
+        getById: jest.fn().mockImplementation((id: string) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'GET', url: `/api/v2/Invoice/${id}` })
+        ),
+        create: jest.fn().mockImplementation((data: any) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'POST', url: '/api/v2/Invoice', body: data })
+        ),
+        update: jest.fn().mockImplementation((id: string, data: any) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'PUT', url: `/api/v2/Invoice/${id}`, body: data })
+        ),
+        delete: jest.fn().mockImplementation((id: string) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'DELETE', url: `/api/v2/Invoice/${id}` })
+        ),
+      },
+      vouchers: {
+        getAll: jest.fn().mockImplementation(() =>
+          sevDeskApiMock.mockHttpRequest({ method: 'GET', url: '/api/v2/Voucher' })
+        ),
+        getById: jest.fn().mockImplementation((id: string) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'GET', url: `/api/v2/Voucher/${id}` })
+        ),
+        create: jest.fn().mockImplementation((data: any) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'POST', url: '/api/v2/Voucher', body: data })
+        ),
+        update: jest.fn().mockImplementation((id: string, data: any) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'PUT', url: `/api/v2/Voucher/${id}`, body: data })
+        ),
+        delete: jest.fn().mockImplementation((id: string) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'DELETE', url: `/api/v2/Voucher/${id}` })
+        ),
+      },
+      orders: {
+        getAll: jest.fn().mockImplementation(() =>
+          sevDeskApiMock.mockHttpRequest({ method: 'GET', url: '/api/v2/Order' })
+        ),
+        getById: jest.fn().mockImplementation((id: string) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'GET', url: `/api/v2/Order/${id}` })
+        ),
+        create: jest.fn().mockImplementation((data: any) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'POST', url: '/api/v2/Order', body: data })
+        ),
+        update: jest.fn().mockImplementation((id: string, data: any) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'PUT', url: `/api/v2/Order/${id}`, body: data })
+        ),
+        delete: jest.fn().mockImplementation((id: string) =>
+          sevDeskApiMock.mockHttpRequest({ method: 'DELETE', url: `/api/v2/Order/${id}` })
+        ),
+      },
+      // Error scenarios using SevDeskApiMock error system
+      errors: {
+        unauthorized: jest.fn().mockImplementation(() =>
+          sevDeskApiMock.mockSevDeskErrors.unauthorized()
+        ),
+        notFound: jest.fn().mockImplementation((resource: string, id: string) =>
+          sevDeskApiMock.mockSevDeskErrors.notFound(resource, id)
+        ),
+        badRequest: jest.fn().mockImplementation((message?: string) =>
+          sevDeskApiMock.mockSevDeskErrors.badRequest(message)
+        ),
+        rateLimited: jest.fn().mockImplementation(() =>
+          sevDeskApiMock.mockSevDeskErrors.rateLimited()
+        ),
+        serverError: jest.fn().mockImplementation(() =>
+          sevDeskApiMock.mockSevDeskErrors.serverError()
+        ),
+        validationError: jest.fn().mockImplementation((field: string) =>
+          sevDeskApiMock.mockSevDeskErrors.validationError(field)
+        ),
+      },
+      // Batch operations
+      batch: {
+        execute: jest.fn().mockImplementation((operations: any[]) =>
+          sevDeskApiMock.mockBatchOperation(operations)
+        ),
+      },
+      // Generic HTTP request mock that routes through SevDeskApiMock
+      httpRequest: jest.fn().mockImplementation((options: any) =>
+        sevDeskApiMock.mockHttpRequest(options)
+      ),
     };
   }
 }

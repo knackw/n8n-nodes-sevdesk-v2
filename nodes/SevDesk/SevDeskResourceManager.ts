@@ -16,16 +16,201 @@ import {
 } from "./types/SevDeskApiTypes";
 
 import { ResourceRegistry } from "./ResourceRegistry";
+import { ResourceHandlerFactory } from "./factories/ResourceHandlerFactory";
+import {
+	BatchOperationHandler,
+	IBatchRequest,
+	IBatchResult,
+	IBatchOperation,
+	BatchOperationUtils
+} from "./batch/BatchOperationHandler";
+import { ResourceDependencyResolver } from "./dependencies/ResourceDependencyResolver";
 
 /**
  * Resource manager for SevDesk operations
- * Handles the execution of different resource operations
+ *
+ * This class serves as the central coordinator for all SevDesk API operations,
+ * providing a unified interface for resource management, batch operations,
+ * and dependency resolution. It handles the execution of different resource
+ * operations while maintaining proper error handling and logging.
+ *
+ * @example
+ * ```typescript
+ * const resourceManager = new SevDeskResourceManager(executeFunctions);
+ * const result = await resourceManager.executeResourceOperation('contact', 'create', 0);
+ * ```
+ *
+ * @since 1.0.0
  */
 export class SevDeskResourceManager {
 	private executeFunctions: IExecuteFunctions;
+	private batchHandler: BatchOperationHandler;
 
+	/**
+	 * Creates a new instance of SevDeskResourceManager
+	 *
+	 * Initializes the resource manager with the provided n8n execution functions,
+	 * sets up batch operation handlers, and initializes the dependency resolver
+	 * for managing resource relationships.
+	 *
+	 * @param executeFunctions - The n8n execution functions interface providing access to node parameters, credentials, and helpers
+	 *
+	 * @example
+	 * ```typescript
+	 * const resourceManager = new SevDeskResourceManager(executeFunctions);
+	 * ```
+	 *
+	 * @since 1.0.0
+	 */
 	constructor(executeFunctions: IExecuteFunctions) {
 		this.executeFunctions = executeFunctions;
+		this.batchHandler = new BatchOperationHandler(executeFunctions);
+		this.initializeBatchHandlers();
+
+		// Initialize dependency resolver
+		ResourceDependencyResolver.initialize();
+	}
+
+	/**
+	 * Initialize batch handlers for all supported resources
+	 */
+	private initializeBatchHandlers(): void {
+		try {
+			// Register handlers for resources that support factory pattern
+			const supportedResources = ['contact', 'invoice', 'voucher', 'order'];
+
+			supportedResources.forEach(resource => {
+				if (ResourceHandlerFactory.isResourceSupported(resource)) {
+					const handler = ResourceHandlerFactory.createHandler(resource, this.executeFunctions);
+					this.batchHandler.registerResourceHandler(resource, handler);
+				}
+			});
+
+			this.logApiInteraction('info', 'Batch handlers initialized successfully', {
+				registeredResources: supportedResources.filter(r => ResourceHandlerFactory.isResourceSupported(r))
+			});
+		} catch (error) {
+			this.logApiInteraction('error', 'Failed to initialize batch handlers', { error: error.message });
+		}
+	}
+
+	/**
+	 * Execute batch operations across multiple resources
+	 *
+	 * Processes a batch of operations across different SevDesk resources in an optimized manner.
+	 * Validates operation compatibility, handles dependencies, and provides comprehensive
+	 * error handling with detailed logging for debugging purposes.
+	 *
+	 * @param batchRequest - The batch request containing operations to execute and configuration options
+	 * @param batchRequest.operations - Array of batch operations to execute
+	 * @param batchRequest.options - Configuration options for batch execution (concurrency, error handling, etc.)
+	 *
+	 * @returns Promise resolving to batch execution results with success/failure details and summary
+	 *
+	 * @throws {Error} When batch contains conflicting operations or execution fails
+	 *
+	 * @example
+	 * ```typescript
+	 * const batchRequest = {
+	 *   operations: [
+	 *     { resource: 'contact', operation: 'create', data: { name: 'Company A' } },
+	 *     { resource: 'invoice', operation: 'create', data: { contactId: '123' } }
+	 *   ],
+	 *   options: { continueOnError: true, maxConcurrency: 3 }
+	 * };
+	 * const result = await resourceManager.executeBatchOperations(batchRequest);
+	 * ```
+	 *
+	 * @since 1.0.0
+	 */
+	public async executeBatchOperations(batchRequest: IBatchRequest): Promise<IBatchResult> {
+		this.logApiInteraction('info', 'Starting batch operations', {
+			operationCount: batchRequest.operations.length,
+			options: batchRequest.options
+		});
+
+		try {
+			// Validate operation compatibility
+			if (!BatchOperationUtils.validateOperationCompatibility(batchRequest.operations)) {
+				throw new Error('Batch contains conflicting operations that cannot be executed together');
+			}
+
+			// Execute the batch
+			const result = await this.batchHandler.executeBatch(batchRequest);
+
+			this.logApiInteraction('info', 'Batch operations completed', {
+				summary: result.summary,
+				success: result.success
+			});
+
+			return result;
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.logApiInteraction('error', `Batch operations failed: ${errorMessage}`);
+			throw error;
+		}
+	}
+
+	/**
+	 * Create batch operations from n8n input data
+	 *
+	 * Parses n8n node parameters to construct a batch request with multiple operations.
+	 * This method extracts batch configuration from the node's input data and creates
+	 * a structured batch request that can be executed by the batch operation handler.
+	 *
+	 * @param itemIndex - The index of the input item to process from n8n workflow data
+	 *
+	 * @returns A structured batch request object containing operations and execution options
+	 *
+	 * @throws {Error} When batch configuration is invalid or parsing fails
+	 *
+	 * @example
+	 * ```typescript
+	 * // Node parameter 'batchConfig' should contain:
+	 * // {
+	 * //   operations: [
+	 * //     { resource: 'contact', operation: 'create', data: {...} },
+	 * //     { resource: 'invoice', operation: 'update', id: '123', data: {...} }
+	 * //   ],
+	 * //   continueOnError: true,
+	 * //   maxConcurrency: 5
+	 * // }
+	 * const batchRequest = resourceManager.createBatchFromInputData(0);
+	 * ```
+	 *
+	 * @since 1.0.0
+	 */
+	public createBatchFromInputData(itemIndex: number): IBatchRequest {
+		try {
+			// Get batch configuration from node parameters
+			const batchConfig = this.executeFunctions.getNodeParameter('batchConfig', itemIndex, {}) as any;
+			const operations: IBatchOperation[] = [];
+
+			// Parse operations from input data
+			if (batchConfig.operations && Array.isArray(batchConfig.operations)) {
+				batchConfig.operations.forEach((op: any) => {
+					operations.push(BatchOperationHandler.createBatchOperation(
+						op.resource,
+						op.operation,
+						op.data,
+						op.id,
+						op.parameters
+					));
+				});
+			}
+
+			// Create batch request with options
+			const options = {
+				continueOnError: batchConfig.continueOnError !== false,
+				maxConcurrency: batchConfig.maxConcurrency || 5,
+				timeout: batchConfig.timeout || 30000
+			};
+
+			return BatchOperationHandler.createBatchRequest(operations, options);
+		} catch (error) {
+			this.logApiInteraction('error', 'Failed to create batch from input data', { error: error.message });
+			throw new Error(`Failed to create batch operations: ${error.message}`);
+		}
 	}
 
 	/**
@@ -50,7 +235,34 @@ export class SevDeskResourceManager {
 
 
 	/**
-	 * Execute operation for a specific resource using dynamic handler resolution
+	 * Execute operation for a specific resource using factory pattern
+	 *
+	 * This is the main entry point for executing individual resource operations.
+	 * It uses the factory pattern to create appropriate handlers for supported resources
+	 * and falls back to legacy handlers for resources not yet migrated. Provides
+	 * comprehensive error handling and logging for debugging purposes.
+	 *
+	 * @param resource - The SevDesk resource type to operate on (e.g., 'contact', 'invoice', 'voucher', 'order')
+	 * @param operation - The operation to perform (e.g., 'create', 'update', 'delete', 'get', 'getAll')
+	 * @param itemIndex - The index of the input item to process from n8n workflow data
+	 *
+	 * @returns Promise resolving to n8n execution data containing the operation result, or null if no data
+	 *
+	 * @throws {NodeApiError} When the operation fails due to invalid parameters, API errors, or unsupported resources
+	 *
+	 * @example
+	 * ```typescript
+	 * // Create a new contact
+	 * const result = await resourceManager.executeResourceOperation('contact', 'create', 0);
+	 *
+	 * // Get all invoices
+	 * const invoices = await resourceManager.executeResourceOperation('invoice', 'getAll', 0);
+	 *
+	 * // Update a specific voucher
+	 * const updated = await resourceManager.executeResourceOperation('voucher', 'update', 0);
+	 * ```
+	 *
+	 * @since 1.0.0
 	 */
 	async executeResourceOperation(
 		resource: string,
@@ -60,32 +272,18 @@ export class SevDeskResourceManager {
 		this.logApiInteraction('info', `Starting operation`, { resource, operation, itemIndex });
 
 		try {
-			// Validate resource is supported
-			if (!ResourceRegistry.isResourceSupported(resource)) {
-				const error = `Unsupported resource: ${resource}`;
-				this.logApiInteraction('error', error);
-				throw new Error(error);
+			// Check if resource is supported by the factory
+			if (!ResourceHandlerFactory.isResourceSupported(resource)) {
+				// Fall back to legacy handler methods for unsupported resources
+				return await this.executeLegacyOperation(resource, operation, itemIndex);
 			}
 
-			// Get the handler method name from the registry
-			const handlerMethodName = ResourceRegistry.getResourceHandler(resource);
-			this.logApiInteraction('info', `Using handler method: ${handlerMethodName}`);
+			// Create handler using factory pattern
+			const handler = ResourceHandlerFactory.createHandler(resource, this.executeFunctions);
+			this.logApiInteraction('info', `Created handler for resource: ${resource}`);
 
-			// Dynamically call the appropriate handler method
-			const handlerMethod = (this as any)[handlerMethodName];
-			if (typeof handlerMethod !== 'function') {
-				const error = `Handler method ${handlerMethodName} not found for resource ${resource}`;
-				this.logApiInteraction('error', error);
-				throw new Error(error);
-			}
-
-			// Call the handler method with appropriate parameters
-			let result: INodeExecutionData | null;
-			if (handlerMethodName === 'handleGenericOperation') {
-				result = await handlerMethod.call(this, resource, operation, itemIndex);
-			} else {
-				result = await handlerMethod.call(this, operation, itemIndex);
-			}
+			// Execute the operation using the handler
+			const result = await handler.execute(operation, itemIndex);
 
 			this.logApiInteraction('info', `Operation completed successfully`, {
 				resource,
@@ -108,6 +306,43 @@ export class SevDeskResourceManager {
 				message: `Failed to execute ${resource} ${operation}: ${errorMessage}`,
 				description: "Please check your parameters and try again.",
 			});
+		}
+	}
+
+	/**
+	 * Execute operation using legacy handler methods for resources not yet migrated to factory pattern
+	 */
+	private async executeLegacyOperation(
+		resource: string,
+		operation: string,
+		itemIndex: number,
+	): Promise<INodeExecutionData | null> {
+		this.logApiInteraction('info', `Using legacy handler for resource: ${resource}`);
+
+		// Validate resource is supported by legacy registry
+		if (!ResourceRegistry.isResourceSupported(resource)) {
+			const error = `Unsupported resource: ${resource}`;
+			this.logApiInteraction('error', error);
+			throw new Error(error);
+		}
+
+		// Get the handler method name from the registry
+		const handlerMethodName = ResourceRegistry.getResourceHandler(resource);
+		this.logApiInteraction('info', `Using legacy handler method: ${handlerMethodName}`);
+
+		// Dynamically call the appropriate handler method
+		const handlerMethod = (this as any)[handlerMethodName];
+		if (typeof handlerMethod !== 'function') {
+			const error = `Handler method ${handlerMethodName} not found for resource ${resource}`;
+			this.logApiInteraction('error', error);
+			throw new Error(error);
+		}
+
+		// Call the handler method with appropriate parameters
+		if (handlerMethodName === 'handleGenericOperation') {
+			return await handlerMethod.call(this, resource, operation, itemIndex);
+		} else {
+			return await handlerMethod.call(this, operation, itemIndex);
 		}
 	}
 
@@ -902,6 +1137,91 @@ export class SevDeskResourceManager {
 		};
 
 		return { json: result };
+	}
+
+	/**
+	 * Handle batch operations
+	 */
+	private async handleBatchOperation(
+		operation: string,
+		itemIndex: number,
+	): Promise<INodeExecutionData | null> {
+		this.logApiInteraction('info', `Starting batch operation: ${operation}`, { itemIndex });
+
+		try {
+			switch (operation) {
+				case 'executeBatch':
+					// Check if JSON batch config is provided
+					const jsonBatchConfig = this.executeFunctions.getNodeParameter('jsonBatchConfig', itemIndex, null) as string | null;
+
+					let batchRequest: IBatchRequest;
+
+					if (jsonBatchConfig && jsonBatchConfig.trim() !== '') {
+						// Parse JSON configuration
+						try {
+							const parsedConfig = JSON.parse(jsonBatchConfig);
+							batchRequest = BatchOperationHandler.createBatchRequest(
+								parsedConfig.operations || [],
+								parsedConfig.options || {}
+							);
+						} catch (parseError) {
+							throw new Error(`Invalid JSON batch configuration: ${parseError.message}`);
+						}
+					} else {
+						// Use form-based configuration
+						batchRequest = this.createBatchFromInputData(itemIndex);
+					}
+
+					// Execute the batch operations
+					const batchResult = await this.executeBatchOperations(batchRequest);
+
+					// Process the results based on user preferences
+					const processingOptions = this.executeFunctions.getNodeParameter('processingOptions', itemIndex, {}) as any;
+					const returnDetailedResults = processingOptions.returnDetailedResults !== false;
+
+					if (returnDetailedResults) {
+						// Return detailed results
+						return {
+							json: {
+								success: batchResult.success,
+								summary: batchResult.summary,
+								results: batchResult.results
+							} as IDataObject,
+							pairedItem: {
+								item: itemIndex,
+							},
+						};
+					} else {
+						// Return only successful results data
+						const successfulData = batchResult.results
+							.filter(result => result.success)
+							.map(result => result.data)
+							.filter(data => data !== null && data !== undefined);
+
+						return {
+							json: {
+								success: batchResult.success,
+								summary: batchResult.summary,
+								data: successfulData
+							} as IDataObject,
+							pairedItem: {
+								item: itemIndex,
+							},
+						};
+					}
+
+				default:
+					throw new Error(`Unknown batch operation: ${operation}`);
+			}
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.logApiInteraction('error', `Batch operation failed: ${errorMessage}`, { operation, itemIndex });
+
+			throw new NodeApiError(this.executeFunctions.getNode(), {
+				message: `Batch operation failed: ${errorMessage}`,
+				description: 'Please check your batch configuration and try again.',
+			});
+		}
 	}
 
 	/**

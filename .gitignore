@@ -99,3 +99,4 @@ temp/
 # Husky
 .husky/_
 /backup/
+/workflows/

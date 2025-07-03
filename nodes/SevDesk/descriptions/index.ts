@@ -27,3 +27,4 @@ export * from "./TagDescription";
 export * from "./LayoutDescription";
 export * from "./ReportDescription";
 export * from "./TagRelationDescription";
+export * from "./BatchDescription";

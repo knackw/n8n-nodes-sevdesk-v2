@@ -7,6 +7,7 @@ import {
 
 import { SevDeskResourceManager } from "./SevDeskResourceManager";
 import { ResourceRegistry } from "./ResourceRegistry";
+import { initializeValidationSchemas } from "./validation/ValidationSchemas";
 import {
 	accountingContactFields,
 	accountingContactOperations,
@@ -63,9 +64,20 @@ import {
 	voucherPosFields,
 	basicsOperations,
 	basicsFields,
+	batchOperations,
+	batchFields,
 } from "./descriptions";
 
 export class SevDesk implements INodeType {
+	// Static initialization block to initialize validation schemas
+	static {
+		try {
+			initializeValidationSchemas();
+		} catch (error) {
+			console.error('Failed to initialize SevDesk validation schemas:', error);
+		}
+	}
+
 	description: INodeTypeDescription = {
 		displayName: "sevDesk",
 		name: "sevDesk",
@@ -158,6 +170,8 @@ export class SevDesk implements INodeType {
 			...voucherPosFields,
 			...basicsOperations,
 			...basicsFields,
+			...batchOperations,
+			...batchFields,
 		],
 	};
 
