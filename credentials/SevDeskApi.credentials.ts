@@ -65,7 +65,7 @@ export class SevDeskApi implements ICredentialType {
 			typeOptions: {
 				password: true,
 				minLength: 10,
-				maxLength: 200
+				maxLength: 200,
 			},
 			default: "",
 			required: true,
@@ -81,12 +81,14 @@ export class SevDeskApi implements ICredentialType {
 				{
 					name: "v1 (Legacy)",
 					value: "v1",
-					description: "Legacy API version - use only for existing integrations"
+					description:
+						"Legacy API version - use only for existing integrations",
 				},
 				{
 					name: "v2 (Recommended)",
 					value: "v2",
-					description: "Current API version with enhanced features and better performance"
+					description:
+						"Current API version with enhanced features and better performance",
 				},
 			],
 			default: "v2",
@@ -149,53 +151,59 @@ export class SevDeskApi implements ICredentialType {
 			},
 			timeout: 10000, // 10 second timeout for credential testing
 		},
-		rules: [
+		rules: <any[]>[
 			// Test for successful authentication
 			{
-				type: 'responseSuccessBody',
+				type: "responseSuccessBody",
 				properties: {
-					key: 'objects',
-					message: 'API key is valid and SevDesk API is accessible',
+					key: "objects",
+					message: "API key is valid and SevDesk API is accessible",
+					value: "", // Add a value property to satisfy the type requirement
 				},
 			},
 			// Test for invalid API key
 			{
-				type: 'responseFailedStatusCode',
+				type: "responseFailedStatusCode",
 				properties: {
 					statusCode: 401,
-					message: 'Invalid API key. Please check your SevDesk API key and ensure it has the correct format (userID_token).',
+					message:
+						"Invalid API key. Please check your SevDesk API key and ensure it has the correct format (userID_token).",
 				},
 			},
 			// Test for forbidden access
 			{
-				type: 'responseFailedStatusCode',
+				type: "responseFailedStatusCode",
 				properties: {
 					statusCode: 403,
-					message: 'Access forbidden. Your API key may not have sufficient permissions or your SevDesk account may not have API access enabled.',
+					message:
+						"Access forbidden. Your API key may not have sufficient permissions or your SevDesk account may not have API access enabled.",
 				},
 			},
 			// Test for rate limiting
 			{
-				type: 'responseFailedStatusCode',
+				type: "responseFailedStatusCode",
 				properties: {
 					statusCode: 429,
-					message: 'Rate limit exceeded. Please wait a moment before testing the credentials again.',
+					message:
+						"Rate limit exceeded. Please wait a moment before testing the credentials again.",
 				},
 			},
 			// Test for server errors
 			{
-				type: 'responseFailedStatusCode',
+				type: "responseFailedStatusCode",
 				properties: {
 					statusCode: 500,
-					message: 'SevDesk server error. Please try again later or contact SevDesk support if the issue persists.',
+					message:
+						"SevDesk server error. Please try again later or contact SevDesk support if the issue persists.",
 				},
 			},
 			// Test for service unavailable
 			{
-				type: 'responseFailedStatusCode',
+				type: "responseFailedStatusCode",
 				properties: {
 					statusCode: 503,
-					message: 'SevDesk service temporarily unavailable. Please try again in a few minutes.',
+					message:
+						"SevDesk service temporarily unavailable. Please try again in a few minutes.",
 				},
 			},
 		],

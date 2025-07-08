@@ -360,7 +360,8 @@ export const voucherFields: INodeProperties[] = [
 				name: "taxRule",
 				type: "options",
 				default: 9,
-				description: "Define the VAT rule according to SevDesk API v2.0. For expense vouchers, use rule 9 (Vorsteuerabziehbare Aufwendungen) or 10 (Nicht vorsteuerabziehbare Aufwendungen).",
+				description:
+					"Define the VAT rule according to SevDesk API v2.0. For expense vouchers, use rule 9 (Vorsteuerabziehbare Aufwendungen) or 10 (Nicht vorsteuerabziehbare Aufwendungen).",
 				options: [
 					{
 						name: "Vorsteuerabziehbare Aufwendungen",
@@ -368,7 +369,7 @@ export const voucherFields: INodeProperties[] = [
 						description: "Deductible input tax expenses (0%, 7%, 19%)",
 					},
 					{
-						name: "Nicht vorsteuerabziehbare Aufwendungen",
+						name: "Nicht Vorsteuerabziehbare Aufwendungen",
 						value: 10,
 						description: "Non-deductible input tax expenses (0%)",
 					},
@@ -378,19 +379,22 @@ export const voucherFields: INodeProperties[] = [
 						description: "Intra-community acquisitions (0%, 7%, 19%)",
 					},
 					{
-						name: "Reverse Charge gem. §13b Abs. 2 UStG mit Vorsteuerabzug 0% (19%)",
+						name: "Reverse Charge Gem. §13b Abs. 2 UStG Mit Vorsteuerabzug 0% (19%)",
 						value: 12,
-						description: "Reverse charge according to §13b para. 2 UStG with input tax deduction 0% (19%)",
+						description:
+							"Reverse charge according to §13b para. 2 UStG with input tax deduction 0% (19%).",
 					},
 					{
-						name: "Reverse Charge gem. §13b UStG ohne Vorsteuerabzug 0% (19%)",
+						name: "Reverse Charge Gem. §13b UStG Ohne Vorsteuerabzug 0% (19%)",
 						value: 13,
-						description: "Reverse charge according to §13b UStG without input tax deduction 0% (19%)",
+						description:
+							"Reverse charge according to §13b UStG without input tax deduction 0% (19%)",
 					},
 					{
-						name: "Reverse Charge gem. §13b Abs. 1 EU Umsätze 0% (19%)",
+						name: "Reverse Charge Gem. §13b Abs. 1 EU Umsätze 0% (19%)",
 						value: 14,
-						description: "Reverse charge according to §13b para. 1 EU transactions 0% (19%)",
+						description:
+							"Reverse charge according to §13b para. 1 EU transactions 0% (19%).",
 					},
 				],
 			},
@@ -404,14 +408,16 @@ export const voucherFields: INodeProperties[] = [
 						useDeprecatedTaxType: [true],
 					},
 				},
-				description: "⚠️ DEPRECATED: Use taxRule instead. This field is maintained for backward compatibility only.",
+				description:
+					"⚠️ DEPRECATED: Use taxRule instead. This field is maintained for backward compatibility only.",
 			},
 			{
 				displayName: "Use Deprecated Tax Type",
 				name: "useDeprecatedTaxType",
 				type: "boolean",
 				default: false,
-				description: "⚠️ Enable this only if you need to use the deprecated taxType system for backward compatibility. New implementations should use taxRule.",
+				description:
+					"⚠️ Enable this only if you need to use the deprecated taxType system for backward compatibility. New implementations should use taxRule.",
 			},
 			{
 				displayName: "Voucher Date",

@@ -3,7 +3,11 @@
  * This demonstrates how to use the abstract base classes for CRUD operations
  */
 
-import { IExecuteFunctions, IHttpRequestOptions, IDataObject } from "n8n-workflow";
+import {
+	IExecuteFunctions,
+	IHttpRequestOptions,
+	IDataObject,
+} from "n8n-workflow";
 import { CrudResourceHandler } from "../base/BaseResourceHandler";
 import { SevDeskContact } from "../types/SevDeskApiTypes";
 
@@ -47,10 +51,10 @@ export class ContactHandler extends CrudResourceHandler<SevDeskContact> {
 	 * const contactHandler = new ContactHandler(this);
 	 */
 	constructor(executeFunctions: IExecuteFunctions) {
-		super(executeFunctions, 'Contact', 'Contact');
+		super(executeFunctions, "Contact", "Contact");
 
 		// Override the ID parameter name if needed
-		this.config.idParameterName = 'contactId';
+		this.config.idParameterName = "contactId";
 	}
 
 	/**
@@ -87,34 +91,61 @@ export class ContactHandler extends CrudResourceHandler<SevDeskContact> {
 		baseOptions: IHttpRequestOptions,
 		baseURL: string,
 		operation: string,
-		itemIndex: number
+		itemIndex: number,
 	): IHttpRequestOptions {
 		switch (operation) {
-			case 'checkCustomerNumberAvailability':
-				const customerNumber = this.executeFunctions.getNodeParameter('customerNumber', itemIndex) as string;
+			case "getAll":
+				const additionalFields = this.executeFunctions.getNodeParameter(
+					"additionalFields",
+					itemIndex,
+					{},
+				) as IDataObject;
 				return {
 					...baseOptions,
-					method: 'GET',
+					method: "GET",
+					url: `${baseURL}/Contact`,
+					qs: this.transformQueryParams(additionalFields),
+				};
+
+			case "checkCustomerNumberAvailability":
+				const customerNumber = this.executeFunctions.getNodeParameter(
+					"customerNumber",
+					itemIndex,
+				) as string;
+				return {
+					...baseOptions,
+					method: "GET",
 					url: `${baseURL}/Contact/Mapper/checkCustomerNumberAvailability`,
 					qs: { customerNumber },
 				};
 
-			case 'findByCustomFieldValue':
-				const customFieldSetting = this.executeFunctions.getNodeParameter('customFieldSetting', itemIndex) as any;
-				const value = this.executeFunctions.getNodeParameter('value', itemIndex) as string;
+			case "findByCustomFieldValue":
+				const customFieldSetting = this.executeFunctions.getNodeParameter(
+					"customFieldSetting",
+					itemIndex,
+				) as any;
+				const value = this.executeFunctions.getNodeParameter(
+					"value",
+					itemIndex,
+				) as string;
 				return {
 					...baseOptions,
-					method: 'GET',
+					method: "GET",
 					url: `${baseURL}/Contact/Factory/findContactByCustomFieldValue`,
 					qs: {
-						'customFieldSetting[id]': customFieldSetting.id,
-						'customFieldSetting[objectName]': customFieldSetting.objectName,
+						"customFieldSetting[id]": customFieldSetting.id,
+						"customFieldSetting[objectName]": customFieldSetting.objectName,
 						value,
 					},
 				};
 
 			default:
-				return super.buildCustomRequest(baseOptions, baseURL, operation, itemIndex);
+				return super.buildCustomRequest(
+					baseOptions,
+					baseURL,
+					operation,
+					itemIndex,
+				);
 		}
 	}
 

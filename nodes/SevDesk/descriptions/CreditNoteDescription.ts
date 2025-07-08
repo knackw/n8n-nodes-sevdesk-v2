@@ -295,7 +295,8 @@ const creditNoteModel: INodeProperties[] = [
 		name: "taxRule",
 		type: "options",
 		default: 1,
-		description: "Define the VAT rule according to SevDesk API v2.0. This replaces the deprecated taxType system.",
+		description:
+			"Define the VAT rule according to SevDesk API v2.0. This replaces the deprecated taxType system.",
 		options: [
 			{
 				name: "Umsatzsteuerpflichtige Umsätze (Standard)",
@@ -318,14 +319,15 @@ const creditNoteModel: INodeProperties[] = [
 				description: "Tax-free transactions §4 UStG (0%)",
 			},
 			{
-				name: "Reverse Charge gem. §13b UStG",
+				name: "Reverse Charge Gem. §13b UStG",
 				value: 5,
 				description: "Reverse charge according to §13b UStG (0%)",
 			},
 			{
-				name: "Steuer nicht erhoben nach §19 UStG (Kleinunternehmer)",
+				name: "Steuer Nicht Erhoben Nach §19 UStG (Kleinunternehmer)",
 				value: 11,
-				description: "Tax not levied according to §19 UStG - Small business (0%)",
+				description:
+					"Tax not levied according to §19 UStG - Small business (0%)",
 			},
 		],
 	},
@@ -334,7 +336,8 @@ const creditNoteModel: INodeProperties[] = [
 		name: "taxType",
 		type: "string",
 		default: "",
-		description: "⚠️ DEPRECATED: Use taxRule instead. This field is maintained for backward compatibility only.",
+		description:
+			"⚠️ DEPRECATED: Use taxRule instead. This field is maintained for backward compatibility only.",
 	},
 	{ displayName: "Tax Text", name: "taxText", type: "string", default: "" },
 	{

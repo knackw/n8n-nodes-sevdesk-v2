@@ -1,5 +1,5 @@
 /**
- * Very tolerant ESLint configuration for publishing
+ * Simplified ESLint configuration for publishing
  * @type {import('@types/eslint').ESLint.ConfigData}
  */
 module.exports = {
@@ -18,15 +18,10 @@ module.exports = {
 		'eslint:recommended',
 	],
 	rules: {
-		// Very minimal rules for publishing
-		'no-console': 'off',
-		'no-unused-vars': 'off',
+		// Basic rules for publishing
+		'no-console': 'off', // Allow console for debugging
 		'@typescript-eslint/no-unused-vars': 'off',
 		'@typescript-eslint/no-explicit-any': 'off',
-		'no-useless-escape': 'off',
-		'no-case-declarations': 'off',
-		'no-mixed-spaces-and-tabs': 'off',
-		'prefer-const': 'off',
 	},
 	ignorePatterns: [
 		'.eslintrc.js', 
@@ -63,11 +58,6 @@ module.exports = {
 				'n8n-nodes-base/node-execute-block-missing-continue-on-fail': 'off',
 				'n8n-nodes-base/node-resource-description-filename-against-convention': 'off',
 				'n8n-nodes-base/node-param-fixed-collection-type-unsorted-items': 'off',
-				'n8n-nodes-base/node-param-display-name-miscased': 'off',
-				'n8n-nodes-base/node-param-description-boolean-without-whether': 'off',
-				'n8n-nodes-base/node-param-description-missing-final-period': 'off',
-				'n8n-nodes-base/node-class-description-inputs-wrong-regular-node': 'off',
-				'n8n-nodes-base/node-class-description-outputs-wrong': 'off',
 			},
 		},
 	],

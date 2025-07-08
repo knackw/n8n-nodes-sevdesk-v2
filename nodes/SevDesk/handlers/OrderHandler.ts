@@ -3,7 +3,11 @@
  * This demonstrates how to use the abstract base classes for CRUD operations
  */
 
-import { IExecuteFunctions, IHttpRequestOptions, IDataObject } from "n8n-workflow";
+import {
+	IExecuteFunctions,
+	IHttpRequestOptions,
+	IDataObject,
+} from "n8n-workflow";
 import { CrudResourceHandler } from "../base/BaseResourceHandler";
 import { SevDeskOrder } from "../types/SevDeskApiTypes";
 
@@ -12,10 +16,10 @@ import { SevDeskOrder } from "../types/SevDeskApiTypes";
  */
 export class OrderHandler extends CrudResourceHandler<SevDeskOrder> {
 	constructor(executeFunctions: IExecuteFunctions) {
-		super(executeFunctions, 'Order', 'Order');
+		super(executeFunctions, "Order", "Order");
 
 		// Override the ID parameter name if needed
-		this.config.idParameterName = 'orderId';
+		this.config.idParameterName = "orderId";
 	}
 
 	/**
@@ -25,48 +29,72 @@ export class OrderHandler extends CrudResourceHandler<SevDeskOrder> {
 		baseOptions: IHttpRequestOptions,
 		baseURL: string,
 		operation: string,
-		itemIndex: number
+		itemIndex: number,
 	): IHttpRequestOptions {
 		switch (operation) {
-			case 'sendByEmail':
-				const orderId = this.executeFunctions.getNodeParameter('orderId', itemIndex) as string;
-				const sendType = this.executeFunctions.getNodeParameter('sendType', itemIndex, 'VPR') as string;
+			case "sendByEmail":
+				const orderId = this.executeFunctions.getNodeParameter(
+					"orderId",
+					itemIndex,
+				) as string;
+				const sendType = this.executeFunctions.getNodeParameter(
+					"sendType",
+					itemIndex,
+					"VPR",
+				) as string;
 				return {
 					...baseOptions,
-					method: 'PUT',
+					method: "PUT",
 					url: `${baseURL}/Order/${orderId}/sendByEmail`,
 					body: { sendType },
 				};
 
-			case 'getPositions':
-				const orderIdPos = this.executeFunctions.getNodeParameter('orderId', itemIndex) as string;
+			case "getPositions":
+				const orderIdPos = this.executeFunctions.getNodeParameter(
+					"orderId",
+					itemIndex,
+				) as string;
 				return {
 					...baseOptions,
-					method: 'GET',
+					method: "GET",
 					url: `${baseURL}/OrderPos`,
-					qs: { 'order[id]': orderIdPos, 'order[objectName]': 'Order' },
+					qs: { "order[id]": orderIdPos, "order[objectName]": "Order" },
 				};
 
-			case 'createInvoiceFromOrder':
-				const orderIdInvoice = this.executeFunctions.getNodeParameter('orderId', itemIndex) as string;
-				const invoiceDate = this.executeFunctions.getNodeParameter('invoiceDate', itemIndex) as string;
+			case "createInvoiceFromOrder":
+				const orderIdInvoice = this.executeFunctions.getNodeParameter(
+					"orderId",
+					itemIndex,
+				) as string;
+				const invoiceDate = this.executeFunctions.getNodeParameter(
+					"invoiceDate",
+					itemIndex,
+				) as string;
 				return {
 					...baseOptions,
-					method: 'POST',
+					method: "POST",
 					url: `${baseURL}/Order/${orderIdInvoice}/createInvoiceFromOrder`,
 					body: { invoiceDate },
 				};
 
-			case 'createPackingListFromOrder':
-				const orderIdPacking = this.executeFunctions.getNodeParameter('orderId', itemIndex) as string;
+			case "createPackingListFromOrder":
+				const orderIdPacking = this.executeFunctions.getNodeParameter(
+					"orderId",
+					itemIndex,
+				) as string;
 				return {
 					...baseOptions,
-					method: 'POST',
+					method: "POST",
 					url: `${baseURL}/Order/${orderIdPacking}/createPackingListFromOrder`,
 				};
 
 			default:
-				return super.buildCustomRequest(baseOptions, baseURL, operation, itemIndex);
+				return super.buildCustomRequest(
+					baseOptions,
+					baseURL,
+					operation,
+					itemIndex,
+				);
 		}
 	}
 
@@ -74,13 +102,18 @@ export class OrderHandler extends CrudResourceHandler<SevDeskOrder> {
 	 * Override to transform order-specific create data
 	 */
 	protected transformCreateData(data: any): object {
+		if (!data || typeof data !== "object") {
+			return {}; // Return an empty object or handle as appropriate for your use case
+		}
 		// Add any order-specific transformations here
 		// For example, handling order dates, delivery information, etc.
 		if (data.orderDate) {
-			data.orderDate = new Date(data.orderDate).toISOString().split('T')[0];
+			data.orderDate = new Date(data.orderDate).toISOString().split("T")[0];
 		}
 		if (data.deliveryDate) {
-			data.deliveryDate = new Date(data.deliveryDate).toISOString().split('T')[0];
+			data.deliveryDate = new Date(data.deliveryDate)
+				.toISOString()
+				.split("T")[0];
 		}
 		return data;
 	}
@@ -92,10 +125,14 @@ export class OrderHandler extends CrudResourceHandler<SevDeskOrder> {
 		// Transform order-specific query parameters
 		// For example, handling date ranges, status filters, etc.
 		if (params.startDate) {
-			params.startDate = new Date(params.startDate as string).toISOString().split('T')[0];
+			params.startDate = new Date(params.startDate as string)
+				.toISOString()
+				.split("T")[0];
 		}
 		if (params.endDate) {
-			params.endDate = new Date(params.endDate as string).toISOString().split('T')[0];
+			params.endDate = new Date(params.endDate as string)
+				.toISOString()
+				.split("T")[0];
 		}
 		return params;
 	}

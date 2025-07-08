@@ -3,13 +3,8 @@
  * These types provide enhanced type safety for internal components
  */
 
-import { INodeExecutionData } from 'n8n-workflow';
-import {
-	ResourceOperation,
-	ApiRequestParams,
-	ApiResponse,
-	SevDeskResponse
-} from './SevDeskApiTypes';
+import { INodeExecutionData } from "n8n-workflow";
+import { ResourceOperation, ApiRequestParams } from "./SevDeskApiTypes";
 
 // ===== STRICT RESOURCE REGISTRY TYPES =====
 
@@ -17,53 +12,53 @@ import {
  * Supported SevDesk resource types with strict typing
  */
 export type SevDeskResourceType =
-	| 'accountingContact'
-	| 'basics'
-	| 'batch'
-	| 'category'
-	| 'checkAccount'
-	| 'checkAccountTransaction'
-	| 'communicationWay'
-	| 'contact'
-	| 'contactAddress'
-	| 'contactCustomField'
-	| 'contactCustomFieldSetting'
-	| 'contactField'
-	| 'country'
-	| 'creditNote'
-	| 'creditNotePos'
-	| 'export'
-	| 'invoice'
-	| 'layout'
-	| 'order'
-	| 'orderPos'
-	| 'orderPo'
-	| 'part'
-	| 'report'
-	| 'tag'
-	| 'tagRelation'
-	| 'unit'
-	| 'voucher'
-	| 'voucherPo';
+	| "accountingContact"
+	| "basics"
+	| "batch"
+	| "category"
+	| "checkAccount"
+	| "checkAccountTransaction"
+	| "communicationWay"
+	| "contact"
+	| "contactAddress"
+	| "contactCustomField"
+	| "contactCustomFieldSetting"
+	| "contactField"
+	| "country"
+	| "creditNote"
+	| "creditNotePos"
+	| "export"
+	| "invoice"
+	| "layout"
+	| "order"
+	| "orderPos"
+	| "orderPo"
+	| "part"
+	| "report"
+	| "tag"
+	| "tagRelation"
+	| "unit"
+	| "voucher"
+	| "voucherPo";
 
 /**
  * Supported handler method names with strict typing
  */
 export type ResourceHandlerMethod =
-	| 'handleContactOperation'
-	| 'handleInvoiceOperation'
-	| 'handleVoucherOperation'
-	| 'handleOrderOperation'
-	| 'handleCreditNoteOperation'
-	| 'handleCategoryOperation'
-	| 'handleCheckAccountOperation'
-	| 'handlePartOperation'
-	| 'handleTagOperation'
-	| 'handleReportOperation'
-	| 'handleExportOperation'
-	| 'handleBasicsOperation'
-	| 'handleBatchOperation'
-	| 'handleGenericOperation';
+	| "handleContactOperation"
+	| "handleInvoiceOperation"
+	| "handleVoucherOperation"
+	| "handleOrderOperation"
+	| "handleCreditNoteOperation"
+	| "handleCategoryOperation"
+	| "handleCheckAccountOperation"
+	| "handlePartOperation"
+	| "handleTagOperation"
+	| "handleReportOperation"
+	| "handleExportOperation"
+	| "handleBasicsOperation"
+	| "handleBatchOperation"
+	| "handleGenericOperation";
 
 /**
  * Strict resource configuration interface
@@ -81,7 +76,10 @@ export interface StrictResourceConfig {
  * Strict resource handler interface
  */
 export interface StrictResourceHandler {
-	execute(operation: ResourceOperation, itemIndex: number): Promise<INodeExecutionData[]>;
+	execute(
+		operation: ResourceOperation,
+		itemIndex: number,
+	): Promise<INodeExecutionData[]>;
 	validateOperation(operation: ResourceOperation): boolean;
 	getSupportedOperations(): ResourceOperation[];
 }
@@ -91,7 +89,7 @@ export interface StrictResourceHandler {
 /**
  * HTTP methods supported by SevDesk API
  */
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 /**
  * Strict API request configuration
@@ -175,7 +173,7 @@ export interface StrictOperationError {
 export interface StrictValidationRule<TValue = unknown> {
 	readonly field: string;
 	readonly required: boolean;
-	readonly type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'date';
+	readonly type: "string" | "number" | "boolean" | "object" | "array" | "date";
 	readonly validator?: (value: TValue) => boolean;
 	readonly errorMessage?: string;
 	readonly transform?: (value: unknown) => TValue;
@@ -288,7 +286,7 @@ export interface StrictApiClientConfig {
 	readonly retryDelay: number;
 	readonly maxConcurrentRequests: number;
 	readonly enableLogging: boolean;
-	readonly logLevel: 'debug' | 'info' | 'warn' | 'error';
+	readonly logLevel: "debug" | "info" | "warn" | "error";
 }
 
 /**
@@ -343,8 +341,8 @@ export type Brand<T, B> = T & { readonly __brand: B };
 
 // ===== BRANDED TYPES FOR ADDITIONAL SAFETY =====
 
-export type ResourceId = Brand<string, 'ResourceId'>;
-export type OperationId = Brand<string, 'OperationId'>;
-export type RequestId = Brand<string, 'RequestId'>;
-export type ApiKey = Brand<string, 'ApiKey'>;
-export type Timestamp = Brand<number, 'Timestamp'>;
+export type ResourceId = Brand<string, "ResourceId">;
+export type OperationId = Brand<string, "OperationId">;
+export type RequestId = Brand<string, "RequestId">;
+export type ApiKey = Brand<string, "ApiKey">;
+export type Timestamp = Brand<number, "Timestamp">;

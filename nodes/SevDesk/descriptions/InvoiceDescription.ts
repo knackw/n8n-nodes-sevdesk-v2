@@ -628,17 +628,18 @@ export const invoiceFields: INodeProperties[] = [
 						description: "Tax-free transactions §4 UStG (0%)",
 					},
 					{
-						name: "Reverse Charge gem. §13b UStG",
+						name: "Reverse Charge Gem. §13b UStG",
 						value: 5,
 						description: "Reverse charge according to §13b UStG (0%)",
 					},
 					{
-						name: "Steuer nicht erhoben nach §19 UStG (Kleinunternehmer)",
+						name: "Steuer Nicht Erhoben Nach §19 UStG (Kleinunternehmer)",
 						value: 11,
-						description: "Tax not levied according to §19 UStG - Small business (0%)",
+						description:
+							"Tax not levied according to §19 UStG - Small business (0%)",
 					},
 					{
-						name: "Nicht im Inland steuerbare Leistung",
+						name: "Nicht Im Inland Steuerbare Leistung",
 						value: 17,
 						description: "Services not taxable domestically (0%)",
 					},
@@ -648,22 +649,25 @@ export const invoiceFields: INodeProperties[] = [
 						description: "One Stop Shop for goods (country dependent rates)",
 					},
 					{
-						name: "One Stop Shop (elektronische Dienstleistungen)",
+						name: "One Stop Shop (Elektronische Dienstleistungen)",
 						value: 19,
-						description: "One Stop Shop for electronic services (country dependent rates)",
+						description:
+							"One Stop Shop for electronic services (country dependent rates)",
 					},
 					{
-						name: "One Stop Shop (andere Dienstleistungen)",
+						name: "One Stop Shop (Andere Dienstleistungen)",
 						value: 20,
-						description: "One Stop Shop for other services (country dependent rates)",
+						description:
+							"One Stop Shop for other services (country dependent rates)",
 					},
 					{
-						name: "Reverse Charge gem. §18b UStG",
+						name: "Reverse Charge Gem. §18b UStG",
 						value: 21,
 						description: "Reverse charge according to §18b UStG (0%)",
 					},
 				],
-				description: "Define the VAT rule according to SevDesk API v2.0. This replaces the deprecated taxType system.",
+				description:
+					"Define the VAT rule according to SevDesk API v2.0. This replaces the deprecated taxType system.",
 			},
 			{
 				displayName: "Tax Type (Deprecated)",
@@ -697,14 +701,16 @@ export const invoiceFields: INodeProperties[] = [
 						value: "ss",
 					},
 				],
-				description: "⚠️ DEPRECATED: Use taxRule instead. This field is maintained for backward compatibility only.",
+				description:
+					"⚠️ DEPRECATED: Use taxRule instead. This field is maintained for backward compatibility only.",
 			},
 			{
 				displayName: "Use Deprecated Tax Type",
 				name: "useDeprecatedTaxType",
 				type: "boolean",
 				default: false,
-				description: "⚠️ Enable this only if you need to use the deprecated taxType system for backward compatibility. New implementations should use taxRule.",
+				description:
+					"⚠️ Enable this only if you need to use the deprecated taxType system for backward compatibility. New implementations should use taxRule.",
 			},
 		],
 	},

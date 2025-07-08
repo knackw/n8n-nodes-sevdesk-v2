@@ -3,7 +3,6 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
-	NodeConnectionType
 } from "n8n-workflow";
 
 import { SevDeskResourceManager } from "./SevDeskResourceManager";
@@ -109,7 +108,7 @@ export class SevDesk implements INodeType {
 		try {
 			initializeValidationSchemas();
 		} catch (error) {
-			console.error('Failed to initialize SevDesk validation schemas:', error);
+			console.error("Failed to initialize SevDesk validation schemas:", error);
 		}
 	}
 
@@ -137,8 +136,8 @@ export class SevDesk implements INodeType {
 		defaults: {
 			name: "sevDesk",
 		},
-		inputs: [NodeConnectionType.Main],
-		outputs: [NodeConnectionType.Main],
+		inputs: ["main"] as any,
+		outputs: ["main"] as any,
 		credentials: [
 			{
 				name: "sevDeskApi",
@@ -268,8 +267,8 @@ export class SevDesk implements INodeType {
 
 		for (let i = 0; i < items.length; i++) {
 			try {
-				const resource = this.getNodeParameter('resource', i) as string;
-				const operation = this.getNodeParameter('operation', i) as string;
+				const resource = this.getNodeParameter("resource", i) as string;
+				const operation = this.getNodeParameter("operation", i) as string;
 
 				const result = await resourceManager.executeResourceOperation(
 					resource,
