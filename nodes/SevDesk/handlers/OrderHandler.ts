@@ -105,35 +105,66 @@ export class OrderHandler extends CrudResourceHandler<SevDeskOrder> {
 		if (!data || typeof data !== "object") {
 			return {}; // Return an empty object or handle as appropriate for your use case
 		}
+		
+		// Create a copy to avoid modifying the original
+		const transformedData = { ...data };
+		
 		// Add any order-specific transformations here
 		// For example, handling order dates, delivery information, etc.
-		if (data.orderDate) {
-			data.orderDate = new Date(data.orderDate).toISOString().split("T")[0];
+		if (transformedData.orderDate) {
+			try {
+				const orderDate = new Date(transformedData.orderDate);
+				if (!isNaN(orderDate.getTime())) {
+					transformedData.orderDate = orderDate.toISOString().split("T")[0];
+				}
+			} catch (error) {
+				// Keep original value if transformation fails
+				console.warn('Invalid orderDate format:', transformedData.orderDate);
+			}
 		}
-		if (data.deliveryDate) {
-			data.deliveryDate = new Date(data.deliveryDate)
-				.toISOString()
-				.split("T")[0];
+		if (transformedData.deliveryDate) {
+			try {
+				const deliveryDate = new Date(transformedData.deliveryDate);
+				if (!isNaN(deliveryDate.getTime())) {
+					transformedData.deliveryDate = deliveryDate.toISOString().split("T")[0];
+				}
+			} catch (error) {
+				// Keep original value if transformation fails
+				console.warn('Invalid deliveryDate format:', transformedData.deliveryDate);
+			}
 		}
-		return data;
+		return transformedData;
 	}
 
 	/**
 	 * Override to transform order-specific query parameters
 	 */
 	protected transformQueryParams(params: IDataObject): IDataObject {
+		// Create a copy to avoid modifying the original
+		const transformedParams = { ...params };
+		
 		// Transform order-specific query parameters
 		// For example, handling date ranges, status filters, etc.
-		if (params.startDate) {
-			params.startDate = new Date(params.startDate as string)
-				.toISOString()
-				.split("T")[0];
+		if (transformedParams.startDate) {
+			try {
+				const startDate = new Date(transformedParams.startDate as string);
+				if (!isNaN(startDate.getTime())) {
+					transformedParams.startDate = startDate.toISOString().split("T")[0];
+				}
+			} catch (error) {
+				console.warn('Invalid startDate format:', transformedParams.startDate);
+			}
 		}
-		if (params.endDate) {
-			params.endDate = new Date(params.endDate as string)
-				.toISOString()
-				.split("T")[0];
+		if (transformedParams.endDate) {
+			try {
+				const endDate = new Date(transformedParams.endDate as string);
+				if (!isNaN(endDate.getTime())) {
+					transformedParams.endDate = endDate.toISOString().split("T")[0];
+				}
+			} catch (error) {
+				console.warn('Invalid endDate format:', transformedParams.endDate);
+			}
 		}
-		return params;
+		return transformedParams;
 	}
 }

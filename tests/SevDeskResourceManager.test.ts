@@ -390,7 +390,7 @@ describe("SevDeskResourceManager - Functional Tests", () => {
 				},
 			);
 
-			mockExecuteFunctions.helpers.httpRequest.mockResolvedValue({
+			mockExecuteFunctions.helpers.httpRequest = jest.fn().mockResolvedValue({
 				objects: [{ id: "12345", name: "Created Resource" }],
 				total: 1,
 			});

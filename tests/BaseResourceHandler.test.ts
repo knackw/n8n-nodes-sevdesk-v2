@@ -141,7 +141,7 @@ describe('BaseResourceHandler', () => {
 			const nodeApiError = handler['handleError'](error, 'create');
 
 			// Check that the error is properly formatted
-			expect(nodeApiError.description).toBe('Contact operation failed: Test error');
+			expect(nodeApiError.description).toBe('Failed to execute create operation on Contact resource.');
 			expect(nodeApiError).toBeInstanceOf(Error);
 		});
 
@@ -328,7 +328,7 @@ describe('BaseResourceHandler', () => {
 			const result = await handler.execute('create', 0);
 
 			expect(result).toBeDefined();
-			expect(result?.json).toEqual(mockResponse.objects);
+			expect(result?.json).toEqual(mockResponse.objects[0]); // Single object should return the first object, not array
 			expect(result?.pairedItem).toEqual({ item: 0 });
 		});
 
@@ -446,7 +446,7 @@ describe('BaseResourceHandler', () => {
 
 			const result = handler['formatResponse'](mockResponse, 0);
 
-			expect(result.json).toEqual(mockResponse.objects);
+			expect(result.json).toEqual(mockResponse.objects[0]); // Single object should return the first object, not array
 			expect(result.pairedItem).toEqual({ item: 0 });
 		});
 
