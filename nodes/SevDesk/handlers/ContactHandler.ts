@@ -181,6 +181,73 @@ export class ContactHandler extends CrudResourceHandler<SevDeskContact> {
 	}
 
 	/**
+	 * Override buildCreateRequest to properly combine name parameter with additionalFields
+	 */
+	protected buildCreateRequest(
+		baseOptions: any,
+		baseURL: string,
+		itemIndex: number,
+	): any {
+		const name = this.executeFunctions.getNodeParameter(
+			"name",
+			itemIndex,
+			"",
+		) as string;
+		const additionalFields = this.executeFunctions.getNodeParameter(
+			"additionalFields",
+			itemIndex,
+			{},
+		) as any;
+
+		// Combine name with additionalFields
+		const createData = {
+			name,
+			...additionalFields,
+		};
+
+		return {
+			...baseOptions,
+			method: "POST",
+			url: `${baseURL}/${this.config.apiEndpoint}`,
+			body: this.transformCreateData(createData),
+		};
+	}
+
+	/**
+	 * Validate contact data before API operations
+	 *
+	 * @protected
+	 * @method validateCreateData
+	 * @param {number} itemIndex - Index of the current input item being processed
+	 * @throws {Error} When required parameters are missing or invalid
+	 */
+	protected validateCreateData(itemIndex: number): void {
+		const name = this.executeFunctions.getNodeParameter(
+			"name",
+			itemIndex,
+			"",
+		) as string;
+
+		// Convert to string and validate required name parameter
+		const nameStr = String(name || "");
+		if (!nameStr || nameStr.trim() === "") {
+			throw new Error("Contact name is required and cannot be empty");
+		}
+	}
+
+	/**
+	 * Override execute method to add validation
+	 */
+	async execute(operation: string, itemIndex: number): Promise<any> {
+		// Add validation for create operations
+		if (operation === "create") {
+			this.validateCreateData(itemIndex);
+		}
+
+		return super.execute(operation, itemIndex);
+	}
+
+	/**
 	 * Transform query parameters for contact searches
 	 *
 	 * Applies contact-specific transformations to query parameters used in

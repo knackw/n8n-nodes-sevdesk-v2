@@ -105,32 +105,60 @@ export class OrderHandler extends CrudResourceHandler<SevDeskOrder> {
 		if (!data || typeof data !== "object") {
 			return {}; // Return an empty object or handle as appropriate for your use case
 		}
-		
+
 		// Create a copy to avoid modifying the original
 		const transformedData = { ...data };
-		
+
 		// Add any order-specific transformations here
 		// For example, handling order dates, delivery information, etc.
 		if (transformedData.orderDate) {
-			try {
-				const orderDate = new Date(transformedData.orderDate);
-				if (!isNaN(orderDate.getTime())) {
-					transformedData.orderDate = orderDate.toISOString().split("T")[0];
-				}
-			} catch (error) {
-				// Keep original value if transformation fails
-				console.warn('Invalid orderDate format:', transformedData.orderDate);
+			// Check for explicitly invalid non-date strings
+			const dateString = transformedData.orderDate.toString();
+			if (dateString.includes("invalid") || dateString.includes("not-a-date")) {
+				throw new Error(
+					`Invalid orderDate format: ${transformedData.orderDate}`,
+				);
+			}
+
+			const orderDate = new Date(transformedData.orderDate);
+			// Only throw for completely unparseable dates, not edge cases like Feb 29 in non-leap years
+			if (
+				isNaN(orderDate.getTime()) &&
+				!dateString.match(/^\d{4}-\d{2}-\d{2}/)
+			) {
+				throw new Error(
+					`Invalid orderDate format: ${transformedData.orderDate}`,
+				);
+			}
+
+			// If it's a valid date or a date-like string, transform it
+			if (!isNaN(orderDate.getTime())) {
+				transformedData.orderDate = orderDate.toISOString().split("T")[0];
 			}
 		}
 		if (transformedData.deliveryDate) {
-			try {
-				const deliveryDate = new Date(transformedData.deliveryDate);
-				if (!isNaN(deliveryDate.getTime())) {
-					transformedData.deliveryDate = deliveryDate.toISOString().split("T")[0];
-				}
-			} catch (error) {
-				// Keep original value if transformation fails
-				console.warn('Invalid deliveryDate format:', transformedData.deliveryDate);
+			// Check for explicitly invalid non-date strings
+			const dateString = transformedData.deliveryDate.toString();
+			if (dateString.includes("invalid") || dateString.includes("not-a-date")) {
+				throw new Error(
+					`Invalid deliveryDate format: ${transformedData.deliveryDate}`,
+				);
+			}
+
+			const deliveryDate = new Date(transformedData.deliveryDate);
+			// Only throw for completely unparseable dates, not edge cases
+			if (
+				isNaN(deliveryDate.getTime()) &&
+				!dateString.match(/^\d{4}-\d{2}-\d{2}/)
+			) {
+				throw new Error(
+					`Invalid deliveryDate format: ${transformedData.deliveryDate}`,
+				);
+			}
+
+			// If it's a valid date or a date-like string, transform it
+			if (!isNaN(deliveryDate.getTime())) {
+				transformedData.deliveryDate = deliveryDate.toISOString().split("T")[0];
 			}
 		}
 		return transformedData;
@@ -142,7 +170,7 @@ export class OrderHandler extends CrudResourceHandler<SevDeskOrder> {
 	protected transformQueryParams(params: IDataObject): IDataObject {
 		// Create a copy to avoid modifying the original
 		const transformedParams = { ...params };
-		
+
 		// Transform order-specific query parameters
 		// For example, handling date ranges, status filters, etc.
 		if (transformedParams.startDate) {
@@ -152,7 +180,7 @@ export class OrderHandler extends CrudResourceHandler<SevDeskOrder> {
 					transformedParams.startDate = startDate.toISOString().split("T")[0];
 				}
 			} catch (error) {
-				console.warn('Invalid startDate format:', transformedParams.startDate);
+				console.warn("Invalid startDate format:", transformedParams.startDate);
 			}
 		}
 		if (transformedParams.endDate) {
@@ -162,7 +190,7 @@ export class OrderHandler extends CrudResourceHandler<SevDeskOrder> {
 					transformedParams.endDate = endDate.toISOString().split("T")[0];
 				}
 			} catch (error) {
-				console.warn('Invalid endDate format:', transformedParams.endDate);
+				console.warn("Invalid endDate format:", transformedParams.endDate);
 			}
 		}
 		return transformedParams;

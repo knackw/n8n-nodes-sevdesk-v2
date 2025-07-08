@@ -98,23 +98,48 @@ export class VoucherHandler extends CrudResourceHandler<SevDeskVoucher> {
 	}
 
 	/**
-	 * Override to transform voucher-specific create data
+	 * Transform voucher data before creation
 	 */
 	protected transformCreateData(data: any): object {
-		if (!data || typeof data !== "object") {
-			return {}; // Return an empty object or handle as appropriate for your use case
-		}
-		// Add any voucher-specific transformations here
-		// For example, handling voucher dates, document references, etc.
+		if (!data) return {};
+
+		// Create a copy to avoid modifying the original
+		const transformedData = { ...data };
+
+		// Handle voucher date safely
 		if (data.voucherDate) {
-			data.voucherDate = new Date(data.voucherDate).toISOString().split("T")[0];
+			try {
+				const date = new Date(data.voucherDate);
+				// Check if the date is valid before calling toISOString()
+				if (!isNaN(date.getTime())) {
+					transformedData.voucherDate = date.toISOString().split("T")[0];
+				} else {
+					// For invalid dates, remove the field or keep original value
+					delete transformedData.voucherDate;
+				}
+			} catch (error) {
+				// If any error occurs during date processing, remove the field
+				delete transformedData.voucherDate;
+			}
 		}
+
+		// Handle delivery date safely
 		if (data.deliveryDate) {
-			data.deliveryDate = new Date(data.deliveryDate)
-				.toISOString()
-				.split("T")[0];
+			try {
+				const date = new Date(data.deliveryDate);
+				// Check if the date is valid before calling toISOString()
+				if (!isNaN(date.getTime())) {
+					transformedData.deliveryDate = date.toISOString().split("T")[0];
+				} else {
+					// For invalid dates, remove the field or keep original value
+					delete transformedData.deliveryDate;
+				}
+			} catch (error) {
+				// If any error occurs during date processing, remove the field
+				delete transformedData.deliveryDate;
+			}
 		}
-		return data;
+		return transformedData;
 	}
 
 	/**

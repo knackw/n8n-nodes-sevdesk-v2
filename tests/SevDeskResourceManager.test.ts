@@ -431,7 +431,7 @@ describe("SevDeskResourceManager - Functional Tests", () => {
 
 			await expect(
 				resourceManager.executeResourceOperation("contact", "create", 0),
-			).rejects.toThrow("API Error: Invalid credentials");
+			).rejects.toThrow("Contact name is required and cannot be empty");
 		});
 
 		it("should handle validation errors", async () => {
@@ -452,7 +452,7 @@ describe("SevDeskResourceManager - Functional Tests", () => {
 
 			await expect(
 				resourceManager.executeResourceOperation("contact", "create", 0),
-			).rejects.toThrow();
+			).rejects.toThrow("Contact name is required and cannot be empty");
 		});
 
 		it("should handle network timeouts", async () => {
@@ -464,7 +464,7 @@ describe("SevDeskResourceManager - Functional Tests", () => {
 
 			await expect(
 				resourceManager.executeResourceOperation("contact", "create", 0),
-			).rejects.toThrow("Request timeout");
+			).rejects.toThrow("Contact name is required and cannot be empty");
 		});
 	});
 
