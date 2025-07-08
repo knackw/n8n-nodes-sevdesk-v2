@@ -200,7 +200,6 @@
   ],
   "connections": {},
   "settings": {
-    "executionOrder": "v1",
     "saveManualExecutions": true,
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "error-handling"
@@ -209,7 +208,8 @@
   "pinData": {},
   "versionId": "1",
   "meta": {
-    "instanceId": "SEVDESK_WORKFLOW_INSTANCE"
+    "instanceId": "SEVDESK_WORKFLOW_INSTANCE",
+    "n8nVersion": "1.101.0"
   },
   "tags": [
     {

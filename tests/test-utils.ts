@@ -588,14 +588,14 @@ export class MockExecuteFunctions {
       }),
       getWorkflowDataProxy: jest.fn(),
       helpers: {
-        httpRequest: jest.fn(),
-        httpRequestWithAuthentication: jest.fn(),
-        requestWithAuthenticationPaginated: jest.fn(),
+        httpRequest: jest.fn().mockResolvedValue({ objects: [], total: 0 }),
+        httpRequestWithAuthentication: jest.fn().mockResolvedValue({ objects: [], total: 0 }),
+        requestWithAuthenticationPaginated: jest.fn().mockResolvedValue({ objects: [], total: 0 }),
         returnJsonArray: jest.fn((data: any[]) => data.map(item => ({ json: item }))),
         constructExecutionMetaData: jest.fn((data: INodeExecutionData[], options: any) => data),
       },
       ...overrides,
-    } as any;
+    } as jest.Mocked<IExecuteFunctions>;
 
     return mockFunctions;
   }

@@ -290,7 +290,52 @@ const creditNoteModel: INodeProperties[] = [
 	},
 	{ displayName: "Address", name: "address", type: "string", default: "" },
 	{ displayName: "Currency", name: "currency", type: "string", default: "" },
-	{ displayName: "Tax Type", name: "taxType", type: "string", default: "" },
+	{
+		displayName: "Tax Rule",
+		name: "taxRule",
+		type: "options",
+		default: 1,
+		description: "Define the VAT rule according to SevDesk API v2.0. This replaces the deprecated taxType system.",
+		options: [
+			{
+				name: "Umsatzsteuerpflichtige Umsätze (Standard)",
+				value: 1,
+				description: "Standard VAT liable transactions (0%, 7%, 19%)",
+			},
+			{
+				name: "Ausfuhren",
+				value: 2,
+				description: "Exports (0%)",
+			},
+			{
+				name: "Innergemeinschaftliche Lieferungen (EU)",
+				value: 3,
+				description: "Intra-community deliveries (0%, 7%, 19%)",
+			},
+			{
+				name: "Steuerfreie Umsätze §4 UStG",
+				value: 4,
+				description: "Tax-free transactions §4 UStG (0%)",
+			},
+			{
+				name: "Reverse Charge gem. §13b UStG",
+				value: 5,
+				description: "Reverse charge according to §13b UStG (0%)",
+			},
+			{
+				name: "Steuer nicht erhoben nach §19 UStG (Kleinunternehmer)",
+				value: 11,
+				description: "Tax not levied according to §19 UStG - Small business (0%)",
+			},
+		],
+	},
+	{
+		displayName: "Tax Type (Deprecated)",
+		name: "taxType",
+		type: "string",
+		default: "",
+		description: "⚠️ DEPRECATED: Use taxRule instead. This field is maintained for backward compatibility only.",
+	},
 	{ displayName: "Tax Text", name: "taxText", type: "string", default: "" },
 	{
 		displayName: "Small Settlement",

@@ -5,13 +5,8 @@
 
 import {
 	IExecuteFunctions,
-	INodeExecutionData,
-	NodeApiError,
-	IHttpRequestOptions,
 	IDataObject,
 } from "n8n-workflow";
-
-import { SevDeskResponse } from "../types/SevDeskApiTypes";
 import { BaseResourceHandler } from "../base/BaseResourceHandler";
 import {
 	ResourceDependencyResolver,
@@ -172,33 +167,6 @@ export class BatchOperationHandler {
 		};
 	}
 
-	/**
-	 * Execute operations with concurrency control
-	 * @deprecated Currently unused - reserved for future batch optimization
-	 */
-	private async _executeConcurrently<T>(
-		promises: Promise<T>[],
-		maxConcurrency: number
-	): Promise<T[]> {
-		const results: T[] = [];
-		const executing: Promise<void>[] = [];
-
-		for (const promise of promises) {
-			const executePromise = promise.then(result => {
-				results.push(result);
-			});
-
-			executing.push(executePromise);
-
-			if (executing.length >= maxConcurrency) {
-				await Promise.race(executing);
-				executing.splice(executing.findIndex(p => p === executePromise), 1);
-			}
-		}
-
-		await Promise.all(executing);
-		return results;
-	}
 
 	/**
 	 * Execute a single operation within the batch

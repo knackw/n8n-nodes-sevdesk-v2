@@ -13,6 +13,58 @@ und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/lang/d
 
 ### Fixed
 
+## [2.2.1] - 2024-12-19
+
+### 🔄 API Compliance & Compatibility Updates
+- **SevDesk API v2.0 Tax System Migration:** Migrated from deprecated `taxType` to modern `taxRule` system
+  - Updated `InvoiceDescription.ts` with comprehensive tax rule options (1-21)
+  - Updated `VoucherDescription.ts` with expense-specific tax rules (8-14)
+  - Updated `CreditNoteDescription.ts` with sales tax rule options
+  - Maintained backward compatibility with deprecated taxType fields
+- **Validation Schema Enhancement:** Updated `ValidationSchemas.ts` to support both taxRule and legacy taxType validation
+- **n8n@1.101.0 Compatibility:** Removed deprecated `executionOrder: "v1"` settings from test workflows
+- **API Resource Completeness:** Verified all 21 SevDesk API resources are fully implemented and current
+
+### 📊 Test Suite & Workflow Updates
+- **Test Workflows:** Updated 9 test workflow files for n8n@1.101.0 compatibility
+- **Node Type References:** Updated legacy `sevDesk` node type references to `n8n-nodes-sevdesk-v2.sevDesk`
+- **Workflow Metadata:** Added n8nVersion metadata to all test workflows
+
+### 🛠️ Technical Improvements
+- **Resource Registry:** Confirmed complete coverage of all SevDesk API v2.0 endpoints
+- **Error Handling:** Enhanced validation error messages for taxRule system
+- **Documentation Consistency:** All documentation reflects standalone v2.0 architecture
+
+### ✅ Validation Results
+- **API Coverage:** 100% - All 21 resources from scraped SevDesk API implemented
+- **Tax System:** ✅ Fully migrated to taxRule system with backward compatibility
+- **n8n Compatibility:** ✅ Compatible with n8n@1.101.0
+- **Test Coverage:** ✅ All workflows updated and validated
+- **Documentation:** ✅ Complete and consistent
+
+### 🔧 Developer Experience
+- **Migration Guide:** Clear upgrade path from taxType to taxRule
+- **Validation:** Comprehensive error messages for both systems
+- **Examples:** Updated all workflow examples to use new tax system
+
+## [2.2.0] - 2024-12-19
+
+### Hinzugefügt
+- **Erweiterte Dokumentation**: Umfassende deutsche Dokumentation hinzugefügt
+- **Migrationsleitfaden**: Detaillierter Migrationsleitfaden für Benutzer
+- **Verbesserte Test-Workflows**: Erweiterte Beispiel-Workflows für Steuerberater-Export
+- **Benutzerhandbuch**: Vollständiges deutsches Benutzerhandbuch
+
+### Geändert
+- **Code-Qualität**: Verbesserte TypeScript-Typisierung und Fehlerbehandlung
+- **Test-Abdeckung**: Erweiterte Test-Suite mit besseren Mock-Daten
+- **Dokumentationsstruktur**: Reorganisierte Dokumentation für bessere Benutzerfreundlichkeit
+
+### Behoben
+- **Build-Stabilität**: Verschiedene Build-Probleme behoben
+- **Typisierung**: TypeScript-Fehler in Test-Utilities behoben
+- **Dokumentation**: Inkonsistenzen in der Dokumentation korrigiert
+
 ## [2.0.0] - 2024-01-15
 
 ### 🎉 **Neugestaltung für maximale Einfachheit**

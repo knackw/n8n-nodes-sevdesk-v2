@@ -602,10 +602,79 @@ export const invoiceFields: INodeProperties[] = [
 				],
 			},
 			{
-				displayName: "Tax Type",
+				displayName: "Tax Rule",
+				name: "taxRule",
+				type: "options",
+				default: 1,
+				options: [
+					{
+						name: "Umsatzsteuerpflichtige Umsätze (Standard)",
+						value: 1,
+						description: "Standard VAT liable transactions (0%, 7%, 19%)",
+					},
+					{
+						name: "Ausfuhren",
+						value: 2,
+						description: "Exports (0%)",
+					},
+					{
+						name: "Innergemeinschaftliche Lieferungen (EU)",
+						value: 3,
+						description: "Intra-community deliveries (0%, 7%, 19%)",
+					},
+					{
+						name: "Steuerfreie Umsätze §4 UStG",
+						value: 4,
+						description: "Tax-free transactions §4 UStG (0%)",
+					},
+					{
+						name: "Reverse Charge gem. §13b UStG",
+						value: 5,
+						description: "Reverse charge according to §13b UStG (0%)",
+					},
+					{
+						name: "Steuer nicht erhoben nach §19 UStG (Kleinunternehmer)",
+						value: 11,
+						description: "Tax not levied according to §19 UStG - Small business (0%)",
+					},
+					{
+						name: "Nicht im Inland steuerbare Leistung",
+						value: 17,
+						description: "Services not taxable domestically (0%)",
+					},
+					{
+						name: "One Stop Shop (Waren)",
+						value: 18,
+						description: "One Stop Shop for goods (country dependent rates)",
+					},
+					{
+						name: "One Stop Shop (elektronische Dienstleistungen)",
+						value: 19,
+						description: "One Stop Shop for electronic services (country dependent rates)",
+					},
+					{
+						name: "One Stop Shop (andere Dienstleistungen)",
+						value: 20,
+						description: "One Stop Shop for other services (country dependent rates)",
+					},
+					{
+						name: "Reverse Charge gem. §18b UStG",
+						value: 21,
+						description: "Reverse charge according to §18b UStG (0%)",
+					},
+				],
+				description: "Define the VAT rule according to SevDesk API v2.0. This replaces the deprecated taxType system.",
+			},
+			{
+				displayName: "Tax Type (Deprecated)",
 				name: "taxType",
 				type: "options",
 				default: "default",
+				displayOptions: {
+					show: {
+						useDeprecatedTaxType: [true],
+					},
+				},
 				options: [
 					{
 						name: "Custom",
@@ -628,6 +697,14 @@ export const invoiceFields: INodeProperties[] = [
 						value: "ss",
 					},
 				],
+				description: "⚠️ DEPRECATED: Use taxRule instead. This field is maintained for backward compatibility only.",
+			},
+			{
+				displayName: "Use Deprecated Tax Type",
+				name: "useDeprecatedTaxType",
+				type: "boolean",
+				default: false,
+				description: "⚠️ Enable this only if you need to use the deprecated taxType system for backward compatibility. New implementations should use taxRule.",
 			},
 		],
 	},

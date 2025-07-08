@@ -52,6 +52,7 @@
         "contactPerson": "={{ $json.contactPerson }}",
         "smallSettlement": "false",
         "taxRate": "={{ $json.vatRate }}",
+        "taxRule": "={{ $json.taxRule || 1 }}",
         "taxText": "Umsatzsteuer",
         "taxType": "default",
         "invoiceType": "={{ $json.invoiceType }}",

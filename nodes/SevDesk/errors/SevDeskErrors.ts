@@ -13,14 +13,109 @@ export abstract class SevDeskError extends Error {
 	}
 
 	/**
-	 * Convert to n8n NodeApiError
+	 * Sanitize error message to prevent information leakage
+	 * Removes sensitive information like API keys, tokens, and internal system details
+	 */
+	private sanitizeMessage(message: string): string {
+		if (!message) return 'An error occurred';
+
+		// Patterns to sanitize
+		const sensitivePatterns = [
+			// API keys and tokens
+			/api[_-]?key[=:\s]*[a-zA-Z0-9_-]{10,}/gi,
+			/token[=:\s]*[a-zA-Z0-9_-]{10,}/gi,
+			/bearer\s+[a-zA-Z0-9_-]{10,}/gi,
+			/authorization[=:\s]*[a-zA-Z0-9_-]{10,}/gi,
+
+			// Email addresses (partial masking)
+			/([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
+
+			// Phone numbers
+			/\+?[\d\s\-\(\)]{10,}/g,
+
+			// Internal system paths
+			/[a-zA-Z]:\\[^\\]+\\[^\\]+/g,
+			/\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+/g,
+
+			// Database connection strings
+			/(?:mysql|postgres|mongodb|redis):\/\/[^\s]+/gi,
+
+			// IP addresses (partial masking)
+			/\b(?:\d{1,3}\.){3}\d{1,3}\b/g,
+
+			// Stack traces (remove file paths)
+			/at\s+[^\s]+\s+\([^)]+\)/g,
+		];
+
+		let sanitized = message;
+
+		// Apply sanitization patterns
+		sensitivePatterns.forEach(pattern => {
+			if (pattern.source.includes('email')) {
+				// Partial email masking: user@domain.com -> u***@domain.com
+				sanitized = sanitized.replace(pattern, (match, user, domain) => {
+					const maskedUser = user.length > 1 ? user[0] + '*'.repeat(user.length - 1) : '*';
+					return `${maskedUser}@${domain}`;
+				});
+			} else if (pattern.source.includes('IP')) {
+				// Partial IP masking: 192.168.1.1 -> 192.168.*.*
+				sanitized = sanitized.replace(pattern, (match) => {
+					const parts = match.split('.');
+					return parts.length === 4 ? `${parts[0]}.${parts[1]}.*.*` : match;
+				});
+			} else {
+				// Complete removal/replacement for sensitive data
+				sanitized = sanitized.replace(pattern, '[REDACTED]');
+			}
+		});
+
+		// Remove excessive whitespace
+		sanitized = sanitized.replace(/\s+/g, ' ').trim();
+
+		// Ensure message is not empty after sanitization
+		return sanitized || 'An error occurred during the operation';
+	}
+
+	/**
+	 * Get sanitized error message for user display
+	 */
+	private getSanitizedMessage(): string {
+		return this.sanitizeMessage(this.message);
+	}
+
+	/**
+	 * Convert to n8n NodeApiError with proper sanitization
 	 */
 	toNodeApiError(node: INode): NodeApiError {
-		return new NodeApiError(node, {
-			message: this.message,
+		// Use sanitized message for user-facing error
+		const sanitizedMessage = this.getSanitizedMessage();
+
+		// Log error details for debugging (only in development)
+		if (process.env.NODE_ENV === 'development') {
+			console.log('SevDesk Error Debug Info:', {
+				nodeType: node?.type,
+				nodeName: node?.name,
+				errorType: this.constructor.name,
+				errorCode: this.errorCode,
+				// Only log sanitized message, never the original
+				sanitizedMessage: sanitizedMessage
+			});
+		}
+
+		// Create error data with sanitized information
+		const errorData = {
+			message: sanitizedMessage,
+			error: sanitizedMessage,
+			errorCode: this.errorCode,
+			type: this.constructor.name
+		};
+
+		const nodeApiError = new NodeApiError(node, errorData, {
 			description: this.getDescription(),
-			...(this.httpStatusCode && { httpCode: this.httpStatusCode }),
+			...(this.httpStatusCode && { httpCode: this.httpStatusCode.toString() }),
 		});
+
+		return nodeApiError;
 	}
 
 	/**

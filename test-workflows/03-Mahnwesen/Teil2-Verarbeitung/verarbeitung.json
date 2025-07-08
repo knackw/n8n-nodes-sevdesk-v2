@@ -42,7 +42,7 @@
         }
       },
       "name": "SevDesk - Mahnung erstellen",
-      "type": "sevDesk",
+      "type": "n8n-nodes-sevdesk-v2.sevDesk",
       "typeVersion": 1,
       "position": [
         1050,
@@ -62,7 +62,7 @@
         "dunningId": "={{ $node[\"SevDesk - Mahnung erstellen\"].json.id }}"
       },
       "name": "SevDesk - Mahnungs-PDF",
-      "type": "sevDesk",
+      "type": "n8n-nodes-sevdesk-v2.sevDesk",
       "typeVersion": 1,
       "position": [
         1250,

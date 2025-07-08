@@ -66,7 +66,7 @@ Der Docker-Container führt beim Start automatisch folgende Schritte aus:
 
 ```
 ├── docker-compose.yml           # Docker Konfiguration
-├── install-packages.sh          # Installations-Skript
+├── tools/install-packages.sh          # Installations-Skript
 ├── n8n_data/                   # n8n Daten (wird erstellt)
 │   ├── .n8n/
 │   │   ├── nodes/              # Installierte Nodes

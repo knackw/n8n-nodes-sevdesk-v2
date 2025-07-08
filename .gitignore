@@ -100,3 +100,4 @@ temp/
 .husky/_
 /backup/
 /workflows/
+/coretex-scraped-sevdesk-api/

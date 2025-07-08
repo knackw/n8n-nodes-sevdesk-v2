@@ -1,0 +1,203 @@
+{
+  "name": "SevDesk - Rechnungsstellung - Teil 3: Versand (v2)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "invoice-sending",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "invoice-sending"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Validiere den Webhook-Key\nconst payload = $input.item.json;\nconst webhookKey = payload.webhook_key;\nconst data = payload.data;\n\n// Konfiguration wird später geladen, hier nur Validierung\nif (!webhookKey || webhookKey !== 'secret-key') {\n  throw new Error('Ungültiger Webhook-Key');\n}\n\nreturn {\n  json: data\n};"
+      },
+      "name": "Daten validieren",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Bestimme den Versandkanal basierend auf Kundenpräferenzen und Konfiguration\nconst data = $input.item.json;\nconst config = $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config || {};\n\n// Standard-Versandkanal\nlet channel = 'email';\n\n// Kundenspezifische Überschreibungen aus der Konfiguration\nconst customerChannels = config.customerChannels || {};\nif (customerChannels[data.customerId]) {\n  channel = customerChannels[data.customerId];\n}\n\n// Versandkanal-spezifische Daten vorbereiten\nlet channelData = {};\n\nswitch(channel) {\n  case 'email':\n    channelData = {\n      emailSubject: `Rechnung ${data.invoiceNumber}`,\n      emailBody: `Sehr geehrte Damen und Herren,\\n\\nim Anhang finden Sie unsere Rechnung ${data.invoiceNumber} vom ${new Date().toLocaleDateString('de-DE')}.\\n\\nMit freundlichen Grüßen\\nIhr Team`,\n      emailRecipient: data.customerData.email\n    };\n    break;\n  case 'post':\n    channelData = {\n      recipientName: data.customerData.name,\n      recipientStreet: data.customerData.street,\n      recipientZip: data.customerData.zip,\n      recipientCity: data.customerData.city\n    };\n    break;\n}\n\nreturn {\n  json: {\n    ...data,\n    channel,\n    channelData\n  }\n};"
+      },
+      "name": "Versandkanal bestimmen",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.channel }}",
+              "operation": "equal",
+              "value2": "email"
+            }
+          ]
+        }
+      },
+      "name": "E-Mail-Versand?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config.senderEmail || \"rechnungen@example.com\" }}",
+        "toEmail": "={{ $json.channelData.emailRecipient }}",
+        "subject": "={{ $json.channelData.emailSubject }}",
+        "text": "={{ $json.channelData.emailBody }}",
+        "options": {
+          "attachments": "url",
+          "attachmentsUrl": "={{ $json.cloudStorageUrl }}"
+        }
+      },
+      "name": "E-Mail senden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        200
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "service": "letterXpress",
+        "options": {
+          "color": true,
+          "duplex": true
+        },
+        "recipientData": "={\n  \"name\": \"{{ $json.channelData.recipientName }}\",\n  \"company\": \"{{ $json.customerData.company }}\",\n  \"street\": \"{{ $json.channelData.recipientStreet }}\",\n  \"zip\": \"{{ $json.channelData.recipientZip }}\",\n  \"city\": \"{{ $json.channelData.recipientCity }}\",\n  \"country\": \"{{ $json.customerData.country }}\"\n}",
+        "documentUrl": "={{ $json.cloudStorageUrl }}"
+      },
+      "name": "Brief versenden",
+      "type": "n8n-nodes-base.letterService",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        400
+      ],
+      "credentials": {
+        "letterXpressApi": {
+          "id": "13",
+          "name": "LetterXpress API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        1650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "buchhaltung-alerts",
+        "text": "=✅ Rechnung versendet:\n\nKunde: {{ $json.customerData.name }}\nRechnungsnummer: {{ $json.invoiceNumber }}\nBetrag: {{ $json.amount }} €\nVersandart: {{ $json.channel === 'email' ? 'E-Mail' : 'Brief' }}\nZeitstempel: {{ $now.toISOString() }}"
+      },
+      "name": "Signal-Benachrichtigung",
+      "type": "n8n-nodes-base.signalSend",
+      "typeVersion": 1,
+      "position": [
+        2050,
+        300
+      ],
+      "credentials": {
+        "signalApi": {
+          "id": "11",
+          "name": "Signal API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $node[\"E-Mail senden\"].error !== undefined || $node[\"Brief versenden\"].error !== undefined || $node[\"Datenbank aktualisieren\"].error !== undefined }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Fehler aufgetreten?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "error-reporting@example.com",
+        "toEmail": "support@example.com",
+        "subject": "Fehler im Rechnungsstellung-Workflow (Versand)",
+        "text": "=Es ist ein Fehler im Rechnungsstellung-Workflow (Teil 3: Versand) aufgetreten:\n\nFehler: {{ $node[\"E-Mail senden\"].error ? $node[\"E-Mail senden\"].error.message : ($node[\"Brief versenden\"].error ? $node[\"Brief versenden\"].error.message : $node[\"Datenbank aktualisieren\"].error.message) }}\n\nDetails: {{ JSON.stringify($node[\"E-Mail senden\"].error || $node[\"Brief versenden\"].error || $node[\"Datenbank aktualisieren\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
+        "options": {}
+      },
+      "name": "Support benachrichtigen",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        2650,
+        200
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "support-alerts",
+        "text": "=⚠️ FEHLER im Rechnungsstellung-Workflow (Versand):\n\n{{ $node[\"E-Mail senden\"].error ? $node[\"E-Mail senden\"].error.message : ($node[\"Brief versenden\"].error ? $node[\"Brief versenden\"].error.message : $node[\"Datenbank aktualisieren\"].error.message) }}\n\nZeitstempel: {{ $now.toISOString() }}"
+      },
+      "name": "Signal-Benachrichtigung (Fehler)",
+      "type": "n8n-nodes-base.signalSend",
+      "typeVersion": 1,
+      "position": [
+        2650,
+        400
+      ],
+      "credentials": {
+        "signalApi": {
+          "id": "11",
+          "name": "Signal API"
+        }
+      }
+    }
+  ],
+  "connections": {}
+}

@@ -25,6 +25,8 @@ import {
 	BatchOperationUtils
 } from "./batch/BatchOperationHandler";
 import { ResourceDependencyResolver } from "./dependencies/ResourceDependencyResolver";
+import { sevDeskRateLimiter, RateLimiter } from "./utils/RateLimiter";
+import { SevDeskRateLimitError, SevDeskErrorFactory } from "./errors/SevDeskErrors";
 
 /**
  * Resource manager for SevDesk operations
@@ -214,23 +216,219 @@ export class SevDeskResourceManager {
 	}
 
 	/**
-	 * Log API interactions for debugging purposes
+	 * Sanitize sensitive data for secure logging
+	 */
+	private sanitizeLogData(data: any): any {
+		if (!data || typeof data !== 'object') {
+			return data;
+		}
+
+		const sensitiveKeys = [
+			'authorization', 'auth', 'token', 'apikey', 'api_key', 'password', 'passwd', 'pwd',
+			'secret', 'key', 'credential', 'credentials', 'bearer', 'x-api-key',
+			'cookie', 'session', 'sessionid', 'session_id', 'csrf', 'csrf_token',
+			'private_key', 'privatekey', 'client_secret', 'clientsecret'
+		];
+
+		const sanitized = Array.isArray(data) ? [] : {};
+
+		for (const [key, value] of Object.entries(data)) {
+			const lowerKey = key.toLowerCase();
+
+			// Check if this key contains sensitive information
+			const isSensitive = sensitiveKeys.some(sensitiveKey =>
+				lowerKey.includes(sensitiveKey)
+			);
+
+			if (isSensitive) {
+				// Redact sensitive values
+				if (typeof value === 'string' && value.length > 0) {
+					sanitized[key] = '[REDACTED]';
+				} else {
+					sanitized[key] = '[REDACTED]';
+				}
+			} else if (typeof value === 'object' && value !== null) {
+				// Recursively sanitize nested objects
+				sanitized[key] = this.sanitizeLogData(value);
+			} else {
+				// Keep non-sensitive values as-is
+				sanitized[key] = value;
+			}
+		}
+
+		return sanitized;
+	}
+
+	/**
+	 * Log API interactions for debugging purposes with secure data handling
 	 */
 	private logApiInteraction(
 		level: 'info' | 'warn' | 'error',
 		message: string,
 		data?: any
 	): void {
+		// Sanitize any sensitive data before logging
+		const sanitizedData = data ? this.sanitizeLogData(data) : undefined;
+
 		const logData = {
 			timestamp: new Date().toISOString(),
 			resource: this.executeFunctions.getNodeParameter('resource', 0, ''),
 			operation: this.executeFunctions.getNodeParameter('operation', 0, ''),
 			message,
-			...(data && { data })
+			...(sanitizedData && { data: sanitizedData })
 		};
 
 		// Use console for logging since n8n logger is not available in this context
 		console[level](`[SevDesk API] ${JSON.stringify(logData)}`);
+	}
+
+	/**
+	 * Make HTTP request with rate limiting and retry logic
+	 */
+	private async makeRateLimitedRequest(requestOptions: IHttpRequestOptions): Promise<any> {
+		let retryCount = 0;
+		const maxRetries = sevDeskRateLimiter.shouldRetry(0) ? 3 : 0;
+
+		// Add SSL/TLS security configuration
+		const secureRequestOptions: IHttpRequestOptions = {
+			...requestOptions,
+			// Enable strict SSL certificate validation
+			rejectUnauthorized: true,
+			// Set minimum TLS version
+			secureProtocol: 'TLSv1_2_method',
+			// Enable certificate verification
+			checkServerIdentity: true,
+			// Set timeout for SSL handshake
+			timeout: 30000,
+			// Additional security headers
+			headers: {
+				...requestOptions.headers,
+				'User-Agent': 'n8n-sevdesk-node/1.0.0',
+				'Connection': 'close', // Prevent connection reuse for security
+			},
+		};
+
+		while (retryCount <= maxRetries) {
+			try {
+				// Wait for rate limit compliance
+				await sevDeskRateLimiter.waitForSlot();
+
+				// Log the request (without sensitive headers)
+				const logHeaders = { ...secureRequestOptions.headers };
+				if (logHeaders.Authorization) {
+					logHeaders.Authorization = '[REDACTED]';
+				}
+
+				this.logApiInteraction('info', `Making API request: ${secureRequestOptions.method} ${secureRequestOptions.url}`, {
+					retryCount,
+					rateLimitStatus: sevDeskRateLimiter.getStatus(),
+					headers: logHeaders,
+				});
+
+				// Make the actual HTTP request with SSL/TLS validation
+				const response = await this.executeFunctions.helpers.httpRequest(secureRequestOptions);
+
+				// Log successful response
+				this.logApiInteraction('info', `API request successful: ${requestOptions.method} ${requestOptions.url}`, {
+					retryCount,
+					responseSize: JSON.stringify(response).length,
+				});
+
+				return response;
+
+			} catch (error: any) {
+				// Check if this is a rate limit error (HTTP 429)
+				if (error.httpCode === 429 || error.statusCode === 429) {
+					retryCount++;
+
+					// Extract retry-after header if available
+					const retryAfter = error.response?.headers?.['retry-after'] ||
+									  error.headers?.['retry-after'];
+
+					if (sevDeskRateLimiter.shouldRetry(retryCount - 1)) {
+						const delay = sevDeskRateLimiter.calculateRetryDelay(retryCount - 1, retryAfter);
+
+						this.logApiInteraction('warn', `Rate limit hit, retrying in ${delay}ms`, {
+							retryCount,
+							retryAfter,
+							url: requestOptions.url,
+						});
+
+						// Wait before retrying
+						await new Promise(resolve => setTimeout(resolve, delay));
+						continue;
+					} else {
+						// Max retries exceeded
+						this.logApiInteraction('error', 'Rate limit exceeded, max retries reached', {
+							retryCount,
+							url: requestOptions.url,
+						});
+
+						throw new SevDeskRateLimitError(
+							'Rate limit exceeded and maximum retries reached',
+							retryAfter,
+							error
+						);
+					}
+				}
+
+				// For non-rate-limit errors, check if we should retry
+				if (retryCount < maxRetries && this.isRetryableError(error)) {
+					retryCount++;
+					const delay = sevDeskRateLimiter.calculateRetryDelay(retryCount - 1);
+
+					this.logApiInteraction('warn', `Retryable error occurred, retrying in ${delay}ms`, {
+						retryCount,
+						error: error.message,
+						url: requestOptions.url,
+					});
+
+					await new Promise(resolve => setTimeout(resolve, delay));
+					continue;
+				}
+
+				// Log the error and re-throw
+				this.logApiInteraction('error', `API request failed: ${error.message}`, {
+					retryCount,
+					url: requestOptions.url,
+					error: error.message,
+				});
+
+				// Create appropriate error type based on the original error
+				if (error.httpCode || error.statusCode) {
+					throw SevDeskErrorFactory.createError(
+						error.httpCode || error.statusCode,
+						error.response?.data || error.data || { message: error.message },
+						error
+					);
+				}
+
+				throw error;
+			}
+		}
+	}
+
+	/**
+	 * Check if an error is retryable (network issues, temporary server errors)
+	 */
+	private isRetryableError(error: any): boolean {
+		// Network errors
+		if (error.code === 'ECONNRESET' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+			return true;
+		}
+
+		// Server errors (5xx)
+		const statusCode = error.httpCode || error.statusCode;
+		if (statusCode >= 500 && statusCode < 600) {
+			return true;
+		}
+
+		// Specific retryable status codes
+		if (statusCode === 408 || statusCode === 502 || statusCode === 503 || statusCode === 504) {
+			return true;
+		}
+
+		return false;
 	}
 
 
@@ -438,7 +636,7 @@ export class SevDeskResourceManager {
 		}
 
 		try {
-			const response = await this.executeFunctions.helpers.httpRequest(requestOptions) as SevDeskResponse<SevDeskContact>;
+			const response = await this.makeRateLimitedRequest(requestOptions) as SevDeskResponse<SevDeskContact>;
 
 			// Extract objects from response if available, otherwise return full response
 			const responseData = response.objects || response;
@@ -615,7 +813,7 @@ export class SevDeskResourceManager {
 		}
 
 		try {
-			const response = await this.executeFunctions.helpers.httpRequest(requestOptions) as SevDeskResponse<SevDeskInvoice>;
+			const response = await this.makeRateLimitedRequest(requestOptions) as SevDeskResponse<SevDeskInvoice>;
 
 			// Extract appropriate data from response based on operation
 			let responseData: any = response;
@@ -802,7 +1000,7 @@ export class SevDeskResourceManager {
 		}
 
 		try {
-			const response = await this.executeFunctions.helpers.httpRequest(requestOptions) as SevDeskResponse<SevDeskVoucher>;
+			const response = await this.makeRateLimitedRequest(requestOptions) as SevDeskResponse<SevDeskVoucher>;
 
 			// Extract appropriate data from response
 			let responseData: any = response;
@@ -965,7 +1163,7 @@ export class SevDeskResourceManager {
 		}
 
 		try {
-			const response = await this.executeFunctions.helpers.httpRequest(requestOptions) as SevDeskResponse<SevDeskOrder>;
+			const response = await this.makeRateLimitedRequest(requestOptions) as SevDeskResponse<SevDeskOrder>;
 
 			// Extract appropriate data from response
 			let responseData: any = response;

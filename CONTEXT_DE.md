@@ -23,7 +23,7 @@ Das n8n-nodes-sevdesk-v2 Projekt ist eine n8n Community Node Implementation für
     - **SevDesk.node.ts**: Haupt-Node-Implementation (deklarativ)
 - **tests/**: Jest-Tests für Node- und Credential-Funktionalitäten
 - **scripts/**: Automatisierungs-Skripte für Entwicklung und Deployment
-  - **start-n8n.js**: Vollautomatisiertes Setup mit Docker und Workflow-Management
+  - **tools/start-n8n.js**: Vollautomatisiertes Setup mit Docker und Workflow-Management
 - **test-workflows/**: Vorgefertigte Workflow-Beispiele für verschiedene Anwendungsfälle
 - **docker-compose.yml**: Docker-Konfiguration für Entwicklungsumgebung
 - **package.json**: NPM-Paketdefinition mit minimalen Abhängigkeiten

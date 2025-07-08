@@ -2,12 +2,14 @@ import {
 	IExecuteFunctions,
 	INodeExecutionData,
 	INodeType,
-	INodeTypeDescription
+	INodeTypeDescription,
+	NodeConnectionType
 } from "n8n-workflow";
 
 import { SevDeskResourceManager } from "./SevDeskResourceManager";
 import { ResourceRegistry } from "./ResourceRegistry";
 import { initializeValidationSchemas } from "./validation/ValidationSchemas";
+import { validateAndWarnEnvironmentConfig } from "./config/EnvironmentConfig";
 import {
 	accountingContactFields,
 	accountingContactOperations,
@@ -68,8 +70,41 @@ import {
 	batchFields,
 } from "./descriptions";
 
+/**
+ * SevDesk n8n Node Implementation
+ *
+ * This node provides integration with the SevDesk v2 API, enabling workflow automation
+ * for German accounting processes including invoice management, contact handling,
+ * voucher processing, and more.
+ *
+ * @class SevDesk
+ * @implements {INodeType}
+ *
+ * @example
+ * // Basic usage in n8n workflow:
+ * // 1. Configure SevDesk API credentials
+ * // 2. Select resource (Contact, Invoice, Order, Voucher, etc.)
+ * // 3. Choose operation (create, get, list, update, delete, or custom operations)
+ * // 4. Configure operation-specific parameters
+ *
+ * @see {@link https://api.sevdesk.de/} SevDesk API Documentation
+ * @see {@link https://docs.n8n.io/} n8n Documentation
+ *
+ * @author n8n-nodes-sevdesk-v2
+ * @version 1.0.0
+ * @since 2025-01-01
+ */
 export class SevDesk implements INodeType {
-	// Static initialization block to initialize validation schemas
+	/**
+	 * Static initialization block to initialize validation schemas
+	 *
+	 * This block runs when the class is first loaded and sets up all validation
+	 * schemas required for SevDesk API operations. It ensures that all resource
+	 * validation rules are properly configured before any node execution.
+	 *
+	 * @static
+	 * @throws {Error} When validation schema initialization fails
+	 */
 	static {
 		try {
 			initializeValidationSchemas();
@@ -78,6 +113,19 @@ export class SevDesk implements INodeType {
 		}
 	}
 
+	/**
+	 * Node type description configuration
+	 *
+	 * Defines the complete configuration for the SevDesk node including:
+	 * - Display properties and metadata
+	 * - Input/output configuration
+	 * - Credential requirements
+	 * - API request defaults
+	 * - All available resources and their operations
+	 *
+	 * @type {INodeTypeDescription}
+	 * @readonly
+	 */
 	description: INodeTypeDescription = {
 		displayName: "sevDesk",
 		name: "sevDesk",
@@ -89,8 +137,8 @@ export class SevDesk implements INodeType {
 		defaults: {
 			name: "sevDesk",
 		},
-		inputs: ["main"],
-		outputs: ["main"],
+		inputs: [NodeConnectionType.Main],
+		outputs: [NodeConnectionType.Main],
 		credentials: [
 			{
 				name: "sevDeskApi",
@@ -175,7 +223,45 @@ export class SevDesk implements INodeType {
 		],
 	};
 
+	/**
+	 * Execute the SevDesk node operation
+	 *
+	 * This method is called by n8n when the node is executed. It processes all input items,
+	 * extracts the resource and operation parameters, and delegates the actual API calls
+	 * to the SevDeskResourceManager. Each input item is processed independently, allowing
+	 * for batch operations while maintaining individual error handling.
+	 *
+	 * @async
+	 * @method execute
+	 * @param {IExecuteFunctions} this - The n8n execution context providing access to node parameters, credentials, and utilities
+	 *
+	 * @returns {Promise<INodeExecutionData[][]>} Array of arrays containing the execution results
+	 *   - Each inner array represents the output for one execution
+	 *   - Each INodeExecutionData contains the JSON response and optional metadata
+	 *
+	 * @throws {Error} When API calls fail and continueOnFail is false
+	 * @throws {SevDeskAuthenticationError} When API credentials are invalid
+	 * @throws {SevDeskValidationError} When input parameters are invalid
+	 * @throws {SevDeskRateLimitError} When API rate limits are exceeded
+	 *
+	 * @example
+	 * // Example execution flow:
+	 * // 1. Get input data from previous node
+	 * // 2. For each input item:
+	 * //    - Extract resource (e.g., 'Contact', 'Invoice')
+	 * //    - Extract operation (e.g., 'create', 'get', 'list')
+	 * //    - Execute via SevDeskResourceManager
+	 * //    - Handle errors based on continueOnFail setting
+	 * // 3. Return all results as array
+	 *
+	 * @see {@link SevDeskResourceManager.executeResourceOperation} For resource operation execution
+	 * @see {@link IExecuteFunctions} For n8n execution context interface
+	 * @see {@link INodeExecutionData} For output data structure
+	 */
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+		// Validate environment configuration on each execution
+		validateAndWarnEnvironmentConfig();
+
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 		const resourceManager = new SevDeskResourceManager(this);

@@ -88,7 +88,7 @@ Der API-Key wird für folgende Funktionen benötigt:
 ├── .env                    # Ihre Konfiguration (nicht in Git!)
 ├── ENV-TEMPLATE.md         # Diese Vorlage
 ├── scripts/
-│   └── start-n8n.js       # Start-Skript
+│   └── tools/start-n8n.js       # Start-Skript
 ├── test-workflows/         # Test-Workflows für Upload
 └── backup/                 # Workflow-Backups (wird erstellt)
 ```

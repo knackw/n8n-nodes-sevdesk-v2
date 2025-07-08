@@ -16,7 +16,20 @@
 		"declaration": true,
 		"outDir": "./dist/",
 		"skipLibCheck": true,
-		"moduleResolution": "node"
+		"moduleResolution": "node",
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["nodes/SevDesk/*"],
+			"@/config/*": ["nodes/SevDesk/config/*"],
+			"@/handlers/*": ["nodes/SevDesk/handlers/*"],
+			"@/errors/*": ["nodes/SevDesk/errors/*"],
+			"@/validation/*": ["nodes/SevDesk/validation/*"],
+			"@/descriptions/*": ["nodes/SevDesk/descriptions/*"],
+			"@/types/*": ["nodes/SevDesk/types/*"],
+			"@/utils/*": ["nodes/SevDesk/utils/*"],
+			"@credentials/*": ["credentials/*"],
+			"@tests/*": ["tests/*"]
+		}
 	},
 	"include": [
 		"credentials/**/*",

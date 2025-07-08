@@ -1,52 +1,52 @@
-# 🚀 Start-Skript für SevDesk-Node
+# 🚀 Startup Script for SevDesk Node
 
-Das neue `npm start` Kommando bietet eine vollautomatisierte Lösung für die Entwicklung mit dem SevDesk-Node.
+The new `npm start` command provides a fully automated solution for development with the SevDesk node.
 
-## ✨ Funktionen
+## ✨ Features
 
-Das Start-Skript führt automatisch folgende Schritte aus:
+The startup script automatically performs the following steps:
 
-1. **🔨 Node Build** - Kompiliert den TypeScript-Code
-2. **🐳 Docker-Management** - Prüft und verwaltet Docker-Container  
-3. **📊 Workflow-Verwaltung** - Backup, Löschen und Upload von Workflows
-4. **🌐 Browser-Start** - Öffnet n8n automatisch im Browser
+1. **🔨 Node Build** - Compiles the TypeScript code
+2. **🐳 Docker Management** - Checks and manages Docker containers  
+3. **📊 Workflow Management** - Backup, delete and upload workflows
+4. **🌐 Browser Start** - Opens n8n automatically in browser
 
-## 🎯 Verwendung
+## 🎯 Usage
 
-### Schnellstart
+### Quick Start
 
 ```bash
-# Einmalig: .env-Datei erstellen (siehe ENV-TEMPLATE.md)
-# n8n starten
+# One-time: Create .env file (see ENV-TEMPLATE.md)
+# Start n8n
 npm start
 ```
 
-## 🔄 Interaktiver Ablauf
+## 🔄 Interactive Process
 
-### 1. Build & Docker-Start
-- ✅ **TypeScript kompilieren**
-- ✅ **Docker-Container prüfen/starten**
-- ✅ **SevDesk-Node automatisch installieren**
+### 1. Build & Docker Start
+- ✅ **Compile TypeScript**
+- ✅ **Check/start Docker containers**
+- ✅ **Automatically install SevDesk node**
 
-### 2. Workflow-Management
-- 📊 **Vorhandene Workflows analysieren**
-- ❓ **Backup erstellen?** (J/n)
-- ❓ **Workflows löschen?** (j/N)
+### 2. Workflow Management
+- 📊 **Analyze existing workflows**
+- ❓ **Create backup?** (Y/n)
+- ❓ **Delete workflows?** (y/N)
 
-### 3. Test-Workflows laden
-- 📁 **Automatische Verzeichnis-Erkennung**
-- 🎯 **Interaktive Auswahl bei mehreren Ordnern**
-- ⬆️ **Upload der gewählten Workflows**
+### 3. Load Test Workflows
+- 📁 **Automatic directory detection**
+- 🎯 **Interactive selection for multiple folders**
+- ⬆️ **Upload selected workflows**
 
-### 4. Browser-Start
-- 🌐 **Automatisches Öffnen von n8n**
-- ✅ **SevDesk-Node sofort verfügbar**
+### 4. Browser Start
+- 🌐 **Automatically open n8n**
+- ✅ **SevDesk node immediately available**
 
-## 📁 Test-Workflow-Struktur
+## 📁 Test Workflow Structure
 
-Das Skript unterstützt verschiedene Organisationsformen:
+The script supports various organizational forms:
 
-### Direkte JSON-Dateien
+### Direct JSON Files
 ```
 test-workflows/
 ├── workflow1.json
@@ -54,7 +54,7 @@ test-workflows/
 └── workflow3.json
 ```
 
-### Kategorisierte Verzeichnisse
+### Categorized Directories
 ```
 test-workflows/
 ├── 01-Belegerfassung/
@@ -66,56 +66,56 @@ test-workflows/
     └── versand.json
 ```
 
-### Interaktive Auswahl
+### Interactive Selection
 ```
-📁 Verfügbare Workflow-Verzeichnisse:
+📁 Available Workflow Directories:
 1. 01-Belegerfassung (2 Workflows)
 2. 02-Rechnungsstellung (1 Workflow)
 3. 03-Mahnwesen (1 Workflow)
-4. Alle Verzeichnisse
-0. Abbrechen
+4. All Directories
+0. Cancel
 
-❓ Wählen Sie ein Verzeichnis (Nummer): 
+❓ Choose a directory (number): 
 ```
 
-## 🔑 API-Key Setup
+## 🔑 API Key Setup
 
-### Erste Verwendung
+### First Use
 
-1. **Starten Sie ohne API-Key:** `npm start`
-2. **n8n öffnet sich automatisch**
-3. **Erstellen Sie API-Key:** Settings → API → Create API Key
-4. **Tragen Sie Key in .env ein:** `N8N_API_KEY=ihr-key`
-5. **Starten Sie erneut:** `npm start`
+1. **Start without API key:** `npm start`
+2. **n8n opens automatically**
+3. **Create API key:** Settings → API → Create API Key
+4. **Add key to .env:** `N8N_API_KEY=your-key`
+5. **Start again:** `npm start`
 
-**Ohne API-Key:** Basic-Funktionen verfügbar
-**Mit API-Key:** Vollständige Workflow-Automatisierung
+**Without API key:** Basic functions available
+**With API key:** Complete workflow automation
 
-## 🛠️ Konfiguration
+## 🛠️ Configuration
 
-Erstellen Sie eine `.env`-Datei (siehe `ENV-TEMPLATE.md`):
+Create a `.env` file (see `ENV-TEMPLATE.md`):
 
 ```bash
-# Basis-Konfiguration
+# Basic configuration
 N8N_HOST=localhost
 N8N_PORT=5678
 N8N_PROTOCOL=http
 
-# API für Workflow-Management
-N8N_API_KEY=ihr-api-key
+# API for workflow management
+N8N_API_KEY=your-api-key
 N8N_API_URL=http://localhost:5678/api/v1
 
-# Docker-Konfiguration  
+# Docker configuration  
 INSTALL_LOCAL_SEVDESK_NODE=true
 SEVDESK_NODE_PATH=/sevdesk-node
 ```
 
-## 📊 Backup-System
+## 📊 Backup System
 
-### Automatische Backups
-- **Pfad:** `./backup/backup-YYYY-MM-DDTHH-mm-ss/`
+### Automatic Backups
+- **Path:** `./backup/backup-YYYY-MM-DDTHH-mm-ss/`
 - **Format:** `WorkflowName_ID.json`
-- **Struktur:** Ein Ordner pro Backup-Session
+- **Structure:** One folder per backup session
 
 ```
 backup/
@@ -125,60 +125,60 @@ backup/
     └── Mahnwesen_125.json
 ```
 
-## 🎯 Entwickler-Workflow
+## 🎯 Developer Workflow
 
-### Typische Iteration
-1. **Code ändern** in `nodes/` oder `credentials/`
-2. **`npm start` ausführen**
-3. **Automatisch:** Build, Docker-Update, Test-Workflows
-4. **Testen** in n8n
-5. **Wiederholen**
+### Typical Iteration
+1. **Change code** in `nodes/` or `credentials/`
+2. **Run `npm start`**
+3. **Automatically:** Build, Docker update, test workflows
+4. **Test** in n8n
+5. **Repeat**
 
-### Schnell-Iteration (ohne Workflows)
+### Quick Iteration (without workflows)
 ```bash
 npm run build && docker-compose restart
 ```
 
-## 🚨 Fehlerbehandlung
+## 🚨 Error Handling
 
-### Docker-Probleme
+### Docker Issues
 ```
-❌ Docker ist nicht verfügbar
-→ Docker Desktop starten
+❌ Docker is not available
+→ Start Docker Desktop
 ```
 
-### n8n-Verbindung
+### n8n Connection
 ```
-❌ n8n ist nicht erreichbar  
+❌ n8n is not reachable  
 → docker-compose logs -f
 → docker-compose restart
 ```
 
-### API-Zugriff
+### API Access
 ```
-⚠️ N8N_API_KEY ist nicht gesetzt
-→ API-Key in n8n erstellen
-→ Key in .env eintragen
-```
-
-## ✅ Erfolgsmeldung
-
-Bei erfolgreichem Start:
-
-```
-🎉 Start-Prozess abgeschlossen!
-✅ SevDesk-Node ist verfügbar  
-🌐 Browser geöffnet: http://localhost:5678
+⚠️ N8N_API_KEY is not set
+→ Create API key in n8n
+→ Add key to .env
 ```
 
-**Der SevDesk-Node ist bereit! 🚀**
+## ✅ Success Message
 
-## 📋 Kommando-Übersicht
+On successful start:
+
+```
+🎉 Start process completed!
+✅ SevDesk node is available  
+🌐 Browser opened: http://localhost:5678
+```
+
+**The SevDesk node is ready! 🚀**
+
+## 📋 Command Overview
 
 ```bash
-npm start              # Vollständiger automatisierter Start
-npm run build          # Nur kompilieren
-npm run dev            # Development-Modus mit Watch
-docker-compose up -d   # Nur Docker starten
-docker-compose logs -f # Container-Logs anzeigen
-``` 
+npm start              # Complete automated start
+npm run build          # Compile only
+npm run dev            # Development mode with watch
+docker-compose up -d   # Start Docker only
+docker-compose logs -f # Show container logs
+```

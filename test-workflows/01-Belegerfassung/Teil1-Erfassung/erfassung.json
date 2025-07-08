@@ -355,9 +355,7 @@
     }
   },
   "pinData": {},
-  "settings": {
-    "executionOrder": "v1"
-  },
+  "settings": {},
   "staticData": null,
   "tags": [
     {
@@ -374,7 +372,8 @@
     }
   ],
   "meta": {
-    "templateCredsSetupCompleted": true
+    "templateCredsSetupCompleted": true,
+    "n8nVersion": "1.101.0"
   },
   "id": "1001",
   "versionId": "v2.0.0"

@@ -13,6 +13,7 @@ import {
 
 import { SevDeskResponse } from "../types/SevDeskApiTypes";
 import { ResourceValidator, IValidationResult } from "../validation/ResourceValidator";
+import { defaultSanitizer, SanitizationResult } from "../security/InputSanitizer";
 
 /**
  * Base interface for all resource operations
@@ -115,6 +116,41 @@ export abstract class BaseResourceHandler<T = any> {
 	}
 
 	/**
+	 * Get a sanitized node parameter
+	 *
+	 * This method retrieves a parameter from the node and sanitizes it to prevent
+	 * security vulnerabilities. Use this instead of direct getNodeParameter calls
+	 * for user-provided data.
+	 *
+	 * @protected
+	 * @param parameterName - Name of the parameter to retrieve
+	 * @param itemIndex - Index of the current input item
+	 * @param defaultValue - Default value if parameter is not found
+	 * @returns Sanitized parameter value
+	 */
+	protected getSanitizedNodeParameter(parameterName: string, itemIndex: number, defaultValue?: any): any {
+		const rawValue = this.executeFunctions.getNodeParameter(parameterName, itemIndex, defaultValue);
+
+		// Only sanitize if it's a meaningful value (not null, undefined, or empty default)
+		if (rawValue === null || rawValue === undefined || rawValue === defaultValue) {
+			return rawValue;
+		}
+
+		// Sanitize the value using our input sanitizer
+		const sanitizationResult = defaultSanitizer.sanitizeForSevDesk(
+			rawValue,
+			this.config.resourceName.toLowerCase()
+		);
+
+		// Log warnings if any dangerous content was detected
+		if (sanitizationResult.warnings.length > 0) {
+			console.warn(`Parameter '${parameterName}' sanitization warnings:`, sanitizationResult.warnings);
+		}
+
+		return sanitizationResult.data;
+	}
+
+	/**
 	 * Validate input data using the ResourceValidator
 	 */
 	protected async validateInputData(operation: string, itemIndex: number): Promise<void> {
@@ -125,24 +161,24 @@ export abstract class BaseResourceHandler<T = any> {
 			case 'create':
 			case 'update':
 				// For create/update operations, get the data from additionalFields
-				inputData = this.executeFunctions.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
+				inputData = this.getSanitizedNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
 				break;
 			case 'get':
 			case 'delete':
 				// For get/delete operations, validate the ID parameter
 				const idParamName = this.config.idParameterName || `${this.config.resourceName.toLowerCase()}Id`;
-				const resourceId = this.executeFunctions.getNodeParameter(idParamName, itemIndex) as string;
+				const resourceId = this.getSanitizedNodeParameter(idParamName, itemIndex) as string;
 				inputData = { [idParamName]: resourceId };
 				break;
 			case 'getMany':
 			case 'list':
 				// For list operations, get query parameters
-				inputData = this.executeFunctions.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
+				inputData = this.getSanitizedNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
 				break;
 			default:
 				// For custom operations, try to get all available parameters
 				try {
-					inputData = this.executeFunctions.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
+					inputData = this.getSanitizedNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
 
 					// Also try to get operation-specific parameters
 					const operationParams = this.getOperationSpecificParameters(operation, itemIndex);
@@ -154,9 +190,23 @@ export abstract class BaseResourceHandler<T = any> {
 				break;
 		}
 
-		// Perform validation using ResourceValidator
-		const validationResult: IValidationResult = ResourceValidator.validate(
+		// Sanitize input data before validation to prevent security vulnerabilities
+		const sanitizationResult: SanitizationResult = defaultSanitizer.sanitizeForSevDesk(
 			inputData,
+			this.config.resourceName.toLowerCase()
+		);
+
+		// Log sanitization warnings if any
+		if (sanitizationResult.warnings.length > 0) {
+			console.warn(`Input sanitization warnings for ${this.config.resourceName} ${operation}:`, sanitizationResult.warnings);
+		}
+
+		// Use sanitized data for validation and further processing
+		const sanitizedInputData = sanitizationResult.data;
+
+		// Perform validation using ResourceValidator on sanitized data
+		const validationResult: IValidationResult = ResourceValidator.validate(
+			sanitizedInputData,
 			this.config.resourceName.toLowerCase(),
 			operation
 		);
@@ -249,7 +299,7 @@ export abstract class BaseResourceHandler<T = any> {
 	 * Build create request options
 	 */
 	protected buildCreateRequest(baseOptions: IHttpRequestOptions, baseURL: string, itemIndex: number): IHttpRequestOptions {
-		const createData = this.executeFunctions.getNodeParameter('additionalFields', itemIndex, {}) as object;
+		const createData = this.getSanitizedNodeParameter('additionalFields', itemIndex, {}) as object;
 
 		return {
 			...baseOptions,
@@ -264,7 +314,7 @@ export abstract class BaseResourceHandler<T = any> {
 	 */
 	protected buildGetRequest(baseOptions: IHttpRequestOptions, baseURL: string, itemIndex: number): IHttpRequestOptions {
 		const idParamName = this.config.idParameterName || `${this.config.resourceName.toLowerCase()}Id`;
-		const resourceId = this.executeFunctions.getNodeParameter(idParamName, itemIndex) as string;
+		const resourceId = this.getSanitizedNodeParameter(idParamName, itemIndex) as string;
 
 		return {
 			...baseOptions,
@@ -277,7 +327,7 @@ export abstract class BaseResourceHandler<T = any> {
 	 * Build list request options
 	 */
 	protected buildListRequest(baseOptions: IHttpRequestOptions, baseURL: string, itemIndex: number): IHttpRequestOptions {
-		const queryParams = this.executeFunctions.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
+		const queryParams = this.getSanitizedNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
 
 		return {
 			...baseOptions,
@@ -292,8 +342,8 @@ export abstract class BaseResourceHandler<T = any> {
 	 */
 	protected buildUpdateRequest(baseOptions: IHttpRequestOptions, baseURL: string, itemIndex: number): IHttpRequestOptions {
 		const idParamName = this.config.idParameterName || `${this.config.resourceName.toLowerCase()}Id`;
-		const resourceId = this.executeFunctions.getNodeParameter(idParamName, itemIndex) as string;
-		const updateData = this.executeFunctions.getNodeParameter('updateFields', itemIndex, {}) as object;
+		const resourceId = this.getSanitizedNodeParameter(idParamName, itemIndex) as string;
+		const updateData = this.getSanitizedNodeParameter('updateFields', itemIndex, {}) as object;
 
 		return {
 			...baseOptions,
@@ -308,7 +358,7 @@ export abstract class BaseResourceHandler<T = any> {
 	 */
 	protected buildDeleteRequest(baseOptions: IHttpRequestOptions, baseURL: string, itemIndex: number): IHttpRequestOptions {
 		const idParamName = this.config.idParameterName || `${this.config.resourceName.toLowerCase()}Id`;
-		const resourceId = this.executeFunctions.getNodeParameter(idParamName, itemIndex) as string;
+		const resourceId = this.getSanitizedNodeParameter(idParamName, itemIndex) as string;
 
 		return {
 			...baseOptions,

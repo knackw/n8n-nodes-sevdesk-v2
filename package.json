@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-sevdesk-v2",
-  "version": "2.3.0",
+  "version": "2.2.1",
   "description": "n8n community node for SevDesk API v2 integration. Direct API access without external dependencies - simplified, secure, and production-ready for German accounting automation.",
   "keywords": [
     "n8n-community-node-package",
@@ -26,7 +26,7 @@
   },
   "main": "index.js",
   "scripts": {
-    "start": "node scripts/start-n8n.js",
+    "start": "node tools/start-n8n.js",
     "build": "tsc && gulp build:icons",
     "build:prod": "npm run clean && npm run lint && npm run test && tsc --project tsconfig.prod.json && gulp build:icons && npm run build:validate",
     "build:validate": "node -e \"console.log('✅ Build validation passed'); process.exit(require('fs').existsSync('./dist/nodes/SevDesk/SevDesk.node.js') && require('fs').existsSync('./dist/credentials/SevDeskApi.credentials.js') ? 0 : 1)\"",

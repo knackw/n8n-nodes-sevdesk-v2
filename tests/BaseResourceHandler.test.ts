@@ -144,5 +144,323 @@ describe('BaseResourceHandler', () => {
 			expect(nodeApiError.description).toBe('Contact operation failed: Test error');
 			expect(nodeApiError).toBeInstanceOf(Error);
 		});
+
+		it('should build correct request options for update operation', async () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the getNodeParameter method to return test data
+			mockExecuteFunctions.getNodeParameter = jest.fn()
+				.mockReturnValueOnce('123') // contactId
+				.mockReturnValueOnce({ name: 'Updated Contact', email: 'updated@example.com' }); // additionalFields
+
+			const requestOptions = await handler['buildRequestOptions']('update', 0);
+
+			expect(requestOptions.method).toBe('PUT');
+			expect(requestOptions.url).toContain('/Contact/123');
+			expect(requestOptions.body).toEqual({
+				name: 'Updated Contact',
+				email: 'updated@example.com'
+			});
+		});
+
+		it('should build correct request options for delete operation', async () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the getNodeParameter method to return contact ID
+			mockExecuteFunctions.getNodeParameter = jest.fn().mockReturnValue('123');
+
+			const requestOptions = await handler['buildRequestOptions']('delete', 0);
+
+			expect(requestOptions.method).toBe('DELETE');
+			expect(requestOptions.url).toContain('/Contact/123');
+		});
+
+		it('should build correct request options for list operation', async () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the getNodeParameter method to return query parameters
+			mockExecuteFunctions.getNodeParameter = jest.fn().mockReturnValue({
+				limit: 50,
+				offset: 0
+			});
+
+			const requestOptions = await handler['buildRequestOptions']('getMany', 0);
+
+			expect(requestOptions.method).toBe('GET');
+			expect(requestOptions.url).toContain('/Contact');
+			expect(requestOptions.qs).toEqual({
+				limit: 50,
+				offset: 0
+			});
+		});
+
+		it('should validate input data successfully', async () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the getNodeParameter method to return valid data
+			mockExecuteFunctions.getNodeParameter = jest.fn().mockReturnValue({
+				name: 'Valid Contact',
+				email: 'valid@example.com'
+			});
+
+			// This should not throw
+			await expect(handler['validateInputData']('create', 0)).resolves.not.toThrow();
+		});
+
+		it('should get operation-specific parameters for ID-based operations', () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the getNodeParameter method to return contact ID
+			mockExecuteFunctions.getNodeParameter = jest.fn().mockReturnValue('123');
+
+			const params = handler['getOperationSpecificParameters']('getId', 0);
+
+			expect(params).toEqual({ contactId: '123' });
+		});
+
+		it('should get operation-specific parameters for email operations', () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the getNodeParameter method to return send type
+			mockExecuteFunctions.getNodeParameter = jest.fn().mockReturnValue('pdf');
+
+			const params = handler['getOperationSpecificParameters']('sendEmail', 0);
+
+			expect(params).toEqual({ sendType: 'pdf' });
+		});
+
+		it('should get operation-specific parameters for booking operations', () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the getNodeParameter method to return booking data
+			mockExecuteFunctions.getNodeParameter = jest.fn()
+				.mockReturnValueOnce(100.50) // amount
+				.mockReturnValueOnce('2023-01-01'); // date
+
+			const params = handler['getOperationSpecificParameters']('bookAmount', 0);
+
+			expect(params).toEqual({
+				amount: 100.50,
+				date: '2023-01-01'
+			});
+		});
+
+		it('should handle missing parameters gracefully in getOperationSpecificParameters', () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the getNodeParameter method to throw error (parameter doesn't exist)
+			mockExecuteFunctions.getNodeParameter = jest.fn().mockImplementation(() => {
+				throw new Error('Parameter not found');
+			});
+
+			const params = handler['getOperationSpecificParameters']('customOperation', 0);
+
+			expect(params).toEqual({});
+		});
+
+		it('should transform create data correctly', () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			const inputData = {
+				name: 'Test Contact',
+				email: 'test@example.com',
+				phone: '123456789'
+			};
+
+			const transformedData = handler['transformCreateData'](inputData);
+
+			// Base implementation should return data as-is
+			expect(transformedData).toEqual(inputData);
+		});
+
+		it('should transform update data correctly', () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			const inputData = {
+				name: 'Updated Contact',
+				email: 'updated@example.com'
+			};
+
+			const transformedData = handler['transformUpdateData'](inputData);
+
+			// Base implementation should return data as-is
+			expect(transformedData).toEqual(inputData);
+		});
+
+		it('should transform query parameters correctly', () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			const inputParams = {
+				limit: 50,
+				offset: 0,
+				search: 'test'
+			};
+
+			const transformedParams = handler['transformQueryParams'](inputParams);
+
+			// Base implementation should return params as-is
+			expect(transformedParams).toEqual(inputParams);
+		});
+
+		it('should execute operation successfully', async () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock all required methods
+			mockExecuteFunctions.getNodeParameter = jest.fn().mockReturnValue({
+				name: 'Test Contact',
+				email: 'test@example.com'
+			});
+
+			// Mock the makeRequest method to return a successful response
+			const mockResponse = {
+				objects: [{
+					id: '1',
+					objectName: 'Contact',
+					create: '2023-01-01',
+					update: '2023-01-01',
+					name: 'Test Contact',
+					category: { id: '1', objectName: 'Category' }
+				}]
+			};
+
+			jest.spyOn(handler as any, 'makeRequest').mockResolvedValue(mockResponse);
+
+			const result = await handler.execute('create', 0);
+
+			expect(result).toBeDefined();
+			expect(result?.json).toEqual(mockResponse.objects);
+			expect(result?.pairedItem).toEqual({ item: 0 });
+		});
+
+		it('should handle execution errors', async () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the makeRequest method to throw an error
+			jest.spyOn(handler as any, 'makeRequest').mockRejectedValue(new Error('API Error'));
+
+			await expect(handler.execute('create', 0)).rejects.toThrow();
+		});
+
+		it('should validate unsupported operations', () => {
+			// Create a handler with limited operations
+			const limitedConfig = {
+				resourceName: 'TestResource',
+				apiEndpoint: 'TestResource',
+				supportedOperations: {
+					create: false,
+					read: true,
+					update: false,
+					delete: false,
+					list: true
+				}
+			};
+
+			// Create a new handler instance with limited config
+			const limitedHandler = new (class extends ContactHandler {
+				constructor(executeFunctions: IExecuteFunctions) {
+					super(executeFunctions);
+					this['config'] = limitedConfig;
+				}
+			})(mockExecuteFunctions);
+
+			// Test unsupported operations
+			expect(() => limitedHandler['validateOperation']('create')).toThrow('Create operation not supported');
+			expect(() => limitedHandler['validateOperation']('update')).toThrow('Update operation not supported');
+			expect(() => limitedHandler['validateOperation']('delete')).toThrow('Delete operation not supported');
+
+			// Test supported operations
+			expect(() => limitedHandler['validateOperation']('get')).not.toThrow();
+			expect(() => limitedHandler['validateOperation']('getMany')).not.toThrow();
+		});
+
+		it('should handle validation for get operation', async () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the getNodeParameter method to return contact ID
+			mockExecuteFunctions.getNodeParameter = jest.fn().mockReturnValue('123');
+
+			// This should not throw for get operation
+			await expect(handler['validateInputData']('get', 0)).resolves.not.toThrow();
+		});
+
+		it('should handle validation for delete operation', async () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the getNodeParameter method to return contact ID
+			mockExecuteFunctions.getNodeParameter = jest.fn().mockReturnValue('123');
+
+			// This should not throw for delete operation
+			await expect(handler['validateInputData']('delete', 0)).resolves.not.toThrow();
+		});
+
+		it('should handle validation for list operation', async () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the getNodeParameter method to return query parameters
+			mockExecuteFunctions.getNodeParameter = jest.fn().mockReturnValue({
+				limit: 50,
+				offset: 0
+			});
+
+			// This should not throw for list operation
+			await expect(handler['validateInputData']('getMany', 0)).resolves.not.toThrow();
+		});
+
+		it('should handle validation for custom operations with parameters', async () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the getNodeParameter method to return custom operation data
+			mockExecuteFunctions.getNodeParameter = jest.fn()
+				.mockReturnValueOnce({ customField: 'value' }) // additionalFields
+				.mockReturnValueOnce('123'); // operation-specific parameter
+
+			// This should not throw for custom operation
+			await expect(handler['validateInputData']('customOperation', 0)).resolves.not.toThrow();
+		});
+
+		it('should handle validation for custom operations without parameters', async () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			// Mock the getNodeParameter method to throw error (no parameters available)
+			mockExecuteFunctions.getNodeParameter = jest.fn().mockImplementation(() => {
+				throw new Error('Parameter not found');
+			});
+
+			// This should not throw for custom operation even without parameters
+			await expect(handler['validateInputData']('customOperation', 0)).resolves.not.toThrow();
+		});
+
+		it('should format response with single object', () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			const mockResponse = {
+				objects: [{
+					id: '1',
+					objectName: 'Contact',
+					create: '2023-01-01',
+					update: '2023-01-01',
+					name: 'Single Contact',
+					category: { id: '1', objectName: 'Category' }
+				}]
+			};
+
+			const result = handler['formatResponse'](mockResponse, 0);
+
+			expect(result.json).toEqual(mockResponse.objects);
+			expect(result.pairedItem).toEqual({ item: 0 });
+		});
+
+		it('should format response with empty objects', () => {
+			const handler = new ContactHandler(mockExecuteFunctions);
+
+			const mockResponse = {
+				objects: []
+			};
+
+			const result = handler['formatResponse'](mockResponse, 0);
+
+			expect(result.json).toEqual([]);
+			expect(result.pairedItem).toEqual({ item: 0 });
+		});
 	});
 });

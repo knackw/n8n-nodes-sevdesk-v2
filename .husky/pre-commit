@@ -1,5 +1,8 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-npm run lint
-npm run test 
+# Run lint-staged for efficient linting and formatting of staged files
+npx lint-staged
+
+# Run tests to ensure code quality
+npm run test

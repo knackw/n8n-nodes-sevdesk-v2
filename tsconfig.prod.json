@@ -1,0 +1,25 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"removeComments": true,
+		"sourceMap": false,
+		"declaration": false,
+		"declarationMap": false,
+		"incremental": false,
+		"tsBuildInfoFile": null,
+		"noEmitOnError": true,
+		"stripInternal": true,
+		"preserveConstEnums": false,
+		"importsNotUsedAsValues": "remove"
+	},
+	"exclude": [
+		"**/*.test.ts",
+		"**/*.spec.ts",
+		"tests/**/*",
+		"coverage/**/*",
+		"node_modules/**/*",
+		"dist/**/*",
+		"*.config.js",
+		"tools/tools/gulpfile.js"
+	]
+}

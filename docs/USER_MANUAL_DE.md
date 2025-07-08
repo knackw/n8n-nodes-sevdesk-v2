@@ -301,7 +301,7 @@ Beiträge sind willkommen! Siehe [CONTRIBUTING.md](../CONTRIBUTING.md) für Deta
 
 ## Changelog
 
-### Version 2.0.0 - Aktuell
+### Version 2.2.1 - Aktuell
 
 **🎉 Neugestaltung für maximale Einfachheit:**
 

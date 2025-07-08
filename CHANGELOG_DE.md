@@ -13,6 +13,58 @@ und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/lang/d
 
 ### Fixed
 
+## [2.2.1] - 2024-12-19
+
+### 🔄 API-Konformität & Kompatibilitätsupdates
+- **SevDesk API v2.0 Steuersystem-Migration:** Migration vom veralteten `taxType` zum modernen `taxRule` System
+  - Aktualisiert `InvoiceDescription.ts` mit umfassenden Steuerregeln (1-21)
+  - Aktualisiert `VoucherDescription.ts` mit ausgabenspezifischen Steuerregeln (8-14)
+  - Aktualisiert `CreditNoteDescription.ts` mit Verkaufs-Steuerregeln
+  - Rückwärtskompatibilität mit veralteten taxType-Feldern beibehalten
+- **Validierungsschema-Verbesserung:** Aktualisiert `ValidationSchemas.ts` zur Unterstützung von taxRule und Legacy-taxType-Validierung
+- **n8n@1.101.0 Kompatibilität:** Entfernte veraltete `executionOrder: "v1"` Einstellungen aus Test-Workflows
+- **API-Ressourcen-Vollständigkeit:** Verifiziert, dass alle 21 SevDesk API-Ressourcen vollständig implementiert und aktuell sind
+
+### 📊 Test-Suite & Workflow-Updates
+- **Test-Workflows:** Aktualisiert 9 Test-Workflow-Dateien für n8n@1.101.0 Kompatibilität
+- **Node-Typ-Referenzen:** Aktualisierte Legacy-`sevDesk` Node-Typ-Referenzen auf `n8n-nodes-sevdesk-v2.sevDesk`
+- **Workflow-Metadaten:** n8nVersion Metadaten zu allen Test-Workflows hinzugefügt
+
+### 🛠️ Technische Verbesserungen
+- **Ressourcen-Registry:** Bestätigt vollständige Abdeckung aller SevDesk API v2.0 Endpunkte
+- **Fehlerbehandlung:** Verbesserte Validierungsfehlermeldungen für taxRule-System
+- **Dokumentationskonsistenz:** Alle Dokumentationen spiegeln eigenständige v2.0-Architektur wider
+
+### ✅ Validierungsergebnisse
+- **API-Abdeckung:** 100% - Alle 21 Ressourcen aus gescrapten SevDesk API implementiert
+- **Steuersystem:** ✅ Vollständig auf taxRule-System migriert mit Rückwärtskompatibilität
+- **n8n-Kompatibilität:** ✅ Kompatibel mit n8n@1.101.0
+- **Test-Abdeckung:** ✅ Alle Workflows aktualisiert und validiert
+- **Dokumentation:** ✅ Vollständig und konsistent
+
+### 🔧 Entwicklererfahrung
+- **Migrationsleitfaden:** Klarer Upgrade-Pfad von taxType zu taxRule
+- **Validierung:** Umfassende Fehlermeldungen für beide Systeme
+- **Beispiele:** Alle Workflow-Beispiele auf neues Steuersystem aktualisiert
+
+## [2.2.0] - 2024-12-19
+
+### Hinzugefügt
+- **Erweiterte Dokumentation**: Umfassende deutsche Dokumentation hinzugefügt
+- **Migrationsleitfaden**: Detaillierter Migrationsleitfaden für Benutzer
+- **Verbesserte Test-Workflows**: Erweiterte Beispiel-Workflows für Steuerberater-Export
+- **Benutzerhandbuch**: Vollständiges deutsches Benutzerhandbuch
+
+### Geändert
+- **Code-Qualität**: Verbesserte TypeScript-Typisierung und Fehlerbehandlung
+- **Test-Abdeckung**: Erweiterte Test-Suite mit besseren Mock-Daten
+- **Dokumentationsstruktur**: Reorganisierte Dokumentation für bessere Benutzerfreundlichkeit
+
+### Behoben
+- **Build-Stabilität**: Verschiedene Build-Probleme behoben
+- **Typisierung**: TypeScript-Fehler in Test-Utilities behoben
+- **Dokumentation**: Inkonsistenzen in der Dokumentation korrigiert
+
 ## [2.0.0] - 2024-01-15
 
 ### 🎉 **Neugestaltung für maximale Einfachheit**

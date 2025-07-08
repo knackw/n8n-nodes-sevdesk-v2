@@ -219,10 +219,13 @@ Die gesamte Dokumentation ist im Ordner `documentation/` verfügbar:
 - Bessere Fehlerbehandlung
 - Performance-Optimierungen
 
-### Version 2.2.0
-- Zusätzliche Ressourcen
-- Batch-Upload-Funktionalität
-- Webhooks für Echtzeit-Updates
+### Version 2.2.1
+- 🎉 **BREAKING CHANGE**: Vereinfachte Architektur ohne externe Abhängigkeiten
+- ✨ Direkter SevDesk API-Zugriff ohne Lizenzvalidierung
+- 🚀 Verbesserte Performance durch Entfernung von Supabase-Integration
+- 🔧 Einfache Konfiguration mit nur API-Schlüssel und Version
+- 📚 Überarbeitete Dokumentation
+- 🧹 Code-Bereinigung und Optimierung
 
 ## 🤝 Beitragen
 

@@ -8,9 +8,49 @@ import { CrudResourceHandler } from "../base/BaseResourceHandler";
 import { SevDeskInvoice } from "../types/SevDeskApiTypes";
 
 /**
- * Invoice resource handler that extends the CRUD base class
+ * Invoice Resource Handler for SevDesk API
+ *
+ * Handles all invoice-related operations including creation, management, and processing.
+ * Extends the base CRUD functionality with invoice-specific operations like email sending,
+ * payment booking, cancellation, and position management. Includes automatic date
+ * transformation for proper API compatibility.
+ *
+ * @class InvoiceHandler
+ * @extends {CrudResourceHandler<SevDeskInvoice>}
+ *
+ * @example
+ * // Create a new invoice
+ * const invoiceHandler = new InvoiceHandler(executeFunctions);
+ * const result = await invoiceHandler.execute('create', 0);
+ *
+ * @example
+ * // Send invoice by email
+ * const result = await invoiceHandler.execute('sendByEmail', 0);
+ *
+ * @example
+ * // Book payment for invoice
+ * const result = await invoiceHandler.execute('bookAmount', 0);
+ *
+ * @see {@link https://api.sevdesk.de/#tag/Invoice} SevDesk Invoice API Documentation
+ * @see {@link CrudResourceHandler} Base CRUD handler implementation
+ *
+ * @author n8n-nodes-sevdesk-v2
+ * @version 1.0.0
+ * @since 2025-01-01
  */
 export class InvoiceHandler extends CrudResourceHandler<SevDeskInvoice> {
+	/**
+	 * Initialize the Invoice Handler
+	 *
+	 * Sets up the handler with the appropriate resource name, API endpoint,
+	 * and configures invoice-specific parameters like the ID parameter name.
+	 *
+	 * @constructor
+	 * @param {IExecuteFunctions} executeFunctions - The n8n execution context
+	 *
+	 * @example
+	 * const invoiceHandler = new InvoiceHandler(this);
+	 */
 	constructor(executeFunctions: IExecuteFunctions) {
 		super(executeFunctions, 'Invoice', 'Invoice');
 
@@ -19,7 +59,47 @@ export class InvoiceHandler extends CrudResourceHandler<SevDeskInvoice> {
 	}
 
 	/**
-	 * Override to handle custom invoice operations
+	 * Build custom HTTP requests for invoice-specific operations
+	 *
+	 * Handles special invoice operations that don't follow the standard CRUD pattern,
+	 * including email sending, payment booking, invoice cancellation, and position retrieval.
+	 * Each operation has specific parameter requirements and API endpoints.
+	 *
+	 * @protected
+	 * @method buildCustomRequest
+	 * @param {IHttpRequestOptions} baseOptions - Base HTTP request configuration
+	 * @param {string} baseURL - The SevDesk API base URL
+	 * @param {string} operation - The operation to perform (sendByEmail, bookAmount, cancelInvoice, getPositions)
+	 * @param {number} itemIndex - Index of the current input item being processed
+	 *
+	 * @returns {IHttpRequestOptions} Configured HTTP request options for the operation
+	 *
+	 * @throws {Error} When required parameters are missing for custom operations
+	 *
+	 * @example
+	 * // Send invoice by email
+	 * const request = buildCustomRequest(baseOptions, baseURL, 'sendByEmail', 0);
+	 * // Results in PUT /Invoice/{id}/sendByEmail with sendType parameter
+	 *
+	 * @example
+	 * // Book payment amount
+	 * const request = buildCustomRequest(baseOptions, baseURL, 'bookAmount', 0);
+	 * // Results in PUT /Invoice/{id}/bookAmount with amount and date
+	 *
+	 * @example
+	 * // Cancel invoice
+	 * const request = buildCustomRequest(baseOptions, baseURL, 'cancelInvoice', 0);
+	 * // Results in PUT /Invoice/{id}/cancelInvoice
+	 *
+	 * @example
+	 * // Get invoice positions
+	 * const request = buildCustomRequest(baseOptions, baseURL, 'getPositions', 0);
+	 * // Results in GET /InvoicePos with invoice filter
+	 *
+	 * @see {@link https://api.sevdesk.de/#operation/sendInvoiceByEmail} Send Invoice Email API
+	 * @see {@link https://api.sevdesk.de/#operation/bookInvoice} Book Invoice API
+	 * @see {@link https://api.sevdesk.de/#operation/cancelInvoice} Cancel Invoice API
+	 * @see {@link https://api.sevdesk.de/#operation/getInvoicePositions} Get Invoice Positions API
 	 */
 	protected buildCustomRequest(
 		baseOptions: IHttpRequestOptions,

@@ -1,0 +1,30 @@
+# Source files (only publish compiled dist)
+credentials/
+nodes/
+*.ts
+tsconfig.json
+.eslintrc.js
+gulpfile.js
+
+# Development files
+.gitignore
+.env*
+*.log
+coverage/
+tests/
+examples/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation (keep README.md)
+docs/
+*.md
+!README.md

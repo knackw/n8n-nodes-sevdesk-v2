@@ -15,36 +15,52 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 		sevDeskApiMock.reset();
 
 		// Create mock execution functions using the comprehensive API mock
-		mockExecuteFunctions = mockSevDeskApi.createMockExecuteFunctions() as unknown as jest.Mocked<IExecuteFunctions>;
+		const baseMock = mockSevDeskApi.createMockExecuteFunctions();
 
-		// Add additional required methods for n8n interface
-		mockExecuteFunctions.getWorkflow = jest.fn();
-		mockExecuteFunctions.getExecutionId = jest.fn();
-		mockExecuteFunctions.getRestApiUrl = jest.fn();
-		mockExecuteFunctions.getInstanceBaseUrl = jest.fn();
-		mockExecuteFunctions.getInstanceId = jest.fn();
-		mockExecuteFunctions.getTimezone = jest.fn();
-		mockExecuteFunctions.getExecuteData = jest.fn();
-		mockExecuteFunctions.evaluateExpression = jest.fn();
-		mockExecuteFunctions.getContext = jest.fn();
-		mockExecuteFunctions.getInputSourceData = jest.fn();
-		mockExecuteFunctions.getMode = jest.fn();
-		mockExecuteFunctions.getActivationMode = jest.fn();
-		mockExecuteFunctions.getNodeInputs = jest.fn();
-		mockExecuteFunctions.getParentCallbackManager = jest.fn();
-		mockExecuteFunctions.getChildNodes = jest.fn();
-		mockExecuteFunctions.getKnownEntryPoints = jest.fn();
-		mockExecuteFunctions.addInputData = jest.fn();
-		mockExecuteFunctions.addOutputData = jest.fn();
-		mockExecuteFunctions.getExecutionCancelSignal = jest.fn();
-		mockExecuteFunctions.onExecutionCancellation = jest.fn();
-		mockExecuteFunctions.sendMessageToUI = jest.fn();
-		mockExecuteFunctions.sendResponse = jest.fn();
-		mockExecuteFunctions.getResponsePromise = jest.fn();
-		mockExecuteFunctions.getSSHClient = jest.fn();
-		mockExecuteFunctions.putExecutionToWait = jest.fn();
-		mockExecuteFunctions.sendDataToUI = jest.fn();
-		mockExecuteFunctions.logAiEvent = jest.fn();
+		// Create a proper Jest mock for httpRequest
+		const mockHttpRequest = jest.fn().mockResolvedValue({});
+
+		// Create a more complete mock with all required methods
+		mockExecuteFunctions = {
+			...baseMock,
+			// Add additional required methods for n8n interface
+			getWorkflow: jest.fn(),
+			getExecutionId: jest.fn(),
+			getRestApiUrl: jest.fn(),
+			getInstanceBaseUrl: jest.fn(),
+			getInstanceId: jest.fn(),
+			getTimezone: jest.fn(),
+			getExecuteData: jest.fn(),
+			evaluateExpression: jest.fn(),
+			getContext: jest.fn(),
+			getInputSourceData: jest.fn(),
+			getMode: jest.fn(),
+			getActivationMode: jest.fn(),
+			getNodeInputs: jest.fn(),
+			getParentCallbackManager: jest.fn(),
+			getChildNodes: jest.fn(),
+			getKnownEntryPoints: jest.fn(),
+			addInputData: jest.fn(),
+			addOutputData: jest.fn(),
+			getExecutionCancelSignal: jest.fn(),
+			onExecutionCancellation: jest.fn(),
+			sendMessageToUI: jest.fn(),
+			sendResponse: jest.fn(),
+			getResponsePromise: jest.fn(),
+			getSSHClient: jest.fn(),
+			putExecutionToWait: jest.fn(),
+			sendDataToUI: jest.fn(),
+			logAiEvent: jest.fn(),
+			getWorkflowStaticData: jest.fn(),
+			continueOnFail: jest.fn(),
+			getWorkflowDataProxy: jest.fn(),
+			executeWorkflow: jest.fn(),
+			prepareOutputData: jest.fn(),
+			helpers: {
+				...baseMock.helpers,
+				httpRequest: mockHttpRequest,
+			},
+		} as unknown as jest.Mocked<IExecuteFunctions>;
 
 		resourceManager = new SevDeskResourceManager(mockExecuteFunctions);
 	});
@@ -74,7 +90,7 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 		it('should create a contact successfully', async () => {
 			// Mock successful API response
 			const mockContact = TestDataFactory.createMockContact();
-			mockExecuteFunctions.helpers.httpRequest.mockResolvedValue({
+			(mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockResolvedValue({
 				objects: [mockContact],
 				total: 1,
 			});
@@ -82,9 +98,10 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 			const result = await resourceManager.executeResourceOperation('contact', 'create', 0);
 
 			expect(result).toBeDefined();
-			expect(Array.isArray(result)).toBe(true);
-			expect(result.length).toBe(1);
-			expect(result[0].json).toEqual(mockContact);
+			expect(result).not.toBeNull();
+			if (result) {
+				expect(result.json).toEqual(mockContact);
+			}
 			expect(mockExecuteFunctions.helpers.httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'POST',
@@ -109,7 +126,7 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 				TestDataFactory.createMockContact(),
 				TestDataFactory.createMockContact({ name: 'Another Company' }),
 			];
-			mockExecuteFunctions.helpers.httpRequest.mockResolvedValue({
+			(mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockResolvedValue({
 				objects: mockContacts,
 				total: 2,
 			});
@@ -117,8 +134,11 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 			const result = await resourceManager.executeResourceOperation('contact', 'getAll', 0);
 
 			expect(result).toBeDefined();
-			expect(Array.isArray(result)).toBe(true);
-			expect(result.length).toBe(2);
+			expect(result).not.toBeNull();
+			if (result) {
+				expect(Array.isArray(result.json)).toBe(true);
+				expect((result.json as unknown as any[]).length).toBe(2);
+			}
 			expect(mockExecuteFunctions.helpers.httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'GET',
@@ -144,7 +164,7 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 			const mockUpdatedContact = TestDataFactory.createMockContact({
 				name: 'Updated Company Name'
 			});
-			mockExecuteFunctions.helpers.httpRequest.mockResolvedValue({
+			(mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockResolvedValue({
 				objects: [mockUpdatedContact],
 				total: 1,
 			});
@@ -152,7 +172,10 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 			const result = await resourceManager.executeResourceOperation('contact', 'update', 0);
 
 			expect(result).toBeDefined();
-			expect(result[0].json.name).toBe('Updated Company Name');
+			expect(result).not.toBeNull();
+			if (result) {
+				expect((result.json as any).name).toBe('Updated Company Name');
+			}
 			expect(mockExecuteFunctions.helpers.httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'PUT',
@@ -173,7 +196,7 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 				}
 			});
 
-			mockExecuteFunctions.helpers.httpRequest.mockResolvedValue({
+			(mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockResolvedValue({
 				objects: [],
 				total: 0,
 			});
@@ -210,7 +233,7 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 
 		it('should create an invoice successfully', async () => {
 			const mockInvoice = TestDataFactory.createMockInvoice();
-			mockExecuteFunctions.helpers.httpRequest.mockResolvedValue({
+			(mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockResolvedValue({
 				objects: [mockInvoice],
 				total: 1,
 			});
@@ -218,7 +241,10 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 			const result = await resourceManager.executeResourceOperation('invoice', 'create', 0);
 
 			expect(result).toBeDefined();
-			expect(result[0].json).toEqual(mockInvoice);
+			expect(result).not.toBeNull();
+			if (result) {
+				expect(result.json).toEqual(mockInvoice);
+			}
 			expect(mockExecuteFunctions.helpers.httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'POST',
@@ -244,7 +270,7 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 			const mockUpdatedInvoice = TestDataFactory.createMockInvoice({
 				status: '200'
 			});
-			mockExecuteFunctions.helpers.httpRequest.mockResolvedValue({
+			(mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockResolvedValue({
 				objects: [mockUpdatedInvoice],
 				total: 1,
 			});
@@ -252,7 +278,10 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 			const result = await resourceManager.executeResourceOperation('invoice', 'update', 0);
 
 			expect(result).toBeDefined();
-			expect(result[0].json.status).toBe('200');
+			expect(result).not.toBeNull();
+			if (result) {
+				expect((result.json as any).status).toBe('200');
+			}
 		});
 	});
 
@@ -290,14 +319,17 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 			];
 
 			// Mock multiple API calls for batch operations
-			mockExecuteFunctions.helpers.httpRequest
+			(mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>)
 				.mockResolvedValueOnce({ objects: [mockBatchResults[0]], total: 1 })
 				.mockResolvedValueOnce({ objects: [mockBatchResults[1]], total: 1 });
 
 			const result = await resourceManager.executeResourceOperation('batch', 'execute', 0);
 
 			expect(result).toBeDefined();
-			expect(Array.isArray(result)).toBe(true);
+			expect(result).not.toBeNull();
+			if (result) {
+				expect(Array.isArray(result.json)).toBe(true);
+			}
 			expect(mockExecuteFunctions.helpers.httpRequest).toHaveBeenCalledTimes(2);
 		});
 	});
@@ -318,7 +350,7 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 
 		it('should handle API errors gracefully', async () => {
 			const mockError = new Error('API Error: Invalid credentials');
-			mockExecuteFunctions.helpers.httpRequest.mockRejectedValue(mockError);
+			(mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockRejectedValue(mockError);
 
 			await expect(
 				resourceManager.executeResourceOperation('contact', 'create', 0)
@@ -347,7 +379,7 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 		it('should handle network timeouts', async () => {
 			const timeoutError = new Error('Request timeout');
 			timeoutError.name = 'TimeoutError';
-			mockExecuteFunctions.helpers.httpRequest.mockRejectedValue(timeoutError);
+			(mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockRejectedValue(timeoutError);
 
 			await expect(
 				resourceManager.executeResourceOperation('contact', 'create', 0)
@@ -404,14 +436,16 @@ describe('SevDeskResourceManager - Functional Tests', () => {
 				objects: [TestDataFactory.createMockContact()],
 				total: 1,
 			};
-			mockExecuteFunctions.helpers.httpRequest.mockResolvedValue(mockApiResponse);
+			(mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockResolvedValue(mockApiResponse);
 
 			const result = await resourceManager.executeResourceOperation('contact', 'getAll', 0);
 
 			expect(result).toBeDefined();
-			expect(Array.isArray(result)).toBe(true);
-			expect(result[0]).toHaveProperty('json');
-			expect(result[0]).toHaveProperty('pairedItem');
+			expect(result).not.toBeNull();
+			if (result) {
+				expect(result).toHaveProperty('json');
+				expect(result).toHaveProperty('pairedItem');
+			}
 		});
 	});
 });

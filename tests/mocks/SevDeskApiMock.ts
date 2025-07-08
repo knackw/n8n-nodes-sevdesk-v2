@@ -1,5 +1,4 @@
 import { TestDataFactory } from '../test-utils';
-import { SevDeskContact, SevDeskInvoice, SevDeskVoucher, SevDeskOrder } from '../../nodes/SevDesk/types/SevDeskApiTypes';
 
 /**
  * Comprehensive API mocking utility for SevDesk endpoints
@@ -87,7 +86,6 @@ export class SevDeskApiMock {
 		});
 
 		const { method, url, body, qs } = options;
-		const urlParts = url.split('/');
 		const resource = this.extractResourceFromUrl(url);
 		const resourceId = this.extractIdFromUrl(url);
 
@@ -97,8 +95,14 @@ export class SevDeskApiMock {
 			case 'POST':
 				return this.handlePostRequest(resource, body);
 			case 'PUT':
+				if (!resourceId) {
+					return Promise.reject(new Error(`Resource ID is required for PUT requests`));
+				}
 				return this.handlePutRequest(resource, resourceId, body);
 			case 'DELETE':
+				if (!resourceId) {
+					return Promise.reject(new Error(`Resource ID is required for DELETE requests`));
+				}
 				return this.handleDeleteRequest(resource, resourceId);
 			default:
 				return Promise.reject(new Error(`Unsupported method: ${method}`));

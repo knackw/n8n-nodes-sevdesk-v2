@@ -10,6 +10,7 @@ describe('SevDeskApiClient - Functional Tests', () => {
 		// Create mock execution functions
 		mockExecuteFunctions = {
 			getCredentials: jest.fn(),
+			getNode: jest.fn(),
 			helpers: {
 				httpRequest: jest.fn(),
 			},
@@ -17,6 +18,7 @@ describe('SevDeskApiClient - Functional Tests', () => {
 
 		// Setup default mock returns
 		mockExecuteFunctions.getCredentials.mockResolvedValue(TestDataFactory.createMockCredentials());
+		mockExecuteFunctions.getNode.mockReturnValue(TestDataFactory.createMockNode());
 		(mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockResolvedValue({});
 
 		apiClient = new SevDeskApiClient(mockExecuteFunctions);
@@ -253,7 +255,13 @@ describe('SevDeskApiClient - Functional Tests', () => {
 			timeoutError.name = 'TimeoutError';
 			(mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockRejectedValue(timeoutError);
 
-			await expect(apiClient.get('/Contact')).rejects.toThrow('Request timeout');
+			try {
+				await apiClient.get('/Contact');
+				fail('Expected error to be thrown');
+			} catch (error: any) {
+				// Check that the error description contains our message
+				expect(error.description).toContain('Request timeout');
+			}
 		});
 
 		it('should handle connection errors', async () => {
@@ -261,7 +269,13 @@ describe('SevDeskApiClient - Functional Tests', () => {
 			connectionError.name = 'ConnectionError';
 			(mockExecuteFunctions.helpers.httpRequest as jest.MockedFunction<any>).mockRejectedValue(connectionError);
 
-			await expect(apiClient.get('/Contact')).rejects.toThrow('Connection refused');
+			try {
+				await apiClient.get('/Contact');
+				fail('Expected error to be thrown');
+			} catch (error: any) {
+				// Check that the error description contains our message
+				expect(error.description).toContain('Connection refused');
+			}
 		});
 	});
 

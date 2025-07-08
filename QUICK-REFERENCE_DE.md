@@ -43,7 +43,7 @@ INSTALL_LOCAL_SEVDESK_NODE=true
 ├── .env                     # Konfiguration (erstellen!)
 ├── package.json             # npm start verfügbar
 ├── docker-compose.yml       # Docker-Konfiguration
-├── scripts/start-n8n.js     # Start-Skript
+├── tools/start-n8n.js       # Start-Skript
 ├── test-workflows/          # Test-Workflows
 ├── backup/                  # Workflow-Backups
 ├── nodes/SevDesk/          # SevDesk-Node Code
