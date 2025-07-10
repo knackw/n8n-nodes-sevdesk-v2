@@ -22,7 +22,7 @@ describe('SevDesk Node', () => {
 
 		it('should have proper request defaults', () => {
 			expect(sevDeskNode.description.requestDefaults).toEqual({
-				baseURL: 'https://my.sevdesk.de/api/{{$credentials.apiVersion}}/',
+				baseURL: 'https://my.sevdesk.de/api/{{$credentials.apiVersion}}',
 				url: '',
 				headers: {
 					Accept: 'application/json',

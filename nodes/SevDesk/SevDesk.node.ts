@@ -145,7 +145,7 @@ export class SevDesk implements INodeType {
 			},
 		],
 		requestDefaults: {
-			baseURL: "https://my.sevdesk.de/api/{{$credentials.apiVersion}}/",
+			baseURL: "https://my.sevdesk.de/api/{{$credentials.apiVersion}}",
 			url: "",
 			headers: {
 				Accept: "application/json",
