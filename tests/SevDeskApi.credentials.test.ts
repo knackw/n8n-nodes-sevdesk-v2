@@ -108,7 +108,8 @@ describe('SevDeskApi Credentials', () => {
   describe('Test Configuration', () => {
     it('should have test configuration', () => {
       expect(credentials.test).toBeDefined();
-      expect(credentials.test.request.baseURL).toBe('https://my.sevdesk.de/api/{{$credentials.apiVersion}}/Contact');
+      expect(credentials.test.request.baseURL).toBe('https://my.sevdesk.de/api/{{$credentials.apiVersion}}');
+      expect(credentials.test.request.url).toBe('/Contact');
       expect(credentials.test.request.method).toBe('GET');
       expect(credentials.test.request.qs).toEqual({ limit: 1 });
     });
@@ -117,7 +118,7 @@ describe('SevDeskApi Credentials', () => {
       const test = credentials.test;
       expect(test.request.baseURL).toContain('my.sevdesk.de/api');
       expect(test.request.baseURL).toContain('{{$credentials.apiVersion}}');
-      expect(test.request.baseURL).toContain('/Contact');
+      expect(test.request.url).toBe('/Contact');
     });
 
     it('should use minimal test request', () => {
