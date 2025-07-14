@@ -35,6 +35,28 @@ export const invoicePosOperations: INodeProperties[] = [
 				},
 			},
 			{
+				name: "Delete",
+				value: "delete",
+				description: "Delete an invoice position",
+				action: "Delete an invoice position",
+				routing: {
+					request: {
+						method: "DELETE",
+						url: "=/InvoicePos/{{$parameter.invoicePosId}}",
+					},
+					output: {
+						postReceive: [
+							{
+								type: "rootProperty",
+								properties: {
+									property: "objects",
+								},
+							},
+						],
+					},
+				},
+			},
+			{
 				name: "Get",
 				value: "get",
 				description: "Get an invoice position",
@@ -108,28 +130,6 @@ export const invoicePosOperations: INodeProperties[] = [
 					},
 				},
 			},
-			{
-				name: "Delete",
-				value: "delete",
-				description: "Delete an invoice position",
-				action: "Delete an invoice position",
-				routing: {
-					request: {
-						method: "DELETE",
-						url: "=/InvoicePos/{{$parameter.invoicePosId}}",
-					},
-					output: {
-						postReceive: [
-							{
-								type: "rootProperty",
-								properties: {
-									property: "objects",
-								},
-							},
-						],
-					},
-				},
-			},
 		],
 		default: "getMany",
 	},
@@ -141,9 +141,9 @@ export const invoicePosFields: INodeProperties[] = [
 		displayName: "Invoice Position ID",
 		name: "invoicePosId",
 		type: "string",
-		description: "Invoice Position ID",
 		required: true,
 		default: "",
+		description: "The ID of the invoice position",
 		displayOptions: {
 			show: {
 				resource: ["invoicePos"],
@@ -157,9 +157,9 @@ export const invoicePosFields: INodeProperties[] = [
 		displayName: "Invoice",
 		name: "invoice",
 		type: "collection",
-		description: "Invoice",
 		required: true,
 		default: {},
+		description: "Invoice details for the position",
 		options: [
 			{
 				displayName: "ID",

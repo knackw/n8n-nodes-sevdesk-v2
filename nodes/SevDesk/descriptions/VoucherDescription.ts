@@ -581,11 +581,11 @@ export const voucherFields: INodeProperties[] = [
 		name: "mimeType",
 		type: "options",
 		options: [
-			{ name: "PDF", value: "application/pdf" },
+			{ name: "Auto-detect", value: "" },
 			{ name: "JPEG", value: "image/jpeg" },
+			{ name: "PDF", value: "application/pdf" },
 			{ name: "PNG", value: "image/png" },
 			{ name: "TIFF", value: "image/tiff" },
-			{ name: "Auto-detect", value: "" },
 		],
 		default: "",
 		description: "MIME type of the file (auto-detected if not specified)",
@@ -601,7 +601,8 @@ export const voucherFields: INodeProperties[] = [
 		name: "fileSize",
 		type: "number",
 		default: 0,
-		description: "File size in megabytes (calculated automatically if not provided)",
+		description:
+			"File size in megabytes (calculated automatically if not provided)",
 		displayOptions: {
 			show: {
 				resource: ["voucher"],
@@ -627,11 +628,11 @@ export const voucherFields: INodeProperties[] = [
 		name: "category",
 		type: "options",
 		options: [
-			{ name: "Invoice", value: "invoice" },
-			{ name: "Receipt", value: "receipt" },
-			{ name: "Credit Note", value: "credit_note" },
 			{ name: "Contract", value: "contract" },
+			{ name: "Credit Note", value: "credit_note" },
+			{ name: "Invoice", value: "invoice" },
 			{ name: "Other", value: "other" },
+			{ name: "Receipt", value: "receipt" },
 		],
 		default: "receipt",
 		description: "Category of the document",
@@ -647,7 +648,8 @@ export const voucherFields: INodeProperties[] = [
 		name: "enableOCR",
 		type: "boolean",
 		default: true,
-		description: "Enable Optical Character Recognition to extract text from the document",
+		description:
+			"Enable Optical Character Recognition to extract text from the document",
 		displayOptions: {
 			show: {
 				resource: ["voucher"],

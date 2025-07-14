@@ -131,7 +131,8 @@ export const invoiceOperations: INodeProperties[] = [
 			{
 				name: "Download PDF",
 				value: "downloadPdf",
-				description: "Retrieves the PDF document of an invoice with customization options",
+				description:
+					"Retrieves the PDF document of an invoice with customization options",
 				action: "Download an invoice PDF",
 				routing: {
 					request: {
@@ -365,7 +366,8 @@ export const invoiceOperations: INodeProperties[] = [
 						url: "=/Invoice/{{$parameter.invoiceId}}/sendViaEmail",
 						body: {
 							to: "={{$parameter.email}}",
-							subject: "={{$parameter.useTemplate ? $parameter.template.subject : $parameter.subject}}",
+							subject:
+								"={{$parameter.useTemplate ? $parameter.template.subject : $parameter.subject}}",
 							text: "={{$parameter.useTemplate ? $parameter.template.text : $parameter.text}}",
 							copy: "={{$parameter.copy}}",
 							additionalAttachments: "={{$parameter.additionalAttachments}}",
@@ -927,10 +929,10 @@ export const invoiceFields: INodeProperties[] = [
 		placeholder: "Add Template Fields",
 		default: {},
 		displayOptions: {
-			show: { 
-				resource: ["invoice"], 
+			show: {
+				resource: ["invoice"],
 				operation: ["sendByEmail"],
-				useTemplate: [true]
+				useTemplate: [true],
 			},
 		},
 		options: [
@@ -939,31 +941,34 @@ export const invoiceFields: INodeProperties[] = [
 				name: "type",
 				type: "options",
 				options: [
-					{ name: "Standard Invoice", value: "standard" },
-					{ name: "Reminder", value: "reminder" },
+					{ name: "Custom", value: "custom" },
 					{ name: "Final Notice", value: "final_notice" },
 					{ name: "Payment Confirmation", value: "payment_confirmation" },
-					{ name: "Custom", value: "custom" }
+					{ name: "Reminder", value: "reminder" },
+					{ name: "Standard Invoice", value: "standard" },
 				],
 				default: "standard",
-				description: "Type of email template to use"
+				description: "Type of email template to use",
 			},
 			{
 				displayName: "Subject Template",
 				name: "subject",
 				type: "string",
 				default: "Invoice {{invoiceNumber}} from {{companyName}}",
-				description: "Email subject template (supports placeholders: {{invoiceNumber}}, {{companyName}}, {{contactName}}, {{amount}}, {{dueDate}})"
+				description:
+					"Email subject template (supports placeholders: {{invoiceNumber}}, {{companyName}}, {{contactName}}, {{amount}}, {{dueDate}})",
 			},
 			{
 				displayName: "Text Template",
 				name: "text",
 				type: "string",
 				typeOptions: { multiline: true },
-				default: "Dear {{contactName}},\n\nPlease find attached invoice {{invoiceNumber}} with amount {{amount}} EUR.\n\nDue date: {{dueDate}}\n\nBest regards,\n{{companyName}}",
-				description: "Email body template (supports placeholders: {{invoiceNumber}}, {{companyName}}, {{contactName}}, {{amount}}, {{dueDate}})"
-			}
-		]
+				default:
+					"Dear {{contactName}},\n\nPlease find attached invoice {{invoiceNumber}} with amount {{amount}} EUR.\n\nDue date: {{dueDate}}\n\nBest regards,\n{{companyName}}",
+				description:
+					"Email body template (supports placeholders: {{invoiceNumber}}, {{companyName}}, {{contactName}}, {{amount}}, {{dueDate}})",
+			},
+		],
 	},
 	{
 		displayName: "Email",
@@ -983,10 +988,10 @@ export const invoiceFields: INodeProperties[] = [
 		required: true,
 		default: "",
 		displayOptions: {
-			show: { 
-				resource: ["invoice"], 
+			show: {
+				resource: ["invoice"],
 				operation: ["sendByEmail"],
-				useTemplate: [false]
+				useTemplate: [false],
 			},
 		},
 	},
@@ -998,10 +1003,10 @@ export const invoiceFields: INodeProperties[] = [
 		default: "",
 		typeOptions: { multiline: true },
 		displayOptions: {
-			show: { 
-				resource: ["invoice"], 
+			show: {
+				resource: ["invoice"],
 				operation: ["sendByEmail"],
-				useTemplate: [false]
+				useTemplate: [false],
 			},
 		},
 	},
@@ -1013,7 +1018,7 @@ export const invoiceFields: INodeProperties[] = [
 			{ name: "Standard (VP)", value: "VP" },
 			{ name: "Registered Mail (VR)", value: "VR" },
 			{ name: "Express (VE)", value: "VE" },
-			{ name: "Priority (VZ)", value: "VZ" }
+			{ name: "Priority (VZ)", value: "VZ" },
 		],
 		default: "VP",
 		description: "Type of sending method for the invoice",
@@ -1104,11 +1109,11 @@ export const invoiceFields: INodeProperties[] = [
 		name: "template",
 		type: "options",
 		options: [
-			{ name: "Default", value: "default" },
-			{ name: "Standard", value: "standard" },
-			{ name: "Modern", value: "modern" },
 			{ name: "Classic", value: "classic" },
+			{ name: "Default", value: "default" },
 			{ name: "Minimal", value: "minimal" },
+			{ name: "Modern", value: "modern" },
+			{ name: "Standard", value: "standard" },
 		],
 		default: "default",
 		description: "PDF template to use for generation",
@@ -1121,11 +1126,11 @@ export const invoiceFields: INodeProperties[] = [
 		name: "language",
 		type: "options",
 		options: [
-			{ name: "German", value: "de" },
 			{ name: "English", value: "en" },
 			{ name: "French", value: "fr" },
-			{ name: "Spanish", value: "es" },
+			{ name: "German", value: "de" },
 			{ name: "Italian", value: "it" },
+			{ name: "Spanish", value: "es" },
 		],
 		default: "de",
 		description: "Language for the PDF document",
@@ -1158,11 +1163,11 @@ export const invoiceFields: INodeProperties[] = [
 		name: "xmlFormat",
 		type: "options",
 		options: [
+			{ name: "FacturX", value: "facturx" },
+			{ name: "Standard", value: "standard" },
+			{ name: "UBL", value: "ubl" },
 			{ name: "XRechnung", value: "xrechnung" },
 			{ name: "ZUGFeRD", value: "zugferd" },
-			{ name: "FacturX", value: "facturx" },
-			{ name: "UBL", value: "ubl" },
-			{ name: "Standard", value: "standard" },
 		],
 		default: "xrechnung",
 		description: "XML format for e-invoice generation",
@@ -1214,44 +1219,44 @@ export const invoiceFields: INodeProperties[] = [
 		default: "VPR",
 		options: [
 			{
-				name: "Print",
-				value: "print",
-				description: "Physical print and manual delivery"
+				name: "Digital (VD)",
+				value: "VD",
+				description: "Digital delivery (e.g., customer portal)",
 			},
 			{
 				name: "Email (VMail)",
 				value: "VMail",
-				description: "Sent via email"
-			},
-			{
-				name: "Fax (VMSC)",
-				value: "VMSC",
-				description: "Sent via fax"
-			},
-			{
-				name: "Standard Post (VP)",
-				value: "VP",
-				description: "Standard postal service"
-			},
-			{
-				name: "Registered Post (VPR)",
-				value: "VPR",
-				description: "Registered postal service with tracking"
+				description: "Sent via email",
 			},
 			{
 				name: "Express (VE)",
 				value: "VE",
-				description: "Express delivery service"
+				description: "Express delivery service",
+			},
+			{
+				name: "Fax (VMSC)",
+				value: "VMSC",
+				description: "Sent via fax",
+			},
+			{
+				name: "Print",
+				value: "print",
+				description: "Physical print and manual delivery",
 			},
 			{
 				name: "Priority (VZ)",
 				value: "VZ",
-				description: "Priority postal service"
+				description: "Priority postal service",
 			},
 			{
-				name: "Digital (VD)",
-				value: "VD",
-				description: "Digital delivery (e.g., customer portal)"
+				name: "Registered Post (VPR)",
+				value: "VPR",
+				description: "Registered postal service with tracking",
+			},
+			{
+				name: "Standard Post (VP)",
+				value: "VP",
+				description: "Standard postal service",
 			},
 		],
 		displayOptions: {
@@ -1275,10 +1280,10 @@ export const invoiceFields: INodeProperties[] = [
 		default: "",
 		description: "Tracking number for postal/courier services",
 		displayOptions: {
-			show: { 
-				resource: ["invoice"], 
+			show: {
+				resource: ["invoice"],
 				operation: ["markAsSent"],
-				sendType: ["VPR", "VE", "VZ"]
+				sendType: ["VPR", "VE", "VZ"],
 			},
 		},
 	},
