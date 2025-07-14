@@ -1,0 +1,2 @@
+Update CHANGELOG.md, CODE_OF_CONDUCT.md, CONTEXT.md, ENV-TEMPLATE.md, CLAUDE.md, GEMINI.md, QUICK-REFERENCE.md, README.md, STARTUP.md, docs/API_REFERENCE.md, docs/DOCUMENTATION.md, docs/MIGRATION_GUIDE.md,                      │
+│   docs/REQUIREMENTS.md, docs/TROUBLESHOOTING.md and docs/USER_MANUAL.md   
