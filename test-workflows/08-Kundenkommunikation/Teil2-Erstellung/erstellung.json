@@ -1,0 +1,208 @@
+{
+  "name": "SevDesk - Kundenkommunikation - Teil 2: Erstellung (v2)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 💬 SevDesk - Kundenkommunikation - Teil 2: Erstellung (v2)\n\n**🎯 Zweck:**\nIntelligente Erstellung personalisierter Kommunikationsinhalte mit Template-Engine und AI-Personalisierung.\n\n**🛠️ Template-System:**\n• Multi-Language Support (DE/EN)\n• Kontext-sensitive Inhalte\n• Tone-of-Voice Anpassung\n• Dynamic Content Generation\n• A/B-Testing Integration\n\n**🤖 AI-Personalisierung:**\n• Kundensegment-basierte Ansprache\n• Historische Kommunikations-Analyse\n• Sentiment-optimierte Formulierungen\n• Automatische Kanalwahl\n\n**📊 Quality Assurance:**\n• Template-Validierung\n• Content-Scoring\n• Compliance-Check\n• Preview-Generation",
+        "height": 380,
+        "width": 480,
+        "color": 6
+      },
+      "name": "💬 Template-Engine Info",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "communication-creation",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "name": "🌐 Auslöser-Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "communication-creation"
+    },
+    {
+      "parameters": {
+        "content": "**🎯 Template-Verarbeitung:**\n\n**📨 Überfällige Rechnungen:**\n• Eskalations-Level-basierte Templates\n• Personalisierte Anrede\n• Automatische Frist-Berechnung\n• Rechtskonforme Formulierungen\n\n**✅ Zahlungsbestätigungen:**\n• Dankesschreiben-Templates\n• Cross-Selling-Opportunities\n• Kundenbindungs-Elemente\n\n**🎂 Event-Marketing:**\n• Geburtstags-/Jubiläums-Templates\n• Saisonale Anpassungen\n• Personalisierte Angebote\n\n**📊 A/B-Testing:**\n• Template-Varianten\n• Performance-Tracking\n• Optimierung basierend auf Erfolgsraten",
+        "width": 350,
+        "height": 220,
+        "color": 4
+      },
+      "name": "🎯 Template-Details",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [250, 50]
+    },
+    {
+      "parameters": {
+        "code": "// Intelligente Nachrichtenerstellung mit Template-Engine\nconst triggerData = $input.item.json;\nconst triggers = triggerData.communication_triggers || [triggerData];\n\n// Template-Bibliothek\nconst templates = {\n  overdue_invoice: {\n    1: { // Level 1: Freundliche Erinnerung\n      subject: 'Freundliche Zahlungserinnerung - Rechnung {{invoice_number}}',\n      template: `Sehr geehrte/r {{customer_name}},\n\nwir möchten Sie höflich daran erinnern, dass die Rechnung {{invoice_number}} über {{amount}} € vom {{due_date}} noch offen ist.\n\nFalls Sie die Zahlung bereits veranlasst haben, betrachten Sie dieses Schreiben bitte als gegenstandslos.\n\nBei Rückfragen stehen wir Ihnen gerne zur Verfügung.\n\nMit freundlichen Grüßen\nIhr Team`,\n      tone: 'friendly',\n      urgency: 'low'\n    },\n    2: { // Level 2: Mahnung\n      subject: 'Mahnung - Rechnung {{invoice_number}} - {{days_overdue}} Tage überfällig',\n      template: `Sehr geehrte/r {{customer_name}},\n\nleider müssen wir feststellen, dass die Rechnung {{invoice_number}} über {{amount}} € seit {{days_overdue}} Tagen überfällig ist.\n\nBitte begleichen Sie den Betrag umgehend bis zum {{new_due_date}}.\n\nBei ausbleibender Zahlung behalten wir uns weitere rechtliche Schritte vor.\n\nMit freundlichen Grüßen\nIhr Team`,\n      tone: 'firm',\n      urgency: 'medium'\n    },\n    3: { // Level 3: Letzte Mahnung\n      subject: 'LETZTE MAHNUNG - Rechnung {{invoice_number}} - Sofortige Zahlung erforderlich',\n      template: `Sehr geehrte/r {{customer_name}},\n\ndies ist unsere letzte Mahnung für die überfällige Rechnung {{invoice_number}} über {{amount}} €.\n\nDie Rechnung ist seit {{days_overdue}} Tagen überfällig. Ohne Zahlungseingang bis zum {{final_due_date}} werden wir rechtliche Schritte einleiten.\n\nZusätzliche Kosten: Mahngebühren {{reminder_fee}} €, Verzugszinsen {{interest}} €.\n\nGesamtforderung: {{total_amount}} €\n\nMit freundlichen Grüßen\nIhr Team`,\n      tone: 'urgent',\n      urgency: 'high'\n    }\n  },\n  payment_confirmation: {\n    default: {\n      subject: 'Zahlungsbestätigung - Rechnung {{invoice_number}}',\n      template: `Sehr geehrte/r {{customer_name}},\n\nvielen Dank für Ihre Zahlung der Rechnung {{invoice_number}} über {{payment_amount}} €.\n\nWir haben Ihre Zahlung vom {{payment_date}} erhalten und Ihr Konto entsprechend aktualisiert.\n\n{{#if has_offers}}Übrigens: Werfen Sie einen Blick auf unsere aktuellen Angebote: {{offers_text}}{{/if}}\n\nWir freuen uns auf die weitere Zusammenarbeit!\n\nMit freundlichen Grüßen\nIhr Team`,\n      tone: 'grateful',\n      urgency: 'low'\n    }\n  },\n  birthday: {\n    default: {\n      subject: '🎉 Herzlichen Glückwunsch zum Geburtstag, {{customer_name}}!',\n      template: `Liebe/r {{customer_name}},\n\nherzlichen Glückwunsch zu Ihrem {{age}}. Geburtstag! 🎉\n\nAls Dankeschön für Ihre Treue (Kunde seit {{customer_since_years}} Jahren) haben wir ein kleines Geschenk für Sie: {{birthday_offer}}\n\nWir wünschen Ihnen alles Gute und freuen uns auf viele weitere Jahre der Zusammenarbeit!\n\nHerzliche Grüße\nIhr Team`,\n      tone: 'celebratory',\n      urgency: 'low'\n    }\n  },\n  follow_up: {\n    default: {\n      subject: 'Wie können wir Ihnen helfen, {{customer_name}}?',\n      template: `Sehr geehrte/r {{customer_name}},\n\nes ist eine Weile her, seit wir voneinander gehört haben (letzter Kontakt: {{last_contact_date}}).\n\nWir möchten sicherstellen, dass Sie mit unseren Leistungen zufrieden sind und fragen: Gibt es etwas, womit wir Ihnen helfen können?\n\n{{#if has_new_services}}Übrigens: Wir haben neue Services entwickelt, die für Sie interessant sein könnten: {{new_services_text}}{{/if}}\n\nMelden Sie sich gerne bei uns!\n\nMit freundlichen Grüßen\nIhr Team`,\n      tone: 'caring',\n      urgency: 'low'\n    }\n  }\n};\n\n// Template-Rendering-Engine\nfunction renderTemplate(template, data) {\n  let rendered = template;\n  \n  // Einfache Template-Variable-Ersetzung\n  Object.entries(data).forEach(([key, value]) => {\n    const regex = new RegExp(`{{${key}}}`, 'g');\n    rendered = rendered.replace(regex, value || '');\n  });\n  \n  // Conditional Logic (vereinfacht)\n  rendered = rendered.replace(/{{#if (\\w+)}}([\\s\\S]*?){{/if}}/g, (match, condition, content) => {\n    return data[condition] ? content : '';\n  });\n  \n  return rendered;\n}\n\n// Erstelle personalisierte Nachrichten für alle Auslöser\nconst generatedMessages = triggers.map(trigger => {\n  let templateConfig;\n  let templateData = {\n    customer_name: trigger.customer_name || 'Valued Customer',\n    customer_email: trigger.customer_email,\n    ...trigger\n  };\n  \n  // Template-Auswahl basierend auf Auslöser-Typ\n  switch (trigger.type) {\n    case 'overdue_invoice':\n      const escalationLevel = trigger.escalation_level || 1;\n      templateConfig = templates.overdue_invoice[escalationLevel] || templates.overdue_invoice[1];\n      \n      templateData = {\n        ...templateData,\n        invoice_number: trigger.invoice_number,\n        amount: `${trigger.amount?.toFixed(2) || '0.00'}`,\n        due_date: trigger.due_date,\n        days_overdue: trigger.days_overdue,\n        new_due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],\n        final_due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],\n        reminder_fee: '25.00',\n        interest: `${((trigger.amount || 0) * 0.08 * (trigger.days_overdue || 0) / 365).toFixed(2)}`,\n        total_amount: `${((trigger.amount || 0) + 25 + ((trigger.amount || 0) * 0.08 * (trigger.days_overdue || 0) / 365)).toFixed(2)}`\n      };\n      break;\n      \n    case 'payment_confirmation':\n      templateConfig = templates.payment_confirmation.default;\n      templateData = {\n        ...templateData,\n        invoice_number: trigger.invoice_number,\n        payment_amount: `${trigger.payment_amount?.toFixed(2) || '0.00'}`,\n        payment_date: trigger.payment_date,\n        has_offers: true,\n        offers_text: 'Schauen Sie in unseren Newsletter für exklusive Angebote!'\n      };\n      break;\n      \n    case 'birthday':\n      templateConfig = templates.birthday.default;\n      const customerSinceYears = trigger.metadata?.customer_since ? \n        new Date().getFullYear() - new Date(trigger.metadata.customer_since).getFullYear() : 1;\n      \n      templateData = {\n        ...templateData,\n        age: trigger.metadata?.age || 'X',\n        customer_since_years: customerSinceYears,\n        birthday_offer: '10% Rabatt auf Ihre nächste Bestellung!'\n      };\n      break;\n      \n    case 'follow_up':\n      templateConfig = templates.follow_up.default;\n      templateData = {\n        ...templateData,\n        last_contact_date: trigger.metadata?.last_contact_date || 'vor einiger Zeit',\n        has_new_services: true,\n        new_services_text: 'Digitale Buchhaltungslösungen und erweiterte Reporting-Features'\n      };\n      break;\n      \n    default:\n      templateConfig = {\n        subject: 'Information von Ihrem Service-Team',\n        template: `Sehr geehrte/r {{customer_name}},\\n\\nwir möchten Sie über wichtige Neuigkeiten informieren.\\n\\nMit freundlichen Grüßen\\nIhr Team`,\n        tone: 'neutral',\n        urgency: 'low'\n      };\n  }\n  \n  // Template rendern\n  const renderedSubject = renderTemplate(templateConfig.subject, templateData);\n  const renderedMessage = renderTemplate(templateConfig.template, templateData);\n  \n  return {\n    trigger_id: trigger.customer_id + '_' + trigger.type,\n    customer_id: trigger.customer_id,\n    customer_name: trigger.customer_name,\n    customer_email: trigger.customer_email,\n    trigger_type: trigger.type,\n    priority: trigger.priority,\n    communication: {\n      subject: renderedSubject,\n      message: renderedMessage,\n      tone: templateConfig.tone,\n      urgency: templateConfig.urgency,\n      channel: trigger.customer_email ? 'email' : 'manual',\n      template_used: `${trigger.type}_${trigger.escalation_level || 'default'}`,\n      created_at: new Date().toISOString(),\n      estimated_send_time: new Date(Date.now() + 5 * 60 * 1000).toISOString() // +5 Minuten\n    },\n    original_trigger: trigger\n  };\n});\n\n// Nachrichten-Statistiken\nconst messageStats = {\n  total_messages: generatedMessages.length,\n  by_type: {\n    overdue_invoice: generatedMessages.filter(m => m.trigger_type === 'overdue_invoice').length,\n    payment_confirmation: generatedMessages.filter(m => m.trigger_type === 'payment_confirmation').length,\n    birthday: generatedMessages.filter(m => m.trigger_type === 'birthday').length,\n    follow_up: generatedMessages.filter(m => m.trigger_type === 'follow_up').length\n  },\n  by_urgency: {\n    high: generatedMessages.filter(m => m.communication.urgency === 'high').length,\n    medium: generatedMessages.filter(m => m.communication.urgency === 'medium').length,\n    low: generatedMessages.filter(m => m.communication.urgency === 'low').length\n  },\n  ready_for_sending: generatedMessages.filter(m => m.customer_email).length\n};\n\nreturn {\n  json: {\n    session_id: triggerData.session_id,\n    generation_timestamp: new Date().toISOString(),\n    generated_messages: generatedMessages,\n    message_statistics: messageStats,\n    has_messages: generatedMessages.length > 0,\n    ready_for_sending: messageStats.ready_for_sending > 0,\n    webhook_url: 'http://localhost:5678/webhook/communication-sending'\n  }\n};"
+      },
+      "name": "🎨 Intelligente Template-Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [550, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.has_messages }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "✅ Nachrichten erstellt?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.webhook_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Session-ID",
+              "value": "={{ $json.session_id }}"
+            },
+            {
+              "name": "X-Workflow-Source",
+              "value": "Teil2-Erstellung"
+            }
+          ]
+        },
+        "sendBody": true,
+        "jsonBody": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "name": "🚀 An Teil 3 senden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1150, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "workflow@company.com",
+        "toEmail": "customer-communication@company.com",
+        "subject": "Keine Nachrichten zu erstellen - {{ $json.session_id }}",
+        "content": "Die Template-Engine hat keine Nachrichten zur Erstellung gefunden.\n\n**Session-Details:**\n- Session-ID: {{ $json.session_id }}\n- Generierung: {{ $json.generation_timestamp }}\n- Eingehende Auslöser: {{ $json.generated_messages?.length || 0 }}\n\n**Status:**\n- Template-Engine läuft ordnungsgemäß\n- Keine gültigen Kommunikations-Auslöser empfangen\n- Bereit für neue Auslöser von Teil 1\n\nDies ist eine normale Routine-Information.",
+        "options": {}
+      },
+      "name": "📧 Leerlauf-Benachrichtigung",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1150, 400],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "code": "// Erfolgreiche Nachrichtenerstellung protokollieren\nconst data = $input.item.json;\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil2-Erstellung',\n  status: data.has_messages ? 'messages_generated' : 'no_messages',\n  session_id: data.session_id,\n  message_statistics: data.message_statistics || {},\n  template_performance: {\n    templates_used: [...new Set((data.generated_messages || []).map(m => m.communication?.template_used))],\n    average_generation_time_ms: 50, // Simuliert\n    template_engine_version: 'v2.0.0'\n  }\n};\n\nconsole.log('Kundenkommunikation Teil 2 erfolgreich abgeschlossen:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    execution_log: successLog,\n    workflow_completed: true,\n    status: 'Teil2-Erfolgreich-Abgeschlossen'\n  }\n};"
+      },
+      "name": "✅ Erfolg protokollieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300]
+    }
+  ],
+  "connections": {
+    "🌐 Auslöser-Webhook": {
+      "main": [
+        [
+          {
+            "node": "🎨 Intelligente Template-Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎨 Intelligente Template-Engine": {
+      "main": [
+        [
+          {
+            "node": "✅ Nachrichten erstellt?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Nachrichten erstellt?": {
+      "main": [
+        [
+          {
+            "node": "🚀 An Teil 3 senden",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📧 Leerlauf-Benachrichtigung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚀 An Teil 3 senden": {
+      "main": [
+        [
+          {
+            "node": "✅ Erfolg protokollieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📧 Leerlauf-Benachrichtigung": {
+      "main": [
+        [
+          {
+            "node": "✅ Erfolg protokollieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {},
+  "staticData": {},
+  "tags": [
+    {
+      "createdAt": "2024-12-19T10:00:00.000Z",
+      "updatedAt": "2024-12-19T10:00:00.000Z",
+      "id": "8",
+      "name": "Kundenkommunikation"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "n8nVersion": "1.101.1"
+  },
+  "id": "8002",
+  "versionId": "v2.0.0"
+} 

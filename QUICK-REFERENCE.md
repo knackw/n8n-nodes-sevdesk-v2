@@ -1,5 +1,9 @@
 # ⚡ SevDesk-Node Quick Reference
 
+**Version:** 2.4.1  
+**Updated:** 2025-07-14  
+**Status:** Production Ready
+
 ## 🚀 Start Commands
 
 ```bash
@@ -21,6 +25,7 @@ docker-compose restart # Restart
 ## ⚙️ Configuration
 
 ### Create .env file
+
 ```bash
 # Copy template
 cp ENV-TEMPLATE.md .env
@@ -33,6 +38,7 @@ INSTALL_LOCAL_SEVDESK_NODE=true
 ```
 
 ### Create API Key
+
 1. Open n8n: http://localhost:5678
 2. Settings → API → Create API Key
 3. Add key to .env: `N8N_API_KEY=your-key`
@@ -53,6 +59,7 @@ INSTALL_LOCAL_SEVDESK_NODE=true
 ## 🔄 Typical Workflow
 
 ### 1. Initial Setup
+
 ```bash
 git clone <repository>
 cd n8n-nodes-sevdesk-v2
@@ -62,36 +69,41 @@ npm start                   # Automatic start
 ```
 
 ### 2. Development
+
 ```bash
 # Change code in nodes/ or credentials/
 npm start                   # Automatic build & restart
 ```
 
 ### 3. Manage Test Workflows
+
 ```bash
 npm start                   # Interactive workflow selection
 # Or manually:
 # - Backup: Yes/No
-# - Delete: Yes/No  
+# - Delete: Yes/No
 # - Upload: Choose directory
 ```
 
 ## 📊 Workflow Management
 
 ### Automatic Detection
+
 - **JSON files** in `test-workflows/` → Direct upload
 - **Directories** with workflows → Interactive selection
 
 ### Backup System
+
 - **Automatic** before each upload (optional)
 - **Path:** `./backup/backup-YYYY-MM-DDTHH-mm-ss/`
 - **Format:** `WorkflowName_ID.json`
 
 ### Directory Selection
+
 ```
 📁 Available Workflow Directories:
 1. 01-Belegerfassung (2 Workflows)
-2. 02-Rechnungsstellung (1 Workflow) 
+2. 02-Rechnungsstellung (1 Workflow)
 3. 03-Mahnwesen (1 Workflow)
 4. All Directories
 0. Cancel
@@ -100,10 +112,12 @@ npm start                   # Interactive workflow selection
 ## 🔧 SevDesk Node Configuration
 
 ### Credentials (in n8n)
+
 - **API Key:** Your SevDesk API key
 - **API Version:** v2 (recommended)
 
 ### Supported Resources
+
 - Contact (Contacts)
 - Invoice (Invoices)
 - Voucher (Vouchers)
@@ -117,6 +131,7 @@ npm start                   # Interactive workflow selection
 ## 🚨 Troubleshooting
 
 ### Docker Issues
+
 ```bash
 # Check Docker
 docker --version
@@ -128,6 +143,7 @@ docker-compose logs -f n8n
 ```
 
 ### n8n Issues
+
 ```bash
 # Check availability
 curl http://localhost:5678/healthz
@@ -137,6 +153,7 @@ docker-compose restart
 ```
 
 ### Build Issues
+
 ```bash
 # Reinstall dependencies
 rm -rf node_modules package-lock.json
@@ -147,6 +164,7 @@ npm run build
 ```
 
 ### API Issues
+
 ```bash
 # Check API key
 # - In n8n: Settings → API
@@ -180,8 +198,9 @@ curl -H "X-N8N-API-KEY: your-key" http://localhost:5678/api/v1/workflows
 ## 🆘 Support
 
 For issues:
+
 1. **Check logs:** `docker-compose logs -f`
-2. **Restart container:** `docker-compose restart`  
+2. **Restart container:** `docker-compose restart`
 3. **Issues:** GitHub Issues
 4. **Community:** n8n Community Forum
 

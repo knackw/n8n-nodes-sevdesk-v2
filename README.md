@@ -1,35 +1,61 @@
-# n8n-nodes-sevdesk-v2
+# 🚀 n8n-nodes-sevdesk-v2
+
+**Version:** 2.4.1  
+**Status:** Production Ready  
+**API-Kompatibilität:** SevDesk API v2.0  
+**n8n-Kompatibilität:** 1.101.1+
 
 [![Version](https://img.shields.io/npm/v/n8n-nodes-sevdesk-v2.svg)](https://www.npmjs.com/package/n8n-nodes-sevdesk-v2)
 [![Downloads](https://img.shields.io/npm/dm/n8n-nodes-sevdesk-v2.svg)](https://www.npmjs.com/package/n8n-nodes-sevdesk-v2)
 [![Tests](https://github.com/knackw/n8n-nodes-sevdesk-v2/workflows/CI/badge.svg)](https://github.com/knackw/n8n-nodes-sevdesk-v2/actions)
 [![License](https://img.shields.io/npm/l/n8n-nodes-sevdesk-v2.svg)](https://github.com/knackw/n8n-nodes-sevdesk-v2/blob/main/LICENSE)
+[![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
+[![n8n Version](https://img.shields.io/badge/n8n-%3E%3D1.101.1-blue)](https://n8n.io/)
 
-A comprehensive n8n community node for integrating with the SevDesk v2 API. SevDesk is a popular German accounting software that helps businesses manage invoices, contacts, orders, and financial documents.
+Professional n8n community node for SevDesk API v2 integration with 24 production-ready workflow templates. Direct API access without external dependencies - simplified, secure, and optimized for German accounting automation.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
 ## 🚀 Features
 
+### 📧 Advanced Email & Document Management
+
+- **Email Template System** - 5 predefined templates with placeholder support
+- **Professional PDF Export** - 5 customizable templates, multi-language support
+- **E-Invoice Standards** - XRechnung, ZUGFeRD, FacturX, UBL compliance
+- **Smart Document Upload** - OCR integration, categorization, MIME detection
+
+### 🔧 Complete Business Operations
+
 - **Complete CRUD Operations** for all major SevDesk entities
+- **Advanced Order-to-Invoice** conversion with dunning levels
+- **Batch Operations** for efficient data processing (25-50 operations optimal)
+- **Rate Limiting Intelligence** - Account-tier aware with exponential backoff
+
+### 🔒 Enterprise-Grade Reliability
+
+- **Resource-Specific Error Handling** - Context-aware error management
+- **Field Validation** - Required field enforcement across all resources
+- **Security Features** - Advanced error message sanitization
 - **API v2 Support** with backward compatibility to v1
-- **Comprehensive Filtering** and search capabilities
-- **File Upload/Download** support for documents
-- **Batch Operations** for efficient data processing
-- **Error Handling** with detailed feedback and retry logic
-- **Direct API Access** without external dependencies
-- **Simple Configuration** with just API key and version
-- **Optimized Performance** through lean architecture
+
+### 🌟 Production Ready
+
+- **n8n 1.101.1 Compatible** - Latest n8n version support with updated typeVersions
+- **Production-Ready Workflows** - 24+ comprehensive test workflows for German businesses
+- **German Business Standards** - SKR03, GoBD, DATEV compliance
 - **TypeScript Support** with full type definitions
 - **Comprehensive Testing** with unit and integration tests
 
 ## 📋 Supported Resources
 
-### ✅ Fully Implemented
-- **Contacts** - Complete contact management with addresses and custom fields
-- **Invoices** - Full invoice lifecycle including PDF generation and email sending
-- **Orders** - Order management with line items and discounts
-- **Vouchers** - Document management with file attachments
+### ✅ Fully Implemented & Enhanced
+
+- **Contacts** - Complete contact management with required field validation
+- **Invoices** - Full lifecycle with email templates, PDF customization, XML e-invoicing
+- **Invoice Positions** - Complete CRUD operations for line items
+- **Orders** - Enhanced order-to-invoice conversion with dunning levels
+- **Vouchers** - Smart document upload with OCR and categorization
 - **Parts** - Inventory management with stock tracking
 - **Check Accounts** - Bank account and transaction management
 - **Tags** - Flexible tagging system for all resources
@@ -38,11 +64,14 @@ A comprehensive n8n community node for integrating with the SevDesk v2 API. SevD
 - **Communication Ways** - Contact communication methods (email, phone, etc.)
 - **Countries** - Country and region management
 - **Unity** - Unit of measurement management
+- **Batch Operations** - Professional bulk operation framework
 
-### 🔄 In Progress
+### ✅ Fully Supported (Extended)
+
 - **Credit Notes** - Credit note management and processing
 - **Exports** - Data export functionality
 - **Layouts** - Document layout management
+- **Basics** - System information and settings
 
 ## 🛠 Installation
 
@@ -50,9 +79,10 @@ A comprehensive n8n community node for integrating with the SevDesk v2 API. SevD
 
 Before installing the node, ensure you have:
 
-1. **n8n installed** - Follow the [n8n installation guide](https://docs.n8n.io/getting-started/installation/)
+1. **n8n >= 1.101.1** - Follow the [n8n installation guide](https://docs.n8n.io/getting-started/installation/)
 2. **Node.js >= 18.0.0** - Required for the node to function properly
 3. **SevDesk Account** - You'll need a SevDesk account with API access
+4. **German Business Context** (Optional) - Many templates are optimized for German accounting standards
 
 ### Install via n8n Community Nodes
 
@@ -125,16 +155,16 @@ Create a simple workflow to test the connection:
 
 ```json
 {
-  "resource": "contact",
-  "operation": "create",
-  "name": "John Doe",
-  "customerNumber": "CUST-001",
-  "email": "john.doe@example.com",
-  "phone": "+49 123 456789",
-  "category": {
-    "id": "3",
-    "objectName": "Category"
-  }
+	"resource": "contact",
+	"operation": "create",
+	"name": "John Doe",
+	"customerNumber": "CUST-001",
+	"email": "john.doe@example.com",
+	"phone": "+49 123 456789",
+	"category": {
+		"id": "3",
+		"objectName": "Category"
+	}
 }
 ```
 
@@ -142,16 +172,16 @@ Create a simple workflow to test the connection:
 
 ```json
 {
-  "resource": "invoice",
-  "operation": "create",
-  "contact": {
-    "id": "{{ $('Get Contact').item.json.id }}",
-    "objectName": "Contact"
-  },
-  "invoiceDate": "2025-01-07",
-  "status": "draft",
-  "invoiceType": "RE",
-  "currency": "EUR"
+	"resource": "invoice",
+	"operation": "create",
+	"contact": {
+		"id": "{{ $('Get Contact').item.json.id }}",
+		"objectName": "Contact"
+	},
+	"invoiceDate": "2025-01-07",
+	"status": "draft",
+	"invoiceType": "RE",
+	"currency": "EUR"
 }
 ```
 
@@ -159,14 +189,14 @@ Create a simple workflow to test the connection:
 
 ```json
 {
-  "resource": "contact",
-  "operation": "list",
-  "filters": {
-    "customerNumber": "CUST-*",
-    "category.id": "3"
-  },
-  "limit": 50,
-  "offset": 0
+	"resource": "contact",
+	"operation": "list",
+	"filters": {
+		"customerNumber": "CUST-*",
+		"category.id": "3"
+	},
+	"limit": 50,
+	"offset": 0
 }
 ```
 
@@ -174,16 +204,127 @@ Create a simple workflow to test the connection:
 
 ```json
 {
-  "resource": "voucher",
-  "operation": "create",
-  "voucherDate": "2025-01-07",
-  "supplier": {
-    "id": "{{ $('Get Supplier').item.json.id }}",
-    "objectName": "Contact"
-  },
-  "document": "{{ $('Read File').item.binary.data }}"
+	"resource": "voucher",
+	"operation": "create",
+	"voucherDate": "2025-01-07",
+	"supplier": {
+		"id": "{{ $('Get Supplier').item.json.id }}",
+		"objectName": "Contact"
+	},
+	"document": "{{ $('Read File').item.binary.data }}"
 }
 ```
+
+## 🔧 Pre-built Workflow Templates
+
+This package includes comprehensive test workflows that demonstrate real-world SevDesk automation scenarios. These workflows are ready-to-use templates for common business processes.
+
+### 📋 Available Workflow Templates
+
+#### 01. Belegerfassung (Document Processing)
+
+**Path**: `test-workflows/01-Belegerfassung/`
+
+- **Teil 1**: Document capture from multiple sources (email, scan, upload)
+- **Teil 2**: Automated processing with OCR and data extraction
+- **Teil 3**: Validation and SevDesk integration
+
+#### 02. Rechnungsstellung (Invoicing)
+
+**Path**: `test-workflows/02-Rechnungsstellung/`
+
+- **Teil 1**: Invoice data collection and customer validation
+- **Teil 2**: Automated invoice generation with templates
+- **Teil 3**: Multi-channel distribution (email, print, portal)
+
+#### 03. Mahnwesen (Dunning Management)
+
+**Path**: `test-workflows/03-Mahnwesen/`
+
+- **Teil 1**: Overdue invoice detection and escalation logic
+- **Teil 2**: Automated reminder processing with staging
+- **Teil 3**: Multi-channel reminder distribution
+
+#### 04. Steuerberater-Export (Tax Advisor Export)
+
+**Path**: `test-workflows/04-Steuerberater-Export/`
+
+- **Teil 1**: DATEV-compliant data extraction
+- **Teil 2**: Format conversion and data preparation
+- **Teil 3**: Secure transmission to tax advisors
+
+#### 05. Banktransaktionen (Bank Transactions)
+
+**Path**: `test-workflows/05-Banktransaktionen/`
+
+- **Teil 1**: Multi-bank format import (CSV, MT940, CAMT.053)
+- **Teil 2**: AI-powered transaction categorization
+- **Teil 3**: Automated booking with SKR03 compliance
+
+#### 06. Reporting (Business Intelligence)
+
+**Path**: `test-workflows/06-Reporting/`
+
+- **Teil 1**: Comprehensive data extraction with KPIs
+- **Teil 2**: Advanced analytics and trend analysis
+- **Teil 3**: Automated report distribution
+
+#### 07. Dokumentenmanagement (Document Management)
+
+**Path**: `test-workflows/07-Dokumentenmanagement/`
+
+- **Teil 1**: Intelligent document capture with OCR
+- **Teil 2**: Content processing and metadata extraction
+- **Teil 3**: GoBD-compliant archiving (10-year retention)
+
+#### 08. Kundenkommunikation (Customer Communication)
+
+**Path**: `test-workflows/08-Kundenkommunikation/`
+
+- **Teil 1**: Automated trigger detection (overdue, events)
+- **Teil 2**: Personalized message generation
+- **Teil 3**: Multi-channel communication delivery
+
+### 🚀 Quick Template Import
+
+```bash
+# Import all workflows to your n8n instance
+node tools/start-n8n-workflows.js
+
+# Or import specific category
+node tools/start-n8n-workflows.js --category 01-Belegerfassung
+```
+
+### 🔧 Template Features
+
+- **n8n 1.101.1 Compatible** - Latest n8n version support
+- **Modular Architecture** - 3-part workflow structure for maintainability
+- **Error Handling** - Comprehensive error management and notifications
+- **German Business Logic** - Tailored for German accounting standards (SKR03, GoBD)
+- **Webhook Integration** - Inter-workflow communication
+- **Audit Trail** - Complete compliance tracking
+- **Scalable Design** - Production-ready implementations
+
+### 📊 Template Architecture
+
+Each workflow category follows a consistent 3-part pattern:
+
+```
+Category/
+├── Teil1-[Process]/     # Data input and initial processing
+├── Teil2-[Core]/        # Main business logic and transformations
+├── Teil3-[Output]/      # Results processing and distribution
+└── README.md           # Category-specific documentation
+```
+
+### ⚙️ Configuration Requirements
+
+Before using the templates:
+
+1. **SevDesk Credentials** - Configure your API access
+2. **Email Settings** - SMTP for notifications
+3. **File Paths** - Adjust paths for your environment
+4. **Webhook URLs** - Update inter-workflow communication endpoints
 
 ## 📖 Detailed Usage Guide
 
@@ -192,6 +333,7 @@ Create a simple workflow to test the connection:
 Contacts are the foundation of SevDesk and represent customers, suppliers, and other business partners.
 
 #### Create a Contact
+
 ```javascript
 // Basic contact creation
 {
@@ -218,6 +360,7 @@ Contacts are the foundation of SevDesk and represent customers, suppliers, and o
 ```
 
 #### Search Contacts
+
 ```javascript
 // Search by name
 {
@@ -243,6 +386,7 @@ Contacts are the foundation of SevDesk and represent customers, suppliers, and o
 Invoices represent billing documents sent to customers.
 
 #### Create an Invoice
+
 ```javascript
 {
   "resource": "invoice",
@@ -261,6 +405,7 @@ Invoices represent billing documents sent to customers.
 ```
 
 #### Send an Invoice
+
 ```javascript
 {
   "resource": "invoice",
@@ -277,6 +422,7 @@ Invoices represent billing documents sent to customers.
 Orders represent sales orders before they become invoices.
 
 #### Create an Order
+
 ```javascript
 {
   "resource": "order",
@@ -298,16 +444,20 @@ The node provides comprehensive error handling with detailed error messages:
 ```javascript
 // Example error handling in a workflow
 try {
-  const result = await this.helpers.httpRequest(options);
-  return result;
+	const result = await this.helpers.httpRequest(options);
+	return result;
 } catch (error) {
-  if (error.statusCode === 401) {
-    throw new Error('Invalid API credentials. Please check your SevDesk API key.');
-  } else if (error.statusCode === 429) {
-    throw new Error('Rate limit exceeded. Please wait before making more requests.');
-  } else {
-    throw new Error(`SevDesk API error: ${error.message}`);
-  }
+	if (error.statusCode === 401) {
+		throw new Error(
+			"Invalid API credentials. Please check your SevDesk API key.",
+		);
+	} else if (error.statusCode === 429) {
+		throw new Error(
+			"Rate limit exceeded. Please wait before making more requests.",
+		);
+	} else {
+		throw new Error(`SevDesk API error: ${error.message}`);
+	}
 }
 ```
 
@@ -384,11 +534,13 @@ npm run dev
 ### Environment Setup
 
 1. **Copy the environment template**:
+
    ```bash
    cp .env.template .env
    ```
 
 2. **Fill in your SevDesk credentials**:
+
    ```bash
    SEVDESK_API_KEY=your_api_key_here
    SEVDESK_API_VERSION=v2
@@ -441,6 +593,7 @@ docker-compose down
 **Problem**: The node returns authentication errors.
 
 **Solution**:
+
 - Verify your API key is correct
 - Check that your SevDesk account has API access enabled
 - Ensure you're using the correct API version (v2 recommended)
@@ -450,6 +603,7 @@ docker-compose down
 **Problem**: Too many requests in a short time.
 
 **Solution**:
+
 - Reduce the frequency of your requests
 - Implement delays between requests in your workflow
 - Use batch operations where possible
@@ -459,6 +613,7 @@ docker-compose down
 **Problem**: Trying to access a resource that doesn't exist.
 
 **Solution**:
+
 - Verify the resource ID is correct
 - Check that the resource hasn't been deleted
 - Ensure you have permission to access the resource
@@ -468,6 +623,7 @@ docker-compose down
 **Problem**: Requests are timing out.
 
 **Solution**:
+
 - Check your internet connection
 - Verify SevDesk service status
 - Increase timeout settings if using custom HTTP requests
@@ -498,19 +654,27 @@ If you encounter issues:
    - Node version
    - SevDesk API version
 
+### Commands
+
+```bash
+docker exec -u root <container_name> chown -R 1000:1000 "/home/node/.npm"
+```
+
+### Contributing
+
 ## 📚 API Reference
 
 ### Supported Operations by Resource
 
-| Resource | Create | Read | Update | Delete | List | Custom Operations |
-|----------|--------|------|--------|--------|------|-------------------|
-| Contact | ✅ | ✅ | ✅ | ✅ | ✅ | checkCustomerNumber, findByCustomField |
-| Invoice | ✅ | ✅ | ✅ | ✅ | ✅ | sendViaEmail, markAsSent, bookAmount |
-| Order | ✅ | ✅ | ✅ | ✅ | ✅ | convertToInvoice |
-| Voucher | ✅ | ✅ | ✅ | ✅ | ✅ | uploadDocument |
-| Part | ✅ | ✅ | ✅ | ✅ | ✅ | updateStock |
-| Tag | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Category | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Resource | Create | Read | Update | Delete | List | Custom Operations                      |
+| -------- | ------ | ---- | ------ | ------ | ---- | -------------------------------------- |
+| Contact  | ✅     | ✅   | ✅     | ✅     | ✅   | checkCustomerNumber, findByCustomField |
+| Invoice  | ✅     | ✅   | ✅     | ✅     | ✅   | sendViaEmail, markAsSent, bookAmount   |
+| Order    | ✅     | ✅   | ✅     | ✅     | ✅   | convertToInvoice                       |
+| Voucher  | ✅     | ✅   | ✅     | ✅     | ✅   | uploadDocument                         |
+| Part     | ✅     | ✅   | ✅     | ✅     | ✅   | updateStock                            |
+| Tag      | ✅     | ✅   | ✅     | ✅     | ✅   | -                                      |
+| Category | ✅     | ✅   | ✅     | ✅     | ✅   | -                                      |
 
 ### Response Format
 
@@ -550,6 +714,10 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## ⚠️ Disclaimer
+
+Context7 projects are community-contributed and while we strive to maintain high quality, we cannot guarantee the accuracy, completeness, or security of all library documentation. Projects listed in Context7 are developed and maintained by their respective owners, not by Context7. If you encounter any suspicious, inappropriate, or potentially harmful content, please use the "Report" button on the project page to notify us immediately. We take all reports seriously and will review flagged content promptly to maintain the integrity and safety of our platform. By using Context7, you acknowledge that you do so at your own discretion and risk.
 
 ## 🙏 Acknowledgments
 

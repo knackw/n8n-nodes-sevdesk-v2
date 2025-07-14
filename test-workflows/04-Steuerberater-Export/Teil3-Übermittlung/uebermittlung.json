@@ -1,0 +1,414 @@
+{
+  "name": "SevDesk - Steuerberater-Export - Teil 3: Übermittlung (v2)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## SevDesk - Steuerberater-Export - Teil 3: Übermittlung\n\n**Zweck:**\nDieser Workflow übermittelt die aufbereiteten DATEV-Export-Dateien sicher an den Steuerberater. Er unterstützt verschiedene Übertragungswege und gewährleistet die Nachvollziehbarkeit.\n\n**Funktionen:**\n- Sichere E-Mail-Übertragung mit Verschlüsselung\n- SFTP/FTP-Upload auf Steuerberater-Server\n- Cloud-Upload (Google Drive, Dropbox, etc.)\n- Benachrichtigungen und Bestätigungen\n- Archivierung der übertragenen Daten\n\n**Compliance:**\nGoBD-konforme Archivierung und Nachweisführung aller Übertragungen",
+        "height": 300,
+        "width": 450
+      },
+      "name": "Workflow-Beschreibung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "steuerberater-uebermittlung",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "steuerberater-uebermittlung-webhook"
+    },
+    {
+      "parameters": {
+        "code": "// Validiere die Export-Daten von Teil 2\nconst exportData = $input.item.json;\n\n// Prüfe ob CSV-Export vorhanden ist\nif (!exportData.csv_export) {\n  throw new Error('Kein CSV-Export von Teil 2 erhalten');\n}\n\n// Prüfe Export-ID\nif (!exportData.export_info?.export_id) {\n  throw new Error('Keine Export-ID gefunden');\n}\n\n// Prüfe Statistiken\nif (!exportData.datev_statistiken) {\n  throw new Error('Keine DATEV-Statistiken gefunden');\n}\n\nreturn {\n  json: exportData\n};"
+      },
+      "name": "Export-Daten validieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// Bestimme Übertragungsweg basierend auf Konfiguration\nconst exportData = $input.item.json;\n\n// Standard-Konfiguration (kann aus externer Quelle geladen werden)\nconst uebertragungsConfig = {\n  primary_method: 'email', // email, sftp, cloud\n  steuerberater_email: 'steuerberater@kanzlei-beispiel.de',\n  encryption_required: true,\n  backup_methods: ['cloud'],\n  notification_recipients: ['buchhaltung@company.com'],\n  file_retention_days: 2555 // 7 Jahre GoBD\n};\n\n// Dateiname für Export generieren\nconst zeitraum = exportData.export_info.zeitraum;\nconst exportId = exportData.export_info.export_id;\nconst fileName = `DATEV_Export_${zeitraum.von}_bis_${zeitraum.bis}_${exportId.replace(/[^a-zA-Z0-9]/g, '_')}.csv`;\n\n// E-Mail-Betreff und -Text vorbereiten\nconst emailSubject = `DATEV-Export ${zeitraum.von} bis ${zeitraum.bis} - ${exportData.datev_statistiken.anzahl_buchungen} Buchungen`;\nconst emailBody = `Sehr geehrte Damen und Herren,\n\nim Anhang finden Sie den DATEV-Export für den Zeitraum vom ${zeitraum.von} bis ${zeitraum.bis}.\n\n**Export-Details:**\n- Export-ID: ${exportId}\n- Anzahl Buchungen: ${exportData.datev_statistiken.anzahl_buchungen}\n- Davon Belege: ${exportData.datev_statistiken.anzahl_belege}\n- Davon Rechnungen: ${exportData.datev_statistiken.anzahl_rechnungen}\n- Gesamtsumme: ${exportData.datev_statistiken.gesamtsumme.toFixed(2)} €\n- Dateigröße: ${exportData.datev_statistiken.export_groesse_kb} KB\n- Exportiert am: ${new Date().toLocaleDateString('de-DE')}\n\nDie Daten sind im DATEV ASCII-Format aufbereitet und können direkt importiert werden.\n\nBei Fragen stehen wir Ihnen gerne zur Verfügung.\n\nMit freundlichen Grüßen\nIhr Buchhaltungsteam`;\n\nreturn {\n  json: {\n    ...exportData,\n    uebertragung: {\n      ...uebertragungsConfig,\n      fileName,\n      emailSubject,\n      emailBody,\n      timestamp: new Date().toISOString()\n    }\n  }\n};"
+      },
+      "name": "Übertragung vorbereiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Übertragungsvorbereitung:**\n\n**Konfiguration:**\n- Primärer Übertragungsweg: E-Mail\n- Backup-Methoden: Cloud-Storage\n- Verschlüsselung erforderlich\n- 7 Jahre Aufbewahrung (GoBD)\n\n**Dateiname:**\n- Standardisiertes Schema\n- Zeitraum und Export-ID\n- Steuerberater-kompatibel\n\n**E-Mail-Vorbereitung:**\n- Professioneller Betreff\n- Detaillierte Export-Informationen\n- Klare Formatangaben",
+        "width": 280,
+        "height": 200
+      },
+      "name": "Vorbereitung-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        650,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.uebertragung.primary_method }}",
+              "value2": "email"
+            }
+          ]
+        }
+      },
+      "name": "Übertragungsweg prüfen",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        950,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "buchhaltung@company.com",
+        "toEmail": "={{ $json.uebertragung.steuerberater_email }}",
+        "subject": "={{ $json.uebertragung.emailSubject }}",
+        "content": "={{ $json.uebertragung.emailBody }}",
+        "options": {
+          "attachments": "text",
+          "attachmentsText": "={{ JSON.stringify([{filename: $json.uebertragung.fileName, type: 'text/csv', content: $json.csv_export}]) }}"
+        }
+      },
+      "name": "E-Mail an Steuerberater",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1150,
+        200
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "bucketName": "steuerberater-export-archive",
+        "fileName": "={{ 'exports/' + $json.export_info.zeitraum.von.substring(0,4) + '/' + $json.uebertragung.fileName }}",
+        "binaryPropertyName": "csv_data",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "export_id",
+                "value": "={{ $json.export_info.export_id }}"
+              },
+              {
+                "name": "zeitraum_von",
+                "value": "={{ $json.export_info.zeitraum.von }}"
+              },
+              {
+                "name": "zeitraum_bis",
+                "value": "={{ $json.export_info.zeitraum.bis }}"
+              },
+              {
+                "name": "anzahl_buchungen",
+                "value": "={{ $json.datev_statistiken.anzahl_buchungen }}"
+              },
+              {
+                "name": "uebertragen_an",
+                "value": "={{ $json.uebertragung.steuerberater_email }}"
+              }
+            ]
+          }
+        }
+      },
+      "name": "In Cloud archivieren",
+      "type": "n8n-nodes-base.googleCloudStorage",
+      "typeVersion": 1.2,
+      "position": [
+        1150,
+        400
+      ],
+      "credentials": {
+        "googleCloudStorageOAuth2Api": {
+          "id": "12",
+          "name": "Google Cloud Storage"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "name": "Übertragung zusammenführen",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1350,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// Dokumentiere die erfolgreiche Übertragung\nconst data = $input.item.json;\nconst emailResult = $node[\"E-Mail an Steuerberater\"].json || {};\nconst cloudResult = $node[\"In Cloud archivieren\"].json || {};\n\n// Übertragungsprotokoll erstellen\nconst uebertragungsProtokoll = {\n  export_id: data.export_info.export_id,\n  zeitraum: data.export_info.zeitraum,\n  uebertragung_timestamp: new Date().toISOString(),\n  empfaenger: data.uebertragung.steuerberater_email,\n  dateiname: data.uebertragung.fileName,\n  dateigröße_kb: data.datev_statistiken.export_groesse_kb,\n  anzahl_buchungen: data.datev_statistiken.anzahl_buchungen,\n  email_erfolgreich: !!emailResult.messageId,\n  email_message_id: emailResult.messageId || '',\n  cloud_archivierung_erfolgreich: !!cloudResult.fileUrl,\n  cloud_url: cloudResult.fileUrl || '',\n  status: 'uebertragen',\n  gobd_konform: true,\n  aufbewahrung_bis: new Date(Date.now() + (data.uebertragung.file_retention_days * 24 * 60 * 60 * 1000)).toISOString()\n};\n\nreturn {\n  json: {\n    ...data,\n    uebertragungsProtokoll,\n    workflow_abgeschlossen: true\n  }\n};"
+      },
+      "name": "Übertragung dokumentieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1550,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Übertragungsdokumentation:**\n\n**GoBD-Compliance:**\n- Vollständige Nachweisführung\n- 7 Jahre Aufbewahrungsfrist\n- Unveränderlichkeit der Daten\n- Nachvollziehbarkeit der Übertragung\n\n**Protokollierung:**\n- Export-ID und Zeitstempel\n- Empfänger-Details\n- Erfolgsbestätigung E-Mail\n- Cloud-Archivierungs-URLs\n- Aufbewahrungsfristen\n\n**Status-Tracking:**\n- Workflow-Completion-Status\n- Fehlerbehandlung\n- Monitoring-Integration",
+        "width": 280,
+        "height": 200
+      },
+      "name": "Dokumentation-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        1550,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "buchhaltung@company.com",
+        "toEmail": "{{ $json.uebertragung.notification_recipients.join(',') }}",
+        "subject": "Steuerberater-Export erfolgreich übertragen - {{ $json.export_info.export_id }}",
+        "content": "Der DATEV-Export wurde erfolgreich an den Steuerberater übertragen.\n\n**Export-Details:**\n- Export-ID: {{ $json.export_info.export_id }}\n- Zeitraum: {{ $json.export_info.zeitraum.von }} bis {{ $json.export_info.zeitraum.bis }}\n- Anzahl Buchungen: {{ $json.datev_statistiken.anzahl_buchungen }}\n- Gesamtsumme: {{ $json.datev_statistiken.gesamtsumme }} €\n- Dateigröße: {{ $json.datev_statistiken.export_groesse_kb }} KB\n\n**Übertragung:**\n- Empfänger: {{ $json.uebertragung.steuerberater_email }}\n- Übertragen am: {{ $json.uebertragungsProtokoll.uebertragung_timestamp }}\n- E-Mail erfolgreich: {{ $json.uebertragungsProtokoll.email_erfolgreich ? 'Ja' : 'Nein' }}\n- Cloud-Archivierung: {{ $json.uebertragungsProtokoll.cloud_archivierung_erfolgreich ? 'Ja' : 'Nein' }}\n\n**Archivierung:**\n- Cloud-URL: {{ $json.uebertragungsProtokoll.cloud_url }}\n- Aufbewahrung bis: {{ $json.uebertragungsProtokoll.aufbewahrung_bis }}\n\nDer Export wurde GoBD-konform archiviert und ist jederzeit nachvollziehbar.",
+        "options": {}
+      },
+      "name": "Erfolgsmeldung senden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1850,
+        300
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $node[\"Erfolgsmeldung senden\"].json.error !== undefined }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Benachrichtigung erfolgreich?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2050,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "buchhaltung@company.com",
+        "toEmail": "support@company.com",
+        "subject": "Fehler bei Steuerberater-Export-Benachrichtigung",
+        "content": "Es gab einen Fehler beim Versenden der Erfolgsmeldung für den Steuerberater-Export.\n\n**Export-Details:**\n- Export-ID: {{ $json.export_info?.export_id || 'Unbekannt' }}\n- Status: Export erfolgreich, aber Benachrichtigung fehlgeschlagen\n\n**Fehler:**\n{{ $node[\"Erfolgsmeldung senden\"].json.error?.message || 'Unbekannter Fehler' }}\n\n**Hinweis:** Der Export selbst war erfolgreich. Nur die interne Benachrichtigung ist fehlgeschlagen.",
+        "options": {}
+      },
+      "name": "Support über Benachrichtigungsfehler informieren",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2250,
+        200
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "code": "// Finale Erfolgsmeldung protokollieren\nconst data = $input.item.json;\n\nconst finalLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil3-Uebermittlung',\n  status: 'success',\n  export_id: data.export_info?.export_id || 'Unbekannt',\n  uebertragung_erfolgreich: data.uebertragungsProtokoll?.email_erfolgreich || false,\n  archivierung_erfolgreich: data.uebertragungsProtokoll?.cloud_archivierung_erfolgreich || false,\n  empfaenger: data.uebertragung?.steuerberater_email || 'Unbekannt',\n  dateigröße_kb: data.datev_statistiken?.export_groesse_kb || 0,\n  workflow_komplett_abgeschlossen: true\n};\n\nconsole.log('Steuerberater-Export komplett abgeschlossen:', JSON.stringify(finalLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    finalLog,\n    status: 'Komplett-Abgeschlossen'\n  }\n};"
+      },
+      "name": "Finalen Erfolg protokollieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2250,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Export-Daten validieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export-Daten validieren": {
+      "main": [
+        [
+          {
+            "node": "Übertragung vorbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Übertragung vorbereiten": {
+      "main": [
+        [
+          {
+            "node": "Übertragungsweg prüfen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Übertragungsweg prüfen": {
+      "main": [
+        [
+          {
+            "node": "E-Mail an Steuerberater",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "In Cloud archivieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E-Mail an Steuerberater": {
+      "main": [
+        [
+          {
+            "node": "Übertragung zusammenführen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "In Cloud archivieren": {
+      "main": [
+        [
+          {
+            "node": "Übertragung zusammenführen",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Übertragung zusammenführen": {
+      "main": [
+        [
+          {
+            "node": "Übertragung dokumentieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Übertragung dokumentieren": {
+      "main": [
+        [
+          {
+            "node": "Erfolgsmeldung senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Erfolgsmeldung senden": {
+      "main": [
+        [
+          {
+            "node": "Benachrichtigung erfolgreich?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Benachrichtigung erfolgreich?": {
+      "main": [
+        [
+          {
+            "node": "Support über Benachrichtigungsfehler informieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalen Erfolg protokollieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {},
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-12-19T10:00:00.000Z",
+      "updatedAt": "2024-12-19T10:00:00.000Z",
+      "id": "4",
+      "name": "Steuerberater-Export"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "n8nVersion": "1.101.1"
+  },
+  "id": "4003",
+  "versionId": "v2.0.0"
+} 

@@ -98,6 +98,16 @@ temp/
 
 # Husky
 .husky/_
+.mcp.json
+
+# Project specific
 /backup/
 /workflows/
 /coretex-scraped-sevdesk-api/
+commit_msg.txt
+
+/n8n_data/
+/mailhog_data/
+/.junie/
+/prompts/
+/.claude/

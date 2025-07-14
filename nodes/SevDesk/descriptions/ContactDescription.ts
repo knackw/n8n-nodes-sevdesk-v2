@@ -225,6 +225,7 @@ const contactCreateAndUpdateFields: INodeProperties[] = [
 		name: "name",
 		type: "string",
 		default: "",
+		required: true,
 		description:
 			"The organization name. Be aware that the type of contact will depend on this attribute. If it holds a value, the contact will be regarded as an organization.",
 	},
@@ -241,6 +242,7 @@ const contactCreateAndUpdateFields: INodeProperties[] = [
 		name: "customerNumber",
 		type: "string",
 		default: "",
+		required: true,
 	},
 	{
 		displayName: "Parent",

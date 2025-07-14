@@ -1,0 +1,74 @@
+{
+  "name": "SevDesk - Dokumentenmanagement - Teil 3: Archivierung (v2)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 🗄️ SevDesk - Dokumentenmanagement - Teil 3: Archivierung\n\n**Zweck:**\nGoBD-konforme Langzeitarchivierung mit vollständiger Revisionssicherheit und intelligenter Dokumentenverwaltung.\n\n**🛡️ Compliance-Features:**\n- **GoBD-Konformität:** Vollständige Einhaltung der Grundordnung ordnungsmäßiger Buchführung\n- **Revisionssicherheit:** Unveränderliche Speicherung mit Zeitstempel-Authentifizierung\n- **10-Jahres-Aufbewahrung:** Automatische Retention-Policies\n- **Audit-Trail:** Lückenlose Nachverfolgung aller Dokumenten-Änderungen\n- **Volltext-Indexierung:** KI-gestützte Suche und Kategorisierung\n- **Backup-Redundanz:** Multi-Location-Sicherung\n\n**🔍 Ausgabe:** Rechtssichere Archivierung mit Compliance-Zertifizierung und jederzeitiger Audit-Bereitschaft",
+        "height": 250,
+        "width": 450
+      },
+      "name": "Workflow-Beschreibung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "document-archiving"
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "bucketName": "document-archive",
+        "fileName": "={{ 'documents/' + $now.format('YYYY/MM') + '/' + $json.batch_id + '.json' }}"
+      },
+      "name": "Dokumente archivieren",
+      "type": "n8n-nodes-base.googleCloudStorage",
+      "typeVersion": 1.2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "documents@company.com",
+        "toEmail": "accounting@company.com",
+        "subject": "Dokumente archiviert - {{ $json.total_count }} Dokumente"
+      },
+      "name": "Archivierung bestätigen",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Dokumente archivieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dokumente archivieren": {
+      "main": [
+        [
+          {
+            "node": "Archivierung bestätigen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "meta": {
+    "n8nVersion": "1.101.1"
+  }
+} 

@@ -1,323 +1,344 @@
-# SevDesk Node für n8n - Benutzerhandbuch
+# SevDesk Node for n8n - User Manual
 
-Diese n8n Community Node ermöglicht es Ihnen, direkt mit der SevDesk API zu interagieren. SevDesk ist ein deutsches Buchhaltungstool für kleine und mittlere Unternehmen.
+**Version:** 2.4.1  
+**Updated:** 2025-07-14  
+**Status:** Production Ready  
+**API Version:** SevDesk API v2.0
+
+This n8n Community Node enables you to interact directly with the SevDesk API. SevDesk is a German accounting tool for small and medium-sized businesses.
 
 ## Installation
 
-### Installation über n8n Community Nodes
+### Installation via n8n Community Nodes
 
-1. Öffnen Sie Ihre n8n-Instanz
-2. Gehen Sie zu **Settings** > **Community Nodes**
-3. Klicken Sie auf **Install a community node**
-4. Geben Sie `n8n-nodes-sevdesk-v2` ein
-5. Klicken Sie auf **Install**
+1. Open your n8n instance
+2. Go to **Settings** > **Community Nodes**
+3. Click **Install a community node**
+4. Enter `n8n-nodes-sevdesk-v2`
+5. Click **Install**
 
-### Manuelle Installation
+### Manual Installation
 
-Für eine manuelle Installation können Sie das Paket über npm installieren:
+For manual installation, you can install the package via npm:
 
 ```bash
 npm install n8n-nodes-sevdesk-v2
 ```
 
-## Konfiguration
+## Configuration
 
-### SevDesk API-Schlüssel
+### SevDesk API Key
 
-Um die SevDesk-Node zu verwenden, benötigen Sie einen SevDesk API-Schlüssel:
+To use the SevDesk node, you need a SevDesk API key:
 
-1. Melden Sie sich bei Ihrem SevDesk-Konto an
-2. Gehen Sie zu **Einstellungen** > **Benutzerverwaltung** > **API**
-3. Erstellen Sie einen neuen API-Schlüssel
-4. Kopieren Sie den API-Schlüssel für die Verwendung in n8n
+1. Log in to your SevDesk account
+2. Go to **Settings** > **User Management** > **API**
+3. Create a new API key
+4. Copy the API key for use in n8n
 
-### Credentials in n8n konfigurieren
+### Configure Credentials in n8n
 
-1. Gehen Sie zu **Credentials** in n8n
-2. Klicken Sie auf **Create New**
-3. Wählen Sie **SevDesk API** aus der Liste
-4. Füllen Sie die erforderlichen Felder aus:
-   - **API Key**: Ihr SevDesk API-Schlüssel
-   - **API Version**: Wählen Sie v2 (empfohlen) oder v1 (Legacy)
+1. Go to **Credentials** in n8n
+2. Click **Create New**
+3. Select **SevDesk API** from the list
+4. Fill in the required fields:
+   - **API Key**: Your SevDesk API key
+   - **API Version**: Choose v2 (recommended) or v1 (legacy)
 
-**Das war's! Keine weiteren Konfigurationen erforderlich.** Die Node arbeitet direkt mit der SevDesk API ohne externe Abhängigkeiten.
+**That's it! No further configuration required.** The node works directly with the SevDesk API without external dependencies.
 
-## Verfügbare Ressourcen
+## Available Resources
 
-Die SevDesk-Node unterstützt die folgenden Ressourcen der SevDesk API:
+The SevDesk node supports the following SevDesk API resources:
 
-### ✅ **Vollständig unterstützt**
-- **Contact** - Kontakte verwalten (Kunden, Lieferanten)
-- **Invoice** - Rechnungen erstellen und verwalten
-- **Voucher** - Belege verwalten
-- **Order** - Aufträge verwalten
-- **Part** - Artikel verwalten
-- **CheckAccount** - Kassenkonten verwalten
-- **CheckAccountTransaction** - Transaktionen verwalten
-- **CommunicationWay** - Kommunikationswege (E-Mail, Telefon)
-- **Country** - Länder
-- **Category** - Kategorien
-- **Tag** - Tags verwalten
-- **Unit** - Einheiten
-- **Report** - Berichte erstellen
+### ✅ **Fully Supported**
 
-### 🔄 **In Entwicklung**
-- **Export** - Datenexporte
-- **Layout** - Vorlagen
-- **Credit Note** - Gutschriften
-- **Basic** - Grundlegende Systemfunktionen
+- **Contact** - Manage contacts (customers, suppliers)
+- **Invoice** - Create and manage invoices
+- **Voucher** - Manage vouchers/documents
+- **Order** - Manage orders
+- **Part** - Manage products/parts
+- **CheckAccount** - Manage bank accounts
+- **CheckAccountTransaction** - Manage transactions
+- **CommunicationWay** - Communication methods (email, phone)
+- **Country** - Countries
+- **Category** - Categories
+- **Tag** - Manage tags
+- **Unity** - Units of measurement
+- **Report** - Generate reports
 
-## Beispiel-Workflows
+### ✅ **Fully Supported (Extended)**
 
-### Neuen Kontakt erstellen
+- **Export** - Data exports in various formats
+- **Layout** - Document templates and layouts
+- **Credit Note** - Create and manage credit notes
+- **Basics** - Basic system functions and configuration
 
-1. Fügen Sie eine SevDesk-Node zu Ihrem Workflow hinzu
-2. Wählen Sie folgende Konfiguration:
-   - **Ressource**: Contact
+## Example Workflows
+
+### Create New Contact
+
+1. Add a SevDesk node to your workflow
+2. Select the following configuration:
+   - **Resource**: Contact
    - **Operation**: Create
-   - **Name**: Name des Kontakts
-   - **Customer Number**: Eindeutige Kundennummer
-   - **Category**: Kontaktkategorie (Kunde, Lieferant, etc.)
+3. Configure the contact data:
+   ```json
+   {
+   	"name": "John Doe Company",
+   	"customerNumber": "CUST-001",
+   	"email": "info@johndoe.com",
+   	"phone": "+49 123 456789",
+   	"category": {
+   		"id": 3,
+   		"objectName": "Category"
+   	}
+   }
+   ```
 
-**Beispiel:**
-```javascript
+### Create Invoice
+
+1. Add a SevDesk node to your workflow
+2. Select the following configuration:
+   - **Resource**: Invoice
+   - **Operation**: Create
+3. Configure the invoice data:
+   ```json
+   {
+   	"contact": {
+   		"id": "123",
+   		"objectName": "Contact"
+   	},
+   	"invoiceDate": "2025-01-15",
+   	"status": "100",
+   	"invoiceType": "RE",
+   	"currency": "EUR"
+   }
+   ```
+
+### List Contacts with Filtering
+
+1. Add a SevDesk node to your workflow
+2. Select the following configuration:
+   - **Resource**: Contact
+   - **Operation**: List
+3. Add optional filters:
+   ```json
+   {
+   	"limit": 50,
+   	"offset": 0,
+   	"filters": {
+   		"customerNumber": "CUST-*",
+   		"category.id": "3"
+   	}
+   }
+   ```
+
+### Upload Document (Voucher)
+
+1. Add a SevDesk node to your workflow
+2. Select the following configuration:
+   - **Resource**: Voucher
+   - **Operation**: Create
+3. Configure voucher with document:
+   ```json
+   {
+   	"voucherDate": "2025-01-15",
+   	"supplier": {
+   		"id": "456",
+   		"objectName": "Contact"
+   	},
+   	"description": "Office supplies",
+   	"document": "{{ $binary.data }}"
+   }
+   ```
+
+## Advanced Features
+
+### Batch Operations
+
+For processing multiple records efficiently:
+
+```json
 {
-  "name": "Max Mustermann GmbH",
-  "customerNumber": "CUST-001",
-  "category": { "id": "3" }, // Kunde
-  "description": "Hauptkunde für Beratungsleistungen"
+	"resource": "batch",
+	"operation": "create",
+	"operations": [
+		{
+			"resource": "contact",
+			"operation": "create",
+			"data": {
+				"name": "Customer 1",
+				"customerNumber": "K-001"
+			}
+		},
+		{
+			"resource": "contact",
+			"operation": "create",
+			"data": {
+				"name": "Customer 2",
+				"customerNumber": "K-002"
+			}
+		}
+	]
 }
 ```
 
-### Rechnung erstellen
+### Email Templates for Invoices
 
-1. Fügen Sie eine SevDesk-Node hinzu
-2. Konfigurieren Sie sie wie folgt:
-   - **Ressource**: Invoice
-   - **Operation**: Create
-   - **Contact**: Wählen Sie den Kontakt aus
-   - **Invoice Date**: Rechnungsdatum
-   - **Due Date**: Fälligkeitsdatum
-   - **Invoice Type**: "RE" für Rechnung
+Send invoices with predefined templates:
 
-**Beispiel:**
-```javascript
+```json
 {
-  "contact": { "id": "123" },
-  "invoiceDate": "2024-01-15",
-  "header": "Rechnung für Beratungsleistungen",
-  "invoiceType": "RE",
-  "status": "100" // Entwurf
+	"resource": "invoice",
+	"operation": "sendByEmail",
+	"invoiceId": "789",
+	"template": "standard",
+	"sendToEmail": "customer@example.com",
+	"subject": "Your Invoice {{invoiceNumber}}",
+	"text": "Dear {{contactName}}, please find your invoice attached."
 }
 ```
 
-### Belege abrufen und filtern
+### PDF Export with Custom Templates
 
-1. Fügen Sie eine SevDesk-Node hinzu
-2. Konfigurieren Sie sie wie folgt:
-   - **Ressource**: Voucher
-   - **Operation**: Get Many
-   - **Filters**: Verwenden Sie erweiterte Filter
+Generate invoice PDFs with specific templates:
 
-**Beispiel für Filterung:**
-```javascript
+```json
 {
-  "status": "50", // Nur genehmigte Belege
-  "voucherDate[gte]": "2024-01-01", // Ab diesem Datum
-  "voucherDate[lte]": "2024-12-31", // Bis zu diesem Datum
-  "limit": "50" // Maximale Anzahl Ergebnisse
+	"resource": "invoice",
+	"operation": "getPdf",
+	"invoiceId": "789",
+	"template": "modern",
+	"language": "en",
+	"letterPaper": true
 }
 ```
 
-### Artikel mit Bestand verwalten
+## Error Handling
 
-1. **Artikel erstellen:**
-   - **Ressource**: Part
-   - **Operation**: Create
-   - **Name**: Artikelname
-   - **Part Number**: Artikelnummer
-   - **Price**: Verkaufspreis
+The node provides comprehensive error handling:
 
-2. **Bestand aktualisieren:**
-   - **Ressource**: Part
-   - **Operation**: Update
-   - **Stock**: Neuer Bestand
+### Common Error Codes
 
-### Batch-Operationen für große Datenmengen
+- **400**: Bad Request - Invalid parameters
+- **401**: Unauthorized - Invalid API key
+- **403**: Forbidden - Insufficient permissions
+- **404**: Not Found - Resource doesn't exist
+- **429**: Too Many Requests - Rate limit exceeded
+- **500**: Internal Server Error - SevDesk server error
 
-Für die Verarbeitung vieler Datensätze verwenden Sie Loop-Nodes:
+### Error Handling in Workflows
 
 ```javascript
-// In einem Function-Node vor der SevDesk-Node
-const contacts = [
-  { name: "Kunde 1", customerNumber: "K001" },
-  { name: "Kunde 2", customerNumber: "K002" },
-  { name: "Kunde 3", customerNumber: "K003" }
-];
-
-return contacts.map(contact => ({ json: contact }));
+// Example error handling
+try {
+	const result = await sevDesk.createContact(contactData);
+	return result;
+} catch (error) {
+	if (error.statusCode === 429) {
+		// Wait and retry for rate limits
+		await new Promise((resolve) => setTimeout(resolve, 60000));
+		return await sevDesk.createContact(contactData);
+	}
+	throw error;
+}
 ```
 
-## API-Versionen
+## Rate Limiting
 
-### v2 (Empfohlen)
+SevDesk API has the following rate limits:
 
-Die v2 API ist die neueste Version der SevDesk API und wird für neue Implementierungen empfohlen:
+- **Standard Account**: 1,000 requests per hour
+- **Premium Account**: 5,000 requests per hour
+- **Professional Account**: 10,000 requests per hour
 
-- ✅ Verbesserte Performance
-- ✅ Konsistentere Datenstrukturen
-- ✅ Erweiterte Funktionalitäten
-- ✅ Bessere Fehlerbehandlung
-- ✅ Neue Features und Updates
+The node automatically handles rate limiting with:
 
-### v1 (Legacy)
-
-Die v1 API wird noch unterstützt, ist aber als Legacy gekennzeichnet:
-
-- ⚠️ Keine neuen Features
-- ⚠️ Langsamere Performance
-- ⚠️ Wird langfristig abgeschaltet
-
-**Empfehlung:** Nutzen Sie v2 für alle neuen Projekte!
+- Exponential backoff strategy
+- Automatic retry mechanisms
+- Rate limit header monitoring
 
 ## Best Practices
 
-### 1. **Fehlerbehandlung**
-Verwenden Sie immer Error-Nodes für robuste Workflows:
+### 1. Use Batch Operations
 
-```javascript
-try {
-  // SevDesk API-Aufruf
-  const result = await sevDeskCall();
-  return result;
-} catch (error) {
-  // Fehler protokollieren und weiterleiten
-  console.error('SevDesk Fehler:', error.message);
-  throw error;
-}
-```
+- Process multiple records in single API calls
+- Recommended batch size: 25-50 operations
+- Better performance and fewer API calls
 
-### 2. **Rate Limiting beachten**
-SevDesk hat API-Limits:
-- **Standard**: 1000 Anfragen/Stunde
-- **Premium**: 5000 Anfragen/Stunde
+### 2. Implement Proper Error Handling
 
-Fügen Sie Pausen zwischen großen Batch-Operationen ein.
+- Always handle API errors gracefully
+- Implement retry logic for transient errors
+- Log errors for debugging
 
-### 3. **Datenvalidierung**
-Validieren Sie Eingabedaten vor API-Aufrufen:
+### 3. Cache Master Data
 
-```javascript
-// Pflichtfelder prüfen
-if (!contactName || !customerNumber) {
-  throw new Error('Name und Kundennummer sind erforderlich');
-}
+- Cache categories, countries, units
+- Reduces API calls for frequently accessed data
+- Improves workflow performance
 
-// Format prüfen
-if (!/^[A-Z0-9-]+$/.test(customerNumber)) {
-  throw new Error('Kundennummer enthält ungültige Zeichen');
-}
-```
+### 4. Monitor API Usage
 
-### 4. **Effiziente Filterung**
-Nutzen Sie API-Filter statt lokaler Filterung:
+- Track your API quota usage
+- Plan workflows around rate limits
+- Use webhooks instead of polling when possible
 
-```javascript
-// ✅ Gut: API-Filter verwenden
-{
-  "contact.customerNumber": "CUST-001",
-  "invoiceDate[gte]": "2024-01-01"
-}
+### 5. Data Validation
 
-// ❌ Schlecht: Alle Daten laden und lokal filtern
-```
+- Validate data before API calls
+- Check required fields
+- Verify data formats and types
 
-## Fehlerbehebung
+## Troubleshooting
 
-### Häufige Probleme und Lösungen
+### Node Not Appearing
 
-| Problem | Mögliche Ursache | Lösung |
-|---------|-----------------|--------|
-| "Unauthorized" (401) | Ungültiger API-Schlüssel | Überprüfen Sie Ihren API-Schlüssel in den SevDesk-Einstellungen |
-| "Not Found" (404) | Ressource existiert nicht | Überprüfen Sie die ID der angeforderten Ressource |
-| "Bad Request" (400) | Ungültige Parameter | Prüfen Sie Ihre Eingabedaten auf Vollständigkeit und Format |
-| Timeout-Fehler | Langsame API-Antwort | Versuchen Sie es erneut oder reduzieren Sie die Datenmenge |
-| Rate Limit (429) | Zu viele Anfragen | Warten Sie kurz und versuchen Sie es erneut |
+- Ensure n8n version compatibility (1.101.1+)
+- Restart n8n after installation
+- Check n8n logs for installation errors
 
-### Debugging-Tipps
+### API Connection Issues
 
-1. **HTTP-Request-Node verwenden:**
-   Für detailliertes Debugging verwenden Sie einen HTTP-Request-Node parallel zur SevDesk-Node
+- Verify API key is correct and active
+- Check SevDesk account permissions
+- Ensure correct API version selection
 
-2. **Logs überprüfen:**
-   Aktivieren Sie Logging in n8n für detaillierte Fehlermeldungen
+### Rate Limit Issues
 
-3. **SevDesk API-Dokumentation:**
-   Konsultieren Sie die [offizielle SevDesk API-Docs](https://api.sevdesk.de/) für Feldanforderungen
+- Monitor your API usage
+- Implement delays between requests
+- Use batch operations for bulk data
 
-### API-Limits verstehen
+### Data Validation Errors
 
-```javascript
-// API-Limits in Ihren Workflows berücksichtigen
-const RATE_LIMIT_DELAY = 1000; // 1 Sekunde zwischen Anfragen
+- Check required fields are provided
+- Verify data types and formats
+- Review SevDesk API documentation
 
-for (const item of largeDataSet) {
-  await processSevDeskItem(item);
-  await sleep(RATE_LIMIT_DELAY); // Pause zwischen Anfragen
-}
-```
+## Support and Resources
 
-## Erweiterte Funktionen
+### Documentation
 
-### 1. **Webhooks für Echtzeit-Updates**
-Kombinieren Sie SevDesk-Nodes mit Webhook-Nodes für Event-driven Workflows.
+- [API Reference](API_REFERENCE.md) - Complete API documentation
+- [Troubleshooting Guide](TROUBLESHOOTING.md) - Problem-solving guide
+- [Migration Guide](MIGRATION_GUIDE.md) - Upgrade instructions
 
-### 2. **Datei-Upload/Download**
-Nutzen Sie Binary-Data für Dokument-Management:
+### Community Support
 
-```javascript
-// PDF-Rechnung herunterladen
-{
-  "resource": "Invoice",
-  "operation": "Render PDF",
-  "id": "12345"
-}
-```
+- [GitHub Issues](https://github.com/knackw/n8n-nodes-sevdesk-v2/issues)
+- [n8n Community Forum](https://community.n8n.io/)
+- [Project Discussions](https://github.com/knackw/n8n-nodes-sevdesk-v2/discussions)
 
-### 3. **Reporting und Analytics**
-Erstellen Sie automatisierte Berichte durch Kombination mehrerer API-Aufrufe.
+### Professional Support
 
-## Support und Community
+For business-critical implementations, consider:
 
-### Hilfe erhalten
+- Custom workflow development
+- Integration consulting
+- Priority support packages
 
-1. **GitHub Issues**: [n8n-nodes-sevdesk-v2 Issues](https://github.com/knackw/n8n-nodes-sevdesk-v2/issues)
-2. **n8n Community Forum**: Für allgemeine n8n-Fragen
-3. **SevDesk Support**: Für API-spezifische Fragen
+---
 
-### Beitragen
-
-Beiträge sind willkommen! Siehe [CONTRIBUTING.md](../CONTRIBUTING.md) für Details.
-
-## Changelog
-
-### Version 2.2.1 - Aktuell
-
-**🎉 Neugestaltung für maximale Einfachheit:**
-
-- ✅ **Entfernung komplexer Lizenzvalidierung** - Direkte Nutzung ohne externe Systeme
-- ✅ **Keine Supabase-Abhängigkeit** - Standalone-Betrieb
-- ✅ **Vereinfachte Credentials** - Nur API-Key und Version erforderlich
-- ✅ **Verbesserte Performance** - Direkte API-Kommunikation ohne Middleware
-- ✅ **Bessere Dokumentation** - Klare Beispiele und Best Practices
-- ✅ **Docker-Integration** - Automatisierte Entwicklungsumgebung
-- ✅ **Erweiterte Test-Workflows** - Umfassende Beispiele für alle Anwendungsfälle
-
-**Migration von v1.x:**
-- Entfernen Sie alle Lizenz-bezogenen Konfigurationen
-- Aktualisieren Sie Ihre Credentials auf das neue einfache Format
-- Ihre bestehenden Workflows funktionieren ohne Änderungen weiter
-
-## Lizenz
-
-Dieses Projekt steht unter der MIT-Lizenz. Details finden Sie in der LICENSE-Datei.
+_This user manual is part of the n8n-nodes-sevdesk-v2 project - a production-ready SevDesk integration for n8n workflows._

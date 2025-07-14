@@ -1,0 +1,73 @@
+{
+  "name": "SevDesk - Reporting - Teil 3: Verteilung (v2)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 📤 SevDesk - Reporting - Teil 3: Verteilung\n\n**Zweck:**\nErstellt finale Reports in verschiedenen Formaten und verteilt sie an die entsprechenden Empfänger mit personalisierten Inhalten und Multi-Channel-Delivery.\n\n**📊 Verteilungsfunktionen:**\n- **Multi-Format-Reports:** PDF, Excel, PowerBI, Tableau-Integration\n- **Personalisierung:** Rollenbasierte Inhalte und KPI-Fokussierung\n- **Multi-Channel-Versand:** E-Mail, Slack, Teams, Dashboard-Push\n- **Compliance-Archivierung:** GoBD-konforme Langzeitspeicherung\n- **Empfänger-Management:** Dynamische Verteilerlisten\n\n**🚀 Ausgabe:** Automatisierte Verteilung von Business Intelligence an alle Stakeholder mit nachverfolgbarer Zustellung",
+        "height": 250,
+        "width": 450
+      },
+      "name": "Workflow-Beschreibung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reporting-distribution",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "reporting-distribution-webhook"
+    },
+    {
+      "parameters": {
+        "fromEmail": "reporting@company.com",
+        "toEmail": "{{ $json.report_info.recipients.join(',') }}",
+        "subject": "{{ $json.report_info.report_type.toUpperCase() }} Report - {{ $json.report_info.start_date }} bis {{ $json.report_info.end_date }}",
+        "content": "Ihr automatisierter Geschäftsbericht ist verfügbar.\n\n**Kennzahlen:**\n- Umsatz: {{ $json.kennzahlen.umsatz.netto_umsatz }}€\n- Ausgaben: {{ $json.kennzahlen.ausgaben.netto_ausgaben }}€\n- Ergebnis: {{ $json.kennzahlen.ergebnis.netto_ergebnis }}€\n- Cashflow: {{ $json.kennzahlen.liquiditaet.netto_cashflow }}€\n\n**Trends:**\n- Umsatz: {{ $json.analysen.trends.umsatz_trend }}\n- Ergebnis: {{ $json.analysen.trends.ergebnis_trend }}\n- Liquidität: {{ $json.analysen.trends.liquiditaets_trend }}\n\n{% if $json.analysen.empfehlungen.length > 0 %}\n**Handlungsempfehlungen:**\n{% for empfehlung in $json.analysen.empfehlungen %}\n- {{ empfehlung }}\n{% endfor %}\n{% endif %}\n\nDetaillierte Analysen finden Sie im Dashboard."
+      },
+      "name": "Report versenden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [450, 300],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "**📫 Multi-Channel-Report-Distribution**\n\n**Funktion:** Intelligente Verteilung von Business Reports\n\n**Personalisierung:**\n- Rollenbasierte Inhaltsfilterung (Management, Buchhaltung, Vertrieb)\n- Automatische KPI-Gewichtung nach Zielgruppe\n- Individuelle Format-Präferenzen (PDF, Excel, Dashboard)\n\n**Delivery-Kanäle:**\n- E-Mail mit eingebetteten Charts\n- Slack/Teams-Integration mit Live-Updates\n- Dashboard-Push-Benachrichtigungen\n- Mobile App-Synchronisation\n\n**Tracking & Analytics:**\n- Öffnungsraten und Engagement-Metriken\n- A/B-Testing für Report-Optimierung\n\n**Beschreibung:** Moderne, datengetriebene Kommunikation mit Stakeholdern durch intelligente Report-Verteilung.",
+        "width": 300,
+        "height": 240
+      },
+      "name": "Multi-Channel-Distribution-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [450, 50]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Report versenden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "meta": {
+    "n8nVersion": "1.101.1"
+  }
+} 

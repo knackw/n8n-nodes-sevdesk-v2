@@ -11,7 +11,7 @@
       },
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         250,
         300
@@ -31,7 +31,7 @@
       },
       "name": "Secret prüfen",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         450,
         300
@@ -47,7 +47,7 @@
       },
       "name": "Unauthorized",
       "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         650,
         200
@@ -55,11 +55,11 @@
     },
     {
       "parameters": {
-        "functionCode": "// Versandkanal basierend auf Mahnstufe bestimmen\nconst reminderData = $node[\"Mahndaten laden\"].json;\nconst reminderLevel = parseInt(reminderData.mahnstufe);\n\n// Versandkanal bestimmen\nlet channel = \"email\";\nlet needsPostalMail = false;\nlet needsRegisteredMail = false;\n\n// Für höhere Mahnstufen andere Kanäle verwenden\nif (reminderLevel >= 3) {\n  channel = \"registered_mail\"; // Einschreiben\n  needsRegisteredMail = true;\n} else if (reminderLevel >= 2) {\n  channel = \"postal_mail\"; // Normaler Brief\n  needsPostalMail = true;\n}\n\n// Kundenspezifische Regeln prüfen (Beispiel)\nif (reminderData.customerNumber === \"ALWAYS_EMAIL\") {\n  channel = \"email\";\n  needsPostalMail = false;\n  needsRegisteredMail = false;\n}\n\n// Betreff und Text je nach Mahnstufe anpassen\nlet subject = \"\";\nswitch (reminderLevel) {\n  case 1:\n    subject = `Zahlungserinnerung: Rechnung ${reminderData.invoiceNumber}`;\n    break;\n  case 2:\n    subject = `Mahnung: Rechnung ${reminderData.invoiceNumber}`;\n    break;\n  case 3:\n    subject = `Letzte Mahnung: Rechnung ${reminderData.invoiceNumber}`;\n    break;\n  default:\n    subject = `Zahlungserinnerung: Rechnung ${reminderData.invoiceNumber}`;\n}\n\nreturn {\n  json: {\n    ...reminderData,\n    channel,\n    needsPostalMail,\n    needsRegisteredMail,\n    emailSubject: subject,\n    // Weitere Daten für den Versand\n    customerEmail: reminderData.email,\n    customerName: reminderData.customerName || `${reminderData.surename} ${reminderData.familyname}`,\n    invoiceNumber: reminderData.invoiceNumber,\n    totalAmount: reminderData.gesamt_betrag\n  }\n};"
+        "code": "// Versandkanal basierend auf Mahnstufe bestimmen\nconst reminderData = $node[\"Mahndaten laden\"].json;\nconst reminderLevel = parseInt(reminderData.mahnstufe);\n\n// Versandkanal bestimmen\nlet channel = \"email\";\nlet needsPostalMail = false;\nlet needsRegisteredMail = false;\n\n// Für höhere Mahnstufen andere Kanäle verwenden\nif (reminderLevel >= 3) {\n  channel = \"registered_mail\"; // Einschreiben\n  needsRegisteredMail = true;\n} else if (reminderLevel >= 2) {\n  channel = \"postal_mail\"; // Normaler Brief\n  needsPostalMail = true;\n}\n\n// Kundenspezifische Regeln prüfen (Beispiel)\nif (reminderData.customerNumber === \"ALWAYS_EMAIL\") {\n  channel = \"email\";\n  needsPostalMail = false;\n  needsRegisteredMail = false;\n}\n\n// Betreff und Text je nach Mahnstufe anpassen\nlet subject = \"\";\nswitch (reminderLevel) {\n  case 1:\n    subject = `Zahlungserinnerung: Rechnung ${reminderData.invoiceNumber}`;\n    break;\n  case 2:\n    subject = `Mahnung: Rechnung ${reminderData.invoiceNumber}`;\n    break;\n  case 3:\n    subject = `Letzte Mahnung: Rechnung ${reminderData.invoiceNumber}`;\n    break;\n  default:\n    subject = `Zahlungserinnerung: Rechnung ${reminderData.invoiceNumber}`;\n}\n\nreturn {\n  json: {\n    ...reminderData,\n    channel,\n    needsPostalMail,\n    needsRegisteredMail,\n    emailSubject: subject,\n    // Weitere Daten für den Versand\n    customerEmail: reminderData.email,\n    customerName: reminderData.customerName || `${reminderData.surename} ${reminderData.familyname}`,\n    invoiceNumber: reminderData.invoiceNumber,\n    totalAmount: reminderData.gesamt_betrag\n  }\n};"
       },
       "name": "Versandkanal bestimmen",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         850,
         400
@@ -78,7 +78,7 @@
       },
       "name": "Versandkanal",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         1050,
         400
@@ -98,7 +98,7 @@
       },
       "name": "E-Mail versenden",
       "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 1,
+      "typeVersion": 2.1,
       "position": [
         1250,
         300
@@ -152,7 +152,7 @@
       },
       "name": "Brief versenden",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 3,
+      "typeVersion": 4.2,
       "position": [
         1250,
         500
@@ -171,7 +171,7 @@
       },
       "name": "Signal Benachrichtigung",
       "type": "n8n-nodes-base.signal",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         1650,
         400
@@ -191,25 +191,113 @@
       },
       "name": "Erfolg",
       "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         1850,
         400
       ]
     }
   ],
-  "connections": {},
-  "settings": {
-    "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner",
-    "errorWorkflow": "error-handling"
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Secret prüfen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Secret prüfen": {
+      "main": [
+        [
+          {
+            "node": "Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Versandkanal bestimmen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Versandkanal bestimmen": {
+      "main": [
+        [
+          {
+            "node": "Versandkanal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Versandkanal": {
+      "main": [
+        [
+          {
+            "node": "E-Mail versenden",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Brief versenden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E-Mail versenden": {
+      "main": [
+        [
+          {
+            "node": "Signal Benachrichtigung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brief versenden": {
+      "main": [
+        [
+          {
+            "node": "Signal Benachrichtigung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signal Benachrichtigung": {
+      "main": [
+        [
+          {
+            "node": "Erfolg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
+  "settings": {},
   "staticData": {},
   "pinData": {},
   "versionId": "1",
   "meta": {
-    "instanceId": "SEVDESK_WORKFLOW_INSTANCE",
-    "n8nVersion": "1.101.0"
+    "templateCredsSetupCompleted": true,
+    "n8nVersion": "1.101.1"
   },
   "tags": [
     {

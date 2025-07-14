@@ -54,6 +54,13 @@ export const orderOperations: INodeProperties[] = [
 						body: {
 							order: '={"id": "{{$parameter.orderId}}", "objectName": "Order"}',
 							"part-sum": "={{$parameter.partSum}}",
+							invoiceDate: "={{$parameter.invoiceDate}}",
+							deliveryDate: "={{$parameter.deliveryDate}}",
+							status: "={{$parameter.invoiceStatus || 100}}",
+							smallBusiness: "={{$parameter.smallBusiness}}",
+							taxRate: "={{$parameter.taxRate}}",
+							taxText: "={{$parameter.taxText}}",
+							dunningLevel: "={{$parameter.dunningLevel || 1}}",
 						},
 					},
 					output: {
@@ -273,6 +280,7 @@ export const orderFields: INodeProperties[] = [
 				displayName: "Contact ID",
 				name: "contactId",
 				type: "string",
+				required: true,
 				default: "",
 				routing: {
 					send: {
@@ -317,6 +325,7 @@ export const orderFields: INodeProperties[] = [
 				displayName: "Order Date",
 				name: "orderDate",
 				type: "dateTime",
+				required: true,
 				default: "",
 			},
 			{
@@ -468,5 +477,107 @@ export const orderFields: INodeProperties[] = [
 		},
 		description:
 			"Whether to create a partial invoice. If true, a new invoice will be created with the sum of all not yet billed order positions.",
+	},
+	{
+		displayName: "Invoice Date",
+		name: "invoiceDate",
+		type: "dateTime",
+		default: "",
+		description: "Date for the created invoice (defaults to current date)",
+		displayOptions: {
+			show: {
+				resource: ["order"],
+				operation: ["createInvoice"],
+			},
+		},
+	},
+	{
+		displayName: "Delivery Date",
+		name: "deliveryDate",
+		type: "dateTime",
+		default: "",
+		description: "Delivery date for the invoice",
+		displayOptions: {
+			show: {
+				resource: ["order"],
+				operation: ["createInvoice"],
+			},
+		},
+	},
+	{
+		displayName: "Invoice Status",
+		name: "invoiceStatus",
+		type: "options",
+		options: [
+			{ name: "Draft", value: 50 },
+			{ name: "Open", value: 100 },
+			{ name: "Paid", value: 200 },
+		],
+		default: 100,
+		description: "Status of the created invoice",
+		displayOptions: {
+			show: {
+				resource: ["order"],
+				operation: ["createInvoice"],
+			},
+		},
+	},
+	{
+		displayName: "Small Business",
+		name: "smallBusiness",
+		type: "boolean",
+		default: false,
+		description: "Whether this is a small business invoice (tax-exempt)",
+		displayOptions: {
+			show: {
+				resource: ["order"],
+				operation: ["createInvoice"],
+			},
+		},
+	},
+	{
+		displayName: "Tax Rate",
+		name: "taxRate",
+		type: "number",
+		default: 19,
+		description: "Tax rate percentage for the invoice",
+		displayOptions: {
+			show: {
+				resource: ["order"],
+				operation: ["createInvoice"],
+			},
+		},
+	},
+	{
+		displayName: "Tax Text",
+		name: "taxText",
+		type: "string",
+		default: "",
+		description: "Custom tax text for the invoice",
+		displayOptions: {
+			show: {
+				resource: ["order"],
+				operation: ["createInvoice"],
+			},
+		},
+	},
+	{
+		displayName: "Dunning Level",
+		name: "dunningLevel",
+		type: "options",
+		options: [
+			{ name: "No Dunning", value: 0 },
+			{ name: "First Reminder", value: 1 },
+			{ name: "Second Reminder", value: 2 },
+			{ name: "Final Notice", value: 3 },
+		],
+		default: 1,
+		description: "Dunning level for the invoice",
+		displayOptions: {
+			show: {
+				resource: ["order"],
+				operation: ["createInvoice"],
+			},
+		},
 	},
 ];

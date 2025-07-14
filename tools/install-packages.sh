@@ -1,109 +1,109 @@
 #!/bin/bash
 
-# Script für automatische Installation von n8n Community Packages und lokalen Nodes
-# Wird beim Docker Container Start ausgeführt
+# Script for automatic installation of n8n Community Packages and local Nodes
+# Executed when Docker Container starts
 
-echo "🚀 n8n Community Package & Local Node Installer gestartet..."
+echo "🚀 n8n Community Package & Local Node Installer started..."
 
-# Erstelle notwendige Verzeichnisse
+# Create necessary directories
 mkdir -p /home/node/.n8n/nodes
 mkdir -p /home/node/.n8n/custom
 
-# Standard Community Packages die installiert werden sollen
+# Default Community Packages to be installed
 DEFAULT_PACKAGES="n8n-nodes-base,n8n-nodes-advanced-flow-blocks,n8n-nodes-puppeteer,n8n-nodes-firecrawl,n8n-nodes-elevenlabs,@brave/n8n-nodes-brave-search"
 
-# Verwende N8N_COMMUNITY_PACKAGES falls gesetzt, ansonsten DEFAULT_PACKAGES
+# Use N8N_COMMUNITY_PACKAGES if set, otherwise DEFAULT_PACKAGES
 PACKAGES_TO_INSTALL="${N8N_COMMUNITY_PACKAGES:-$DEFAULT_PACKAGES}"
 
-echo "📦 Installiere Community Packages: $PACKAGES_TO_INSTALL"
+echo "📦 Installing Community Packages: $PACKAGES_TO_INSTALL"
 
-# Installiere jedes Package einzeln
+# Install each package individually
 IFS=',' read -ra PACKAGES <<< "$PACKAGES_TO_INSTALL"
 for package in "${PACKAGES[@]}"; do
-    # Entferne Leerzeichen
+    # Remove whitespace
     package=$(echo "$package" | xargs)
     
     if [ ! -z "$package" ]; then
-        echo "🔧 Installiere: $package"
+        echo "🔧 Installing: $package"
         
-        # Versuche globale Installation
+        # Try global installation
         if npm install -g "$package" --no-fund --no-audit; then
-            echo "✅ $package erfolgreich installiert"
+            echo "✅ $package successfully installed"
         else
-            echo "❌ Fehler beim Installieren von $package"
+            echo "❌ Error installing $package"
             
-            # Fallback: Versuche lokale Installation im nodes Verzeichnis
-            echo "🔄 Versuche lokale Installation..."
+            # Fallback: Try local installation in nodes directory
+            echo "🔄 Trying local installation..."
             cd /home/node/.n8n/nodes
             if npm install "$package" --no-fund --no-audit; then
-                echo "✅ $package lokal installiert"
+                echo "✅ $package locally installed"
             else
-                echo "❌ Auch lokale Installation fehlgeschlagen für $package"
+                echo "❌ Local installation also failed for $package"
             fi
         fi
     fi
 done
 
-# Installation des lokalen SevDesk-Nodes
-echo "🔧 Installiere lokalen SevDesk-Node..."
+# Installation of local SevDesk-Node
+echo "🔧 Installing local SevDesk-Node..."
 
 if [ "$INSTALL_LOCAL_SEVDESK_NODE" = "true" ] && [ -d "$SEVDESK_NODE_PATH" ]; then
-    echo "📂 Gefunden: $SEVDESK_NODE_PATH"
+    echo "📂 Found: $SEVDESK_NODE_PATH"
     
-    # Wechsle in das SevDesk-Node Verzeichnis
+    # Change to SevDesk-Node directory
     cd "$SEVDESK_NODE_PATH"
     
-    # Prüfe ob package.json existiert
+    # Check if package.json exists
     if [ ! -f "package.json" ]; then
-        echo "❌ Keine package.json gefunden in $SEVDESK_NODE_PATH"
+        echo "❌ No package.json found in $SEVDESK_NODE_PATH"
         exit 1
     fi
     
-    echo "📥 Installiere Node Dependencies..."
+    echo "📥 Installing Node Dependencies..."
     if npm install --no-fund --no-audit; then
-        echo "✅ Dependencies installiert"
+        echo "✅ Dependencies installed"
     else
-        echo "❌ Fehler beim Installieren der Dependencies"
+        echo "❌ Error installing dependencies"
         exit 1
     fi
     
-    echo "🔨 Kompiliere SevDesk-Node..."
+    echo "🔨 Compiling SevDesk-Node..."
     if npm run build; then
-        echo "✅ Build erfolgreich"
+        echo "✅ Build successful"
     else
-        echo "❌ Build fehlgeschlagen"
+        echo "❌ Build failed"
         exit 1
     fi
     
-    echo "🔗 Verlinke SevDesk-Node global..."
+    echo "🔗 Linking SevDesk-Node globally..."
     if npm link; then
-        echo "✅ Globaler Link erstellt"
+        echo "✅ Global link created"
     else
-        echo "❌ Globaler Link fehlgeschlagen"
+        echo "❌ Global link failed"
         exit 1
     fi
     
-    # Installiere in n8n custom nodes Verzeichnis
-    echo "📁 Installiere in n8n nodes Verzeichnis..."
+    # Install in n8n custom nodes directory
+    echo "📁 Installing in n8n nodes directory..."
     cd /home/node/.n8n/nodes
     
     if npm link n8n-nodes-sevdesk-v2; then
-        echo "✅ SevDesk-Node erfolgreich in n8n installiert!"
+        echo "✅ SevDesk-Node successfully installed in n8n!"
     else
-        echo "❌ Fehler beim Installieren in n8n"
-        # Fallback: Kopiere dist Verzeichnis direkt
-        echo "🔄 Versuche direktes Kopieren..."
+        echo "❌ Error installing in n8n"
+        # Fallback: Copy dist directory directly
+        echo "🔄 Trying direct copy..."
         if [ -d "$SEVDESK_NODE_PATH/dist" ]; then
             cp -r "$SEVDESK_NODE_PATH/dist" "/home/node/.n8n/nodes/n8n-nodes-sevdesk-v2"
-            echo "✅ SevDesk-Node direkt kopiert"
+            echo "✅ SevDesk-Node copied directly"
         else
-            echo "❌ Kein dist Verzeichnis gefunden"
+            echo "❌ No dist directory found"
             exit 1
         fi
     fi
     
-    # Erstelle/Aktualisiere package.json im nodes Verzeichnis
-    echo "📝 Aktualisiere nodes package.json..."
+    # Create/Update package.json in nodes directory
+    echo "📝 Updating nodes package.json..."
     cat > /home/node/.n8n/nodes/package.json << EOF
 {
   "name": "installed-nodes",
@@ -115,14 +115,14 @@ if [ "$INSTALL_LOCAL_SEVDESK_NODE" = "true" ] && [ -d "$SEVDESK_NODE_PATH" ]; th
 EOF
 
 else
-    echo "ℹ️  Lokaler SevDesk-Node nicht gefunden oder deaktiviert"
+    echo "ℹ️  Local SevDesk-Node not found or disabled"
 fi
 
-# Aktualisiere package.json im nodes Verzeichnis (falls noch nicht vorhanden)
-echo "📝 Stelle sicher, dass package.json existiert..."
+# Update package.json in nodes directory (if not already present)
+echo "📝 Ensuring package.json exists..."
 cd /home/node/.n8n/nodes
 
-# Erstelle package.json falls nicht vorhanden
+# Create package.json if not present
 if [ ! -f "package.json" ]; then
     cat > package.json << EOF
 {
@@ -133,21 +133,21 @@ if [ ! -f "package.json" ]; then
 EOF
 fi
 
-# Setze korrekte Berechtigungen
-echo "🔐 Setze Berechtigungen..."
+# Set correct permissions
+echo "🔐 Setting permissions..."
 chown -R node:node /home/node/.n8n
 chmod -R 755 /home/node/.n8n
 
-echo "🎉 Installation abgeschlossen!"
-echo "ℹ️  Installierte Community Packages:"
-npm list -g --depth=0 | grep n8n-nodes || echo "Keine globalen n8n-nodes gefunden"
+echo "🎉 Installation completed!"
+echo "ℹ️  Installed Community Packages:"
+npm list -g --depth=0 | grep n8n-nodes || echo "No global n8n-nodes found"
 
-echo "ℹ️  Lokale Packages in /home/node/.n8n/nodes:"
-cd /home/node/.n8n/nodes && npm list --depth=0 2>/dev/null || echo "Keine lokalen Packages gefunden"
+echo "ℹ️  Local Packages in /home/node/.n8n/nodes:"
+cd /home/node/.n8n/nodes && npm list --depth=0 2>/dev/null || echo "No local packages found"
 
 echo "ℹ️  SevDesk-Node Status:"
 if [ -d "/home/node/.n8n/nodes/n8n-nodes-sevdesk-v2" ] || npm list n8n-nodes-sevdesk-v2 >/dev/null 2>&1; then
-    echo "✅ SevDesk-Node ist verfügbar"
+    echo "✅ SevDesk-Node is available"
 else
-    echo "❌ SevDesk-Node nicht gefunden"
+    echo "❌ SevDesk-Node not found"
 fi 

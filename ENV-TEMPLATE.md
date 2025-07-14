@@ -1,100 +1,106 @@
-# 🔧 Umgebungsvariablen-Konfiguration
+# 🔧 Environment Configuration
 
-Erstellen Sie eine `.env`-Datei im Root-Verzeichnis mit folgenden Variablen:
+**Version:** 2.4.1  
+**Updated:** 2025-07-14
 
-## 📋 .env Vorlage
+Create a `.env` file in the root directory with the following variables for optimal n8n-nodes-sevdesk-v2 development experience:
+
+## 📋 .env Template
 
 ```bash
-# n8n Docker-Container Konfiguration für SevDesk-Node
+# n8n SevDesk Node Development Environment
 
-# n8n Basis Konfiguration
+# Node Environment
+NODE_ENV=development
+
+# n8n Configuration
 N8N_HOST=localhost
 N8N_PORT=5678
 N8N_PROTOCOL=http
-NODE_ENV=development
-
-# n8n API Konfiguration für Workflow-Management
-# WICHTIG: Nach dem ersten Start von n8n einen API-Key erstellen!
-# 1. Öffnen Sie n8n: http://localhost:5678
-# 2. Gehen Sie zu Settings → API
-# 3. Erstellen Sie einen neuen API-Key
-# 4. Tragen Sie den Key hier ein:
-N8N_API_KEY=your-api-key-here
 N8N_API_URL=http://localhost:5678/api/v1
 
-# SevDesk-Node Installation
+# n8n API Key (optional - create after first n8n start)
+# 1. Open n8n: http://localhost:5678
+# 2. Go to Settings → API
+# 3. Create a new API Key
+# 4. Add the key here:
+N8N_API_KEY=your-api-key-here
+
+# Debug & Logging
+DEBUG=false
+LOG_LEVEL=info
+
+# SevDesk Node Development
 INSTALL_LOCAL_SEVDESK_NODE=true
 SEVDESK_NODE_PATH=/sevdesk-node
 
-# Community Packages (optional - standardmäßig installiert)
-N8N_COMMUNITY_PACKAGES=n8n-nodes-base,n8n-nodes-advanced-flow-blocks,n8n-nodes-puppeteer,n8n-nodes-firecrawl,n8n-nodes-elevenlabs,@brave/n8n-nodes-brave-search
-
-# Beispiel für produktive Umgebung:
-# N8N_HOST=ihredomain.de
+# Production Example:
+# NODE_ENV=production
+# N8N_HOST=yourdomain.com
 # N8N_PORT=443
 # N8N_PROTOCOL=https
-# NODE_ENV=production
-# N8N_API_URL=https://ihredomain.de/api/v1
+# N8N_API_URL=https://yourdomain.com/api/v1
+# DEBUG=false
+# LOG_LEVEL=error
 ```
 
-## 🚀 Schnellstart
+## 🚀 Quick Start
 
-1. **Erstellen Sie die .env-Datei:**
+1. **Create the .env file:**
+
    ```bash
    cp ENV-TEMPLATE.md .env
-   # Bearbeiten Sie die .env-Datei mit Ihren Werten
+   # Edit the .env file with your values
    ```
 
-2. **Starten Sie n8n:**
+2. **Start development:**
+
    ```bash
    npm start
    ```
 
-3. **API-Key erstellen (beim ersten Start):**
-   - Das Skript startet n8n ohne API-Key
-   - Öffnen Sie http://localhost:5678
-   - Gehen Sie zu Settings → API → Create API Key
-   - Kopieren Sie den Key in Ihre .env-Datei: `N8N_API_KEY=ihr-api-key`
-   - Starten Sie das Skript erneut: `npm start`
+3. **Create API Key (first start):**
+   - Open http://localhost:5678
+   - Go to Settings → API → Create API Key
+   - Copy the key to your .env file: `N8N_API_KEY=your-api-key`
 
-## 🔑 API-Key konfigurieren
+## 🔑 API Key Configuration
 
-Der API-Key wird für folgende Funktionen benötigt:
+The API key is required for:
 
-- ✅ **Workflow-Backup erstellen**
-- ✅ **Vorhandene Workflows löschen** 
-- ✅ **Test-Workflows hochladen**
-- ✅ **Workflow-Verwaltung**
+- ✅ **Workflow management**
+- ✅ **Test workflow uploads**
+- ✅ **Automated testing**
 
-**Ohne API-Key:**
-- ✅ n8n startet normal
-- ✅ SevDesk-Node ist verfügbar
-- ❌ Keine automatische Workflow-Verwaltung
+**Without API Key:**
 
-## 🛠️ Fehlerbehandlung
+- ✅ n8n starts normally
+- ✅ SevDesk Node is available
+- ❌ No automated workflow management
 
-**Problem:** `N8N_API_KEY ist nicht gesetzt`
-- **Lösung:** Erstellen Sie einen API-Key in n8n und tragen Sie ihn in die .env ein
+## 🛠️ Troubleshooting
 
-**Problem:** `Fehler beim Abrufen der Workflows`
-- **Lösung:** Prüfen Sie die n8n-URL und den API-Key
+**Problem:** `N8N_API_KEY is not set`
 
-**Problem:** `Docker ist nicht verfügbar`
-- **Lösung:** Starten Sie Docker Desktop oder Docker-Service
+- **Solution:** Create an API key in n8n and add it to your .env file
 
-## 📁 Verzeichnisstruktur
+**Problem:** `Cannot connect to n8n`
+
+- **Solution:** Check n8n URL and API key configuration
+
+## 📁 Directory Structure
 
 ```
-├── .env                    # Ihre Konfiguration (nicht in Git!)
-├── ENV-TEMPLATE.md         # Diese Vorlage
-├── scripts/
-│   └── tools/start-n8n.js       # Start-Skript
-├── test-workflows/         # Test-Workflows für Upload
-└── backup/                 # Workflow-Backups (wird erstellt)
+├── .env                    # Your configuration (not in Git!)
+├── ENV-TEMPLATE.md         # This template
+├── tools/
+│   └── start-n8n.js       # Start script
+├── test-workflows/         # Test workflows
+└── backup/                 # Workflow backups (created automatically)
 ```
 
-## 🔒 Sicherheit
+## 🔒 Security
 
-- Fügen Sie `.env` zu Ihrer `.gitignore` hinzu
-- Teilen Sie niemals Ihre API-Keys
-- Verwenden Sie verschiedene Keys für Development/Production 
+- Add `.env` to your `.gitignore`
+- Never share your API keys
+- Use different keys for development/production

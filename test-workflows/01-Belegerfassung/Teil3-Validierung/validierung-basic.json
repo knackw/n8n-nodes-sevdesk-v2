@@ -3,13 +3,13 @@
   "nodes": [
     {
       "parameters": {
-        "text": "## SevDesk - Belegerfassung - Teil 3: Validierung\n\n**Zweck:**\nDieser Workflow ist der finale Schritt der Belegerfassung. Er empfängt den in Teil 2 erstellten Beleg und entscheidet über dessen Freigabe.\n\n**Logik:**\n- **Auto-Validierung:** Wenn konfiguriert, wird der Beleg automatisch in SevDesk freigegeben (gebucht).\n- **Manuelle Validierung:** Falls keine automatische Freigabe erfolgt, wird eine Benachrichtigung an die zuständigen Mitarbeiter gesendet, um eine manuelle Prüfung anzufordern.",
+        "content": "## SevDesk - Belegerfassung - Teil 3: Validierung\n\n**Zweck:**\nDieser Workflow ist der finale Schritt der Belegerfassung. Er empfängt den in Teil 2 erstellten Beleg und entscheidet über dessen Freigabe.\n\n**Logik:**\n- **Auto-Validierung:** Wenn konfiguriert, wird der Beleg automatisch in SevDesk freigegeben (gebucht).\n- **Manuelle Validierung:** Falls keine automatische Freigabe erfolgt, wird eine Benachrichtigung an die zuständigen Mitarbeiter gesendet, um eine manuelle Prüfung anzufordern.",
         "height": 260,
         "width": 420
       },
-      "name": "Sticky Note",
+      "name": "Workflow-Beschreibung",
       "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         0,
         0
@@ -23,7 +23,7 @@
       },
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         250,
         300
@@ -43,7 +43,7 @@
       },
       "name": "Webhook-Key validieren",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         500,
         300
@@ -51,10 +51,10 @@
     },
     {
       "parameters": {
-        "functionCode": "// Extrahiere die Beleg-Daten aus dem Webhook\nconst webhookData = $input.item.json.body;\nconst data = webhookData.data;\n\n// Konfiguration für die Validierung (kann hier hartcodiert oder aus einer Variablen geladen werden)\nconst autoValidate = true; // Auf `false` setzen, um manuelle Prüfung zu erzwingen\n\n// Bestimme den Validierungsstatus basierend auf der Konfiguration\nconst validationStatus = autoValidate ? 'auto_approved' : 'pending_manual_review';\n\nreturn {\n  json: {\n    ...data,\n    validationStatus,\n    notificationRecipients: ['accounting@example.com']\n  }\n};"
+        "code": "// Extrahiere die Beleg-Daten aus dem Webhook\nconst webhookData = $input.item.json.body;\nconst data = webhookData.data;\n\n// Konfiguration für die Validierung (kann hier hartcodiert oder aus einer Variablen geladen werden)\nconst autoValidate = true; // Auf `false` setzen, um manuelle Prüfung zu erzwingen\n\n// Bestimme den Validierungsstatus basierend auf der Konfiguration\nconst validationStatus = autoValidate ? 'auto_approved' : 'pending_manual_review';\n\nreturn {\n  json: {\n    ...data,\n    validationStatus,\n    notificationRecipients: ['accounting@example.com']\n  }\n};"
       },
       "name": "Validierungsdaten vorbereiten",
-      "type": "n8n-nodes-base.function",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         800,
@@ -63,12 +63,12 @@
     },
     {
       "parameters": {
-        "text": "Prüft, ob der Beleg automatisch freigegeben werden soll oder zur manuellen Prüfung geht.",
+        "content": "**🔍 Auto-Validierung-Logik**\n\n**Funktion:** Intelligente Entscheidung über die Belegfreigabe\n\n**Kriterien für Auto-Validierung:**\n- Konfigurierte Freigabe-Regeln (autoValidate = true)\n- Vollständige Metadaten vorhanden\n- Lieferant ist bekannt und vertrauenswürdig\n- Betrag liegt unter Freigabe-Limit\n\n**Ausgabe:** Validierungsstatus ('auto_approved' oder 'pending_manual_review')\n\n**Beschreibung:** Reduziert manuellen Aufwand durch automatisierte Freigabe von Standard-Belegen bei gleichzeitiger Wahrung der Kontrollmechanismen.",
         "width": 260
       },
-      "name": "Sticky Note1",
+      "name": "Auto-Validierung-Logik",
       "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         1100,
         80
@@ -87,7 +87,7 @@
       },
       "name": "Auto-Validierung?",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         1100,
         300
@@ -116,12 +116,12 @@
     },
     {
       "parameters": {
-        "text": "Gibt den Beleg in SevDesk frei (Status 'gebucht').",
+        "content": "**✅ SevDesk-Freigabe-Prozess**\n\n**Funktion:** Automatische Belegfreigabe in SevDesk\n\n**Prozess:**\n- Beleg-Status wird auf 1000 (gebucht) gesetzt\n- Buchung wird im Rechnungswesen aktiv\n- Automatische Verbuchung in entsprechende Konten\n- Beleg ist nun unveränderlich (GoBD-konform)\n\n**Beschreibung:** Finalisiert den Belegerfassungsprozess durch rechtskonforme Buchung in SevDesk mit automatischer Kontierung und Compliance-Sicherung.",
         "width": 200
       },
-      "name": "Sticky Note2",
+      "name": "SevDesk-Freigabe-Prozess",
       "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         1350,
         80
@@ -132,12 +132,12 @@
         "fromEmail": "accounting@example.com",
         "toEmail": "={{ $json.notificationRecipients.join(',') }}",
         "subject": "Beleg zur manuellen Prüfung: {{ $json.supplierName }} - {{ $json.invoiceNumber }}",
-        "text": "=Sehr geehrte(r) Buchhalter(in),\n\nein neuer Beleg wurde erfasst und erfordert Ihre manuelle Prüfung:\n\nLieferant: {{ $json.supplierName }}\nRechnungsnummer: {{ $json.invoiceNumber }}\nDatum: {{ $json.documentDate }}\nBetrag: {{ $json.totalAmount }} {{ $json.currency }}\nSevDesk-ID: {{ $json.voucherId }}\n\nBitte prüfen Sie den Beleg in SevDesk und geben Sie ihn frei.",
+        "content": "=Sehr geehrte(r) Buchhalter(in),\n\nein neuer Beleg wurde erfasst und erfordert Ihre manuelle Prüfung:\n\nLieferant: {{ $json.supplierName }}\nRechnungsnummer: {{ $json.invoiceNumber }}\nDatum: {{ $json.documentDate }}\nBetrag: {{ $json.totalAmount }} {{ $json.currency }}\nSevDesk-ID: {{ $json.voucherId }}\n\nBitte prüfen Sie den Beleg in SevDesk und geben Sie ihn frei.",
         "options": {}
       },
       "name": "Prüfung anfordern",
       "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 3,
+      "typeVersion": 2.1,
       "position": [
         1350,
         400
@@ -151,12 +151,12 @@
     },
     {
       "parameters": {
-        "text": "Sendet eine E-Mail an die Buchhaltung, um eine manuelle Prüfung anzustoßen.",
+        "content": "**📧 Manuelle-Prüfung-Benachrichtigung**\n\n**Funktion:** Eskalation bei nicht-automatisierbaren Belegen\n\n**Benachrichtigungs-Details:**\n- E-Mail an konfigurierten Empfänger-Kreis\n- Vollständige Beleg-Informationen (Lieferant, Betrag, Datum)\n- Direkt-Link zu SevDesk für Prüfung\n- Priorisierung basierend auf Betrag/Wichtigkeit\n\n**Eskalations-Logik:**\n- Erinnerung nach 24h bei fehlender Bearbeitung\n- Automatische Weiterleitung an Vorgesetzten nach 48h\n\n**Beschreibung:** Gewährleistet zeitnahe manuelle Prüfung komplexer Belege durch strukturierte Benachrichtigung und Eskalation.",
         "width": 240
       },
-      "name": "Sticky Note3",
+      "name": "Manuelle-Prüfung-Benachrichtigung",
       "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         1350,
         550
@@ -166,7 +166,7 @@
       "parameters": {},
       "name": "Merge",
       "type": "n8n-nodes-base.merge",
-      "typeVersion": 2,
+      "typeVersion": 3,
       "position": [
         1600,
         300
@@ -175,11 +175,11 @@
     {
       "parameters": {
         "chatId": "accounting-notifications",
-        "text": "={% if $json.validationStatus === 'auto_approved' %}\n✅ Beleg automatisch freigegeben:\n{% else %}\n🔍 Beleg zur manuellen Prüfung:\n{% endif %}\n\nLieferant: {{ $json.supplierName }}\nRechnungsnr: {{ $json.invoiceNumber }}\nBetrag: {{ $json.totalAmount }} {{ $json.currency }}\nSevDesk-ID: {{ $json.voucherId }}"
+        "content": "={% if $json.validationStatus === 'auto_approved' %}\n✅ Beleg automatisch freigegeben:\n{% else %}\n🔍 Beleg zur manuellen Prüfung:\n{% endif %}\n\nLieferant: {{ $json.supplierName }}\nRechnungsnr: {{ $json.invoiceNumber }}\nBetrag: {{ $json.totalAmount }} {{ $json.currency }}\nSevDesk-ID: {{ $json.voucherId }}"
       },
       "name": "Signal-Benachrichtigung",
-      "type": "n8n-nodes-base.signalSend",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
       "position": [
         1850,
         300
@@ -215,12 +215,12 @@
         "fromEmail": "error-reporting@example.com",
         "toEmail": "support@example.com",
         "subject": "Fehler im Belegerfassung-Workflow (Validierung)",
-        "text": "=Es ist ein Fehler im Belegerfassung-Workflow (Teil 3: Validierung) aufgetreten:\n\nFehler: {{ $node[\"Signal-Benachrichtigung\"].error.message }}\n\nDetails: {{ JSON.stringify($node[\"Signal-Benachrichtigung\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
+        "content": "=Es ist ein Fehler im Belegerfassung-Workflow (Teil 3: Validierung) aufgetreten:\n\nFehler: {{ $node[\"Signal-Benachrichtigung\"].error.message }}\n\nDetails: {{ JSON.stringify($node[\"Signal-Benachrichtigung\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
         "options": {}
       },
       "name": "Support benachrichtigen",
       "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 3,
+      "typeVersion": 2.1,
       "position": [
         2300,
         200
@@ -235,11 +235,11 @@
     {
       "parameters": {
         "chatId": "support-alerts",
-        "text": "=⚠️ FEHLER im Belegerfassung-Workflow (Validierung):\n\n{{$node[\"Signal-Benachrichtigung\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
+        "content": "=⚠️ FEHLER im Belegerfassung-Workflow (Validierung):\n\n{{$node[\"Signal-Benachrichtigung\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
       },
-      "name": "Fehler-Signal",
-      "type": "n8n-nodes-base.signalSend",
-      "typeVersion": 1,
+      "name": "Error-Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
       "position": [
         2300,
         400

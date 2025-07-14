@@ -29,6 +29,7 @@ export type SevDeskResourceType =
 	| "creditNotePos"
 	| "export"
 	| "invoice"
+	| "invoicePos"
 	| "layout"
 	| "order"
 	| "orderPos"
@@ -37,7 +38,7 @@ export type SevDeskResourceType =
 	| "report"
 	| "tag"
 	| "tagRelation"
-	| "unit"
+	| "unity"
 	| "voucher"
 	| "voucherPo";
 

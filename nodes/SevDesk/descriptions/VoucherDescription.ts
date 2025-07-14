@@ -189,6 +189,12 @@ export const voucherOperations: INodeProperties[] = [
 						url: "/Voucher/Factory/uploadTempFile",
 						body: {
 							data: "={{$binary.data}}",
+							filename: "={{$parameter.filename || $binary.fileName}}",
+							mimeType: "={{$parameter.mimeType || $binary.mimeType}}",
+							size: "={{$parameter.fileSize}}",
+							description: "={{$parameter.description}}",
+							category: "={{$parameter.category}}",
+							ocrData: "={{$parameter.enableOCR}}",
 						},
 					},
 					output: {
@@ -423,6 +429,7 @@ export const voucherFields: INodeProperties[] = [
 				displayName: "Voucher Date",
 				name: "voucherDate",
 				type: "dateTime",
+				required: true,
 				default: "",
 			},
 			{
@@ -553,6 +560,98 @@ export const voucherFields: INodeProperties[] = [
 			show: {
 				resource: ["voucher"],
 				operation: ["book"],
+			},
+		},
+	},
+	{
+		displayName: "Filename",
+		name: "filename",
+		type: "string",
+		default: "",
+		description: "Custom filename for the uploaded file",
+		displayOptions: {
+			show: {
+				resource: ["voucher"],
+				operation: ["uploadFile"],
+			},
+		},
+	},
+	{
+		displayName: "MIME Type",
+		name: "mimeType",
+		type: "options",
+		options: [
+			{ name: "PDF", value: "application/pdf" },
+			{ name: "JPEG", value: "image/jpeg" },
+			{ name: "PNG", value: "image/png" },
+			{ name: "TIFF", value: "image/tiff" },
+			{ name: "Auto-detect", value: "" },
+		],
+		default: "",
+		description: "MIME type of the file (auto-detected if not specified)",
+		displayOptions: {
+			show: {
+				resource: ["voucher"],
+				operation: ["uploadFile"],
+			},
+		},
+	},
+	{
+		displayName: "File Size (MB)",
+		name: "fileSize",
+		type: "number",
+		default: 0,
+		description: "File size in megabytes (calculated automatically if not provided)",
+		displayOptions: {
+			show: {
+				resource: ["voucher"],
+				operation: ["uploadFile"],
+			},
+		},
+	},
+	{
+		displayName: "Description",
+		name: "description",
+		type: "string",
+		default: "",
+		description: "Description or notes for the uploaded file",
+		displayOptions: {
+			show: {
+				resource: ["voucher"],
+				operation: ["uploadFile"],
+			},
+		},
+	},
+	{
+		displayName: "Category",
+		name: "category",
+		type: "options",
+		options: [
+			{ name: "Invoice", value: "invoice" },
+			{ name: "Receipt", value: "receipt" },
+			{ name: "Credit Note", value: "credit_note" },
+			{ name: "Contract", value: "contract" },
+			{ name: "Other", value: "other" },
+		],
+		default: "receipt",
+		description: "Category of the document",
+		displayOptions: {
+			show: {
+				resource: ["voucher"],
+				operation: ["uploadFile"],
+			},
+		},
+	},
+	{
+		displayName: "Enable OCR",
+		name: "enableOCR",
+		type: "boolean",
+		default: true,
+		description: "Enable Optical Character Recognition to extract text from the document",
+		displayOptions: {
+			show: {
+				resource: ["voucher"],
+				operation: ["uploadFile"],
 			},
 		},
 	},

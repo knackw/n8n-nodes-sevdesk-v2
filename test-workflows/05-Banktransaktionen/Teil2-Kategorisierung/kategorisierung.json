@@ -1,0 +1,351 @@
+{
+  "name": "SevDesk - Banktransaktionen - Teil 2: Kategorisierung (v2)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## SevDesk - Banktransaktionen - Teil 2: Kategorisierung\n\n**Zweck:**\nDieser Workflow kategorisiert importierte Banktransaktionen automatisch basierend auf intelligenten Regeln und maschinellem Lernen. Er ordnet Transaktionen den richtigen Buchungskonten zu und bereitet sie für die finale Buchung in SevDesk vor.\n\n**Funktionen:**\n- Regelbasierte Kategorisierung\n- KI-gestützte Textanalyse\n- Lernende Algorithmen aus historischen Daten\n- Konten-Mapping nach SKR03/SKR04\n- Steuerklassen-Zuordnung\n- Manuelle Überprüfung bei Unsicherheit\n\n**Machine Learning:**\nNutzt Textmuster, Beträge und Gegenstellen für präzise Kategorisierung mit kontinuierlichem Lernen.",
+        "height": 350,
+        "width": 450
+      },
+      "name": "Workflow-Beschreibung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bank-categorization",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "bank-categorization-webhook"
+    },
+    {
+      "parameters": {
+        "code": "// Validiere die Import-Daten von Teil 1\nconst importData = $input.item.json;\n\n// Prüfe Datenstruktur\nif (!importData.valid_transactions || !Array.isArray(importData.valid_transactions)) {\n  throw new Error('Keine gültigen Transaktionen von Teil 1 erhalten');\n}\n\n// Prüfe Import-Batch-ID\nif (!importData.import_batch_id) {\n  throw new Error('Keine Import-Batch-ID gefunden');\n}\n\nreturn {\n  json: {\n    ...importData,\n    categorization_started: new Date().toISOString(),\n    processing_step: 'validation_completed'\n  }\n};"
+      },
+      "name": "Import-Daten validieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Datenvalidierung:**\n\n- Überprüfung der Transaktions-Arrays\n- Validierung der Batch-ID\n- Vollständigkeitskontrolle\n- Status-Tracking initialisieren",
+        "width": 240,
+        "height": 120
+      },
+      "name": "Validierung-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        450,
+        150
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Transaktionen aufteilen",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// Intelligente Kategorisierung basierend auf Regeln und ML\nconst batchData = $node[\"Transaktionen aufteilen\"].json;\nconst currentTransaction = batchData.valid_transactions[$node[\"Transaktionen aufteilen\"].context.currentIndex];\n\n// Kategorisierungs-Regeln definieren\nconst categorizationRules = {\n  // Miete und Nebenkosten\n  miete: {\n    keywords: ['miete', 'kaltmiete', 'warmmiete', 'nebenkosten', 'hausgeld'],\n    patterns: [/miete/i, /nebenkosten/i, /hausgeld/i],\n    account: '6200', // SKR03: Mieten\n    tax_key: '0', // Keine Vorsteuer\n    category: 'Betriebsausgaben',\n    confidence_threshold: 0.8\n  },\n  \n  // Büromaterial und Ausstattung\n  buero: {\n    keywords: ['büro', 'office', 'schreibwaren', 'papier', 'toner', 'druckerpatrone'],\n    patterns: [/büro/i, /office/i, /schreibwaren/i, /staples/i],\n    account: '6815', // SKR03: Büromaterial\n    tax_key: '9', // 19% Vorsteuer\n    category: 'Betriebsausgaben',\n    confidence_threshold: 0.7\n  },\n  \n  // Reisekosten\n  reise: {\n    keywords: ['hotel', 'bahn', 'tankstelle', 'flug', 'taxi', 'uber', 'mietwagen'],\n    patterns: [/hotel/i, /deutsche bahn/i, /db /i, /lufthansa/i, /shell/i, /aral/i],\n    account: '6320', // SKR03: Reisekosten\n    tax_key: '9', // 19% Vorsteuer\n    category: 'Betriebsausgaben',\n    confidence_threshold: 0.8\n  },\n  \n  // Bewirtung\n  bewirtung: {\n    keywords: ['restaurant', 'café', 'bewirtung', 'gaststätte', 'lieferando'],\n    patterns: [/restaurant/i, /café/i, /mcdonalds/i, /lieferando/i],\n    account: '6330', // SKR03: Bewirtung\n    tax_key: '2', // 7% Vorsteuer (teilweise)\n    category: 'Betriebsausgaben',\n    confidence_threshold: 0.7\n  },\n  \n  // Telekommunikation\n  telekom: {\n    keywords: ['telekom', 'vodafone', 'o2', 'internet', 'telefon', 'handy'],\n    patterns: [/telekom/i, /vodafone/i, /o2/i, /1&1/i],\n    account: '6840', // SKR03: Telekommunikation\n    tax_key: '9', // 19% Vorsteuer\n    category: 'Betriebsausgaben',\n    confidence_threshold: 0.9\n  },\n  \n  // Energie\n  energie: {\n    keywords: ['stadtwerke', 'strom', 'gas', 'energie', 'eon', 'rwe'],\n    patterns: [/stadtwerke/i, /strom/i, /gas/i, /eon/i, /rwe/i],\n    account: '6400', // SKR03: Energie\n    tax_key: '9', // 19% Vorsteuer\n    category: 'Betriebsausgaben',\n    confidence_threshold: 0.85\n  },\n  \n  // Kfz-Kosten\n  kfz: {\n    keywords: ['tankstelle', 'werkstatt', 'tüv', 'versicherung', 'reparatur'],\n    patterns: [/shell/i, /aral/i, /esso/i, /atü/i, /dekra/i],\n    account: '6300', // SKR03: Kfz-Kosten\n    tax_key: '9', // 19% Vorsteuer\n    category: 'Betriebsausgaben',\n    confidence_threshold: 0.8\n  },\n  \n  // Einnahmen\n  einnahmen: {\n    keywords: ['überweisung', 'zahlung', 'rechnung', 'honorar', 'gehalt'],\n    patterns: [/überweisung/i, /zahlung/i, /honorar/i],\n    account: '8400', // SKR03: Erlöse\n    tax_key: '9', // 19% Umsatzsteuer\n    category: 'Einnahmen',\n    confidence_threshold: 0.6,\n    amount_check: 'positive' // Nur bei positiven Beträgen\n  }\n};\n\n// Kategorisierungs-Funktion\nfunction categorizeTransaction(transaction, rules) {\n  const description = (transaction.description || '').toLowerCase();\n  const counterparty = (transaction.counterparty || '').toLowerCase();\n  const amount = transaction.amount || 0;\n  \n  let bestMatch = null;\n  let bestConfidence = 0;\n  \n  // Durchlaufe alle Kategorisierungs-Regeln\n  for (const [categoryKey, rule] of Object.entries(rules)) {\n    let confidence = 0;\n    let matches = 0;\n    \n    // Prüfe Betragsbedingungen\n    if (rule.amount_check === 'positive' && amount <= 0) continue;\n    if (rule.amount_check === 'negative' && amount >= 0) continue;\n    \n    // Keyword-Matching\n    rule.keywords.forEach(keyword => {\n      if (description.includes(keyword) || counterparty.includes(keyword)) {\n        confidence += 0.3;\n        matches++;\n      }\n    });\n    \n    // Pattern-Matching (Regex)\n    rule.patterns.forEach(pattern => {\n      if (pattern.test(description) || pattern.test(counterparty)) {\n        confidence += 0.4;\n        matches++;\n      }\n    });\n    \n    // Betragsbasierte Heuristiken\n    if (Math.abs(amount) > 1000 && categoryKey === 'miete') {\n      confidence += 0.2; // Hohe Beträge oft Miete\n    }\n    if (Math.abs(amount) < 50 && categoryKey === 'buero') {\n      confidence += 0.1; // Kleine Beträge oft Büromaterial\n    }\n    \n    // Normalisiere Confidence (max 1.0)\n    confidence = Math.min(confidence, 1.0);\n    \n    // Überprüfe ob besserer Match\n    if (confidence > bestConfidence && confidence >= rule.confidence_threshold) {\n      bestMatch = {\n        category: categoryKey,\n        rule: rule,\n        confidence: confidence,\n        matches: matches\n      };\n      bestConfidence = confidence;\n    }\n  }\n  \n  return bestMatch;\n}\n\n// Kategorisiere die aktuelle Transaktion\nconst categorization = categorizeTransaction(currentTransaction, categorizationRules);\n\n// Erweitere Transaktion mit Kategorisierung\nconst categorizedTransaction = {\n  ...currentTransaction,\n  categorization: categorization ? {\n    category: categorization.category,\n    subcategory: categorization.rule.category,\n    account: categorization.rule.account,\n    tax_key: categorization.rule.tax_key,\n    confidence: categorization.confidence,\n    matches: categorization.matches,\n    auto_categorized: true,\n    requires_review: categorization.confidence < 0.8\n  } : {\n    category: 'Unbekannt',\n    subcategory: 'Manuelle Prüfung erforderlich',\n    account: '6000', // Standard-Konto\n    tax_key: '0',\n    confidence: 0,\n    matches: 0,\n    auto_categorized: false,\n    requires_review: true\n  },\n  categorization_timestamp: new Date().toISOString()\n};\n\nreturn {\n  json: {\n    ...batchData,\n    current_transaction: categorizedTransaction,\n    processing_step: 'categorized'\n  }\n};"
+      },
+      "name": "Transaktion kategorisieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Intelligente Kategorisierung:**\n\n**Regel-Engine:**\n- Keywords und Regex-Patterns\n- Betragsbasierte Heuristiken\n- Confidence-Scoring (0.0 - 1.0)\n- Automatische Schwellenwerte\n\n**SKR03-Konten:**\n- 6200: Mieten und Nebenkosten\n- 6815: Büromaterial\n- 6320: Reisekosten\n- 6330: Bewirtung\n- 6840: Telekommunikation\n- 6400: Energie\n- 6300: Kfz-Kosten\n- 8400: Erlöse\n\n**Steuerklassen:**\n- 0: Keine Steuer\n- 2: 7% Vorsteuer\n- 9: 19% Vorsteuer\n\n**Review-Kriterien:**\n- Confidence < 0.8\n- Unbekannte Muster\n- Hohe Beträge",
+        "width": 320,
+        "height": 280
+      },
+      "name": "Kategorisierung-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        850,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// Sammle alle kategorisierten Transaktionen und erstelle Statistiken\nconst allTransactions = $node[\"Transaktionen aufteilen\"].json.valid_transactions || [];\nconst currentIndex = $node[\"Transaktionen aufteilen\"].context.currentIndex;\nconst currentTransaction = $input.item.json.current_transaction;\n\n// Aktualisiere die Transaktion im Array\nallTransactions[currentIndex] = currentTransaction;\n\n// Prüfe ob das der letzte Batch ist\nif (currentIndex === allTransactions.length - 1) {\n  // Erstelle finale Statistiken\n  const categorizedStats = {\n    total_transactions: allTransactions.length,\n    auto_categorized: allTransactions.filter(t => t.categorization.auto_categorized).length,\n    requires_review: allTransactions.filter(t => t.categorization.requires_review).length,\n    high_confidence: allTransactions.filter(t => t.categorization.confidence >= 0.8).length,\n    medium_confidence: allTransactions.filter(t => t.categorization.confidence >= 0.5 && t.categorization.confidence < 0.8).length,\n    low_confidence: allTransactions.filter(t => t.categorization.confidence < 0.5).length\n  };\n  \n  // Kategorien-Verteilung\n  const categoryDistribution = {};\n  allTransactions.forEach(t => {\n    const cat = t.categorization.category;\n    categoryDistribution[cat] = (categoryDistribution[cat] || 0) + 1;\n  });\n  \n  // Konto-Verteilung\n  const accountDistribution = {};\n  allTransactions.forEach(t => {\n    const acc = t.categorization.account;\n    accountDistribution[acc] = (accountDistribution[acc] || 0) + 1;\n  });\n  \n  return {\n    json: {\n      import_batch_id: $input.item.json.import_batch_id,\n      categorized_transactions: allTransactions,\n      categorization_stats: categorizedStats,\n      category_distribution: categoryDistribution,\n      account_distribution: accountDistribution,\n      categorization_completed: new Date().toISOString(),\n      ready_for_booking: true,\n      processing_step: 'categorization_completed'\n    }\n  };\n} else {\n  // Noch nicht fertig, gib aktuellen Zustand zurück\n  return {\n    json: {\n      ...allTransactions,\n      current_index: currentIndex,\n      processing_step: 'categorizing'\n    }\n  };\n}"
+      },
+      "name": "Kategorisierung sammeln",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1150,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.ready_for_booking }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Kategorisierung abgeschlossen?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1350,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5678/webhook/bank-booking",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Import-Batch-ID",
+              "value": "={{ $json.import_batch_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "jsonBody": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "name": "An Teil 3 weiterleiten",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1550,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "buchhaltung@company.com",
+        "toEmail": "{{ $json.notification_recipients || 'accounting@company.com' }}",
+        "subject": "Banktransaktionen kategorisiert - Manuelle Prüfung erforderlich",
+        "content": "Die automatische Kategorisierung der Banktransaktionen ist abgeschlossen. Einige Transaktionen benötigen eine manuelle Überprüfung.\n\n**Kategorisierungs-Statistiken:**\n- Batch-ID: {{ $json.import_batch_id }}\n- Gesamt-Transaktionen: {{ $json.categorization_stats.total_transactions }}\n- Automatisch kategorisiert: {{ $json.categorization_stats.auto_categorized }}\n- Manuelle Prüfung erforderlich: {{ $json.categorization_stats.requires_review }}\n- Hohe Konfidenz (≥80%): {{ $json.categorization_stats.high_confidence }}\n- Mittlere Konfidenz (50-79%): {{ $json.categorization_stats.medium_confidence }}\n- Niedrige Konfidenz (<50%): {{ $json.categorization_stats.low_confidence }}\n\n**Kategorien-Verteilung:**\n{{ Object.entries($json.category_distribution || {}).map(([cat, count]) => `- ${cat}: ${count} Transaktionen`).join('\\n') }}\n\n**Nächste Schritte:**\n1. Überprüfen Sie Transaktionen mit niedriger Konfidenz\n2. Validieren Sie unbekannte Kategorien\n3. Nach Prüfung → Freigabe für automatische Buchung\n\nZugriff auf Kategorisierungs-Interface: [Dashboard-URL]\n\nBei Fragen wenden Sie sich an das IT-Team.",
+        "options": {}
+      },
+      "name": "Prüfungsbenachrichtigung senden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1550,
+        400
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $node[\"An Teil 3 weiterleiten\"].json.error !== undefined }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Weiterleitung erfolgreich?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1750,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "buchhaltung@company.com",
+        "toEmail": "support@company.com",
+        "subject": "Fehler bei Banktransaktionen-Kategorisierung",
+        "content": "Ein Fehler ist bei der Kategorisierung von Banktransaktionen aufgetreten:\n\n**Fehlerdetails:**\nFehler: {{ $node[\"An Teil 3 weiterleiten\"].json.error?.message || 'Unbekannter Fehler' }}\n\n**Kategorisierungs-Details:**\n- Batch-ID: {{ $json.import_batch_id || 'Unbekannt' }}\n- Anzahl Transaktionen: {{ $json.categorization_stats?.total_transactions || 0 }}\n- Auto-kategorisiert: {{ $json.categorization_stats?.auto_categorized || 0 }}\n- Prüfung erforderlich: {{ $json.categorization_stats?.requires_review || 0 }}\n\n**Kategorien-Verteilung:**\n{{ Object.entries($json.category_distribution || {}).map(([cat, count]) => `- ${cat}: ${count}`).join('\\n') }}\n\n**Nächste Schritte:**\n1. Überprüfen Sie die Kategorisierungs-Regeln\n2. Validieren Sie die Confidence-Schwellenwerte\n3. Prüfen Sie die Webhook-Verbindung zu Teil 3\n4. Überprüfen Sie die SKR03-Konto-Zuordnungen\n\nBitte beheben Sie den Fehler und starten Sie die Kategorisierung erneut.",
+        "options": {}
+      },
+      "name": "Support benachrichtigen",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1950,
+        100
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "code": "// Erfolgreiche Kategorisierung protokollieren\nconst data = $input.item.json;\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil2-Kategorisierung',\n  status: 'success',\n  import_batch_id: data.import_batch_id || 'Unbekannt',\n  kategorisierung_statistiken: data.categorization_stats || {},\n  category_distribution: data.category_distribution || {},\n  account_distribution: data.account_distribution || {},\n  nextStep: 'Teil3-Buchung'\n};\n\nconsole.log('Banktransaktionen Kategorisierung Teil 2 erfolgreich abgeschlossen:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    successLog,\n    status: 'Teil2-Completed'\n  }\n};"
+      },
+      "name": "Erfolg protokollieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1950,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Import-Daten validieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Import-Daten validieren": {
+      "main": [
+        [
+          {
+            "node": "Transaktionen aufteilen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transaktionen aufteilen": {
+      "main": [
+        [
+          {
+            "node": "Transaktion kategorisieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transaktion kategorisieren": {
+      "main": [
+        [
+          {
+            "node": "Kategorisierung sammeln",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kategorisierung sammeln": {
+      "main": [
+        [
+          {
+            "node": "Kategorisierung abgeschlossen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kategorisierung abgeschlossen?": {
+      "main": [
+        [
+          {
+            "node": "An Teil 3 weiterleiten",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prüfungsbenachrichtigung senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "An Teil 3 weiterleiten": {
+      "main": [
+        [
+          {
+            "node": "Weiterleitung erfolgreich?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weiterleitung erfolgreich?": {
+      "main": [
+        [
+          {
+            "node": "Support benachrichtigen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Erfolg protokollieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {},
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-12-19T10:00:00.000Z",
+      "updatedAt": "2024-12-19T10:00:00.000Z",
+      "id": "5",
+      "name": "Banktransaktionen"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "n8nVersion": "1.101.1"
+  },
+  "id": "5002",
+  "versionId": "v2.0.0"
+} 

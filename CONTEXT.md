@@ -1,101 +1,110 @@
-# Projektübersicht und Ziel
+# Project Overview and Goals
 
-Das n8n-nodes-sevdesk-v2 Projekt ist eine n8n Community Node Implementation für die direkte Integration mit der SevDesk API (Version 2). Es ermöglicht die Automatisierung von Buchhaltungs- und Rechnungsprozessen durch n8n-Workflows. Das Ziel ist es, eine einfache, zuverlässige und vollständige Integration mit allen wichtigen SevDesk-Funktionalitäten zu bieten, ohne externe Abhängigkeiten oder komplexe Konfigurationen.
+The n8n-nodes-sevdesk-v2 project is a professional n8n Community Node implementation for direct integration with the SevDesk API (Version 2.0). It enables complete automation of accounting and invoicing processes through n8n workflows. The goal is to provide simple, reliable and comprehensive integration with all important SevDesk functionalities, without external dependencies or complex configurations.
 
-# Technologien und verwendete Bibliotheken
+**Version:** 2.4.1  
+**Status:** Production Ready  
+**API Compatibility:** SevDesk API v2.0  
+**n8n Compatibility:** 1.101.1+
 
-- **TypeScript**: Hauptprogrammiersprache für typsichere Entwicklung
-- **n8n-workflow**: Kern-Bibliothek für n8n Node Entwicklung
-- **n8n-core**: Erweiterte n8n Funktionalitäten für Node-Implementation
-- **SevDesk API v2**: REST-API für Buchhaltungs- und Rechnungsmanagement
-- **Node.js**: Laufzeitumgebung für JavaScript/TypeScript
-- **Jest**: Testing-Framework für Unit- und Integrationstests
-- **HTTP/HTTPS**: Direkte API-Kommunikation mit SevDesk-Services
-- **JSON**: Datenformat für API-Kommunikation und Konfiguration
-- **Docker**: Containerisierte Entwicklungsumgebung
+# Technologies and Libraries Used
 
-# Projektstruktur und Ordneraufbau
+- **TypeScript**: Main programming language for type-safe development
+- **n8n-workflow**: Core library for n8n node development
+- **n8n-core**: Advanced n8n functionalities for node implementation
+- **SevDesk API v2**: REST API for accounting and invoice management
+- **Node.js**: Runtime environment for JavaScript/TypeScript
+- **Jest**: Testing framework for unit and integration tests
+- **HTTP/HTTPS**: Direct API communication with SevDesk services
+- **JSON**: Data format for API communication and configuration
+- **Docker**: Containerized development environment
 
-- **credentials/**: SevDesk API-Authentifizierungskonfigurationen (nur API-Key und Version)
-- **nodes/**: Hauptimplementierung des SevDesk-Nodes
-  - **SevDesk/**: Node-Implementierung und Beschreibungen
-    - **descriptions/**: Feld- und Operations-Definitionen für alle Ressourcen
-    - **SevDesk.node.ts**: Haupt-Node-Implementation (deklarativ)
-- **tests/**: Jest-Tests für Node- und Credential-Funktionalitäten
-- **scripts/**: Automatisierungs-Skripte für Entwicklung und Deployment
-  - **tools/start-n8n.js**: Vollautomatisiertes Setup mit Docker und Workflow-Management
-- **test-workflows/**: Vorgefertigte Workflow-Beispiele für verschiedene Anwendungsfälle
-- **docker-compose.yml**: Docker-Konfiguration für Entwicklungsumgebung
-- **package.json**: NPM-Paketdefinition mit minimalen Abhängigkeiten
-- **tsconfig.json**: TypeScript-Konfiguration
+# Project Structure and Directory Layout
 
-# Funktionen und Hauptlogik
+- **credentials/**: SevDesk API authentication configurations (API key and version only)
+- **nodes/**: Main implementation of the SevDesk node
+  - **SevDesk/**: Node implementation and descriptions
+    - **descriptions/**: Field and operation definitions for all resources
+    - **SevDesk.node.ts**: Main node implementation (declarative)
+- **tests/**: Jest tests for node and credential functionalities
+- **scripts/**: Automation scripts for development and deployment
+  - **tools/start-n8n.js**: Fully automated setup with Docker and workflow management
+- **test-workflows/**: Pre-built workflow examples for various use cases
+- **docker-compose.yml**: Docker configuration for development environment
+- **package.json**: NPM package definition with minimal dependencies
+- **tsconfig.json**: TypeScript configuration
 
-- **Direkte SevDesk API Integration**: Vollständige Integration mit SevDesk API v2 ohne Middleware
-- **Rechnungsmanagement**: Erstellung, Bearbeitung und Verwaltung von Rechnungen mit PDF-Generierung
-- **Kontaktverwaltung**: Umfassende Verwaltung von Kunden und Lieferanten
-- **Produktverwaltung**: Verwaltung von Artikeln und Dienstleistungen mit Bestandsführung
-- **Belegverwaltung**: Automatisierte Belegerfassung und -verarbeitung
-- **Bankwesen**: Integration von Bankkonten und Transaktionen
-- **Export-Funktionen**: Datenexport in verschiedene Formate
-- **Credential-Management**: Einfache und sichere Verwaltung von API-Schlüsseln
-- **Error-Handling**: Robuste Fehlerbehandlung mit automatischen Retry-Mechanismen
-- **Docker-Integration**: Vollautomatisierte Entwicklungsumgebung
-- **Workflow-Automation**: Erweiterte Start-Skripte mit Backup und Upload-Funktionalität
+# Features and Main Logic
 
-# Verwendete Code-Stile und Konventionen
+- **Direct SevDesk API Integration**: Complete integration with SevDesk API v2 without middleware
+- **Invoice Management**: Creation, editing and management of invoices with PDF generation
+- **Contact Management**: Comprehensive management of customers and suppliers
+- **Product Management**: Management of articles and services with inventory tracking
+- **Document Management**: Automated document capture and processing
+- **Banking**: Integration of bank accounts and transactions
+- **Export Functions**: Data export in various formats
+- **Credential Management**: Simple and secure management of API keys
+- **Error Handling**: Robust error handling with automatic retry mechanisms
+- **Docker Integration**: Fully automated development environment
+- **Workflow Automation**: Advanced start scripts with backup and upload functionality
 
-- **TypeScript Strict Mode**: Vollständige Typisierung mit strengen Compiler-Optionen
-- **n8n Community Standards**: Einhaltung der offiziellen n8n Community Node Guidelines
-- **Deklarative Node-Architektur**: Moderne n8n-Node-Implementation ohne execute-Methode
-- **Modulare Architektur**: Trennung von Node-Logik, Beschreibungen und Hilfsfunktionen
-- **API-First Design**: Strukturierung basierend auf SevDesk API-Endpunkten
-- **Defensive Programming**: Umfassende Validierung und Fehlerbehandlung
-- **Standalone Design**: Keine externen Abhängigkeiten oder komplexe Konfigurationen
+# Code Styles and Conventions Used
 
-# Abhängigkeiten und Schnittstellen
+- **TypeScript Strict Mode**: Complete typing with strict compiler options
+- **n8n Community Standards**: Adherence to official n8n Community Node Guidelines
+- **Declarative Node Architecture**: Modern n8n node implementation without execute method
+- **Modular Architecture**: Separation of node logic, descriptions and helper functions
+- **API-First Design**: Structure based on SevDesk API endpoints
+- **Defensive Programming**: Comprehensive validation and error handling
+- **Standalone Design**: No external dependencies or complex configurations
 
-- **SevDesk API v2**: REST-API für alle Buchhaltungsfunktionalitäten
-- **n8n-workflow**: Kern-Bibliothek für n8n Node Entwicklung
-- **n8n-core**: Erweiterte n8n Funktionalitäten
-- **HTTP Client**: Für direkte API-Kommunikation mit SevDesk
-- **Authentication**: API-Key-basierte Authentifizierung (vereinfacht)
-- **JSON Processing**: Verarbeitung von API-Responses und -Requests
-- **Docker**: Containerisierte Entwicklungs- und Test-Umgebung
+# Dependencies and Interfaces
+
+- **SevDesk API v2**: REST API for all accounting functionalities
+- **n8n-workflow**: Core library for n8n node development
+- **n8n-core**: Advanced n8n functionalities
+- **HTTP Client**: For direct API communication with SevDesk
+- **Authentication**: API key-based authentication (simplified)
+- **JSON Processing**: Processing of API responses and requests
+- **Docker**: Containerized development and test environment
 
 # Best Practices
 
-- **Code-Organisation**: 
-  - Klare Trennung von Node-Implementierung und Beschreibungen
-  - Modulare Struktur für verschiedene SevDesk-Funktionalitäten
-  - Konsistente Namenskonventionen für alle Operationen
-  - Deklarative Node-Definition für bessere Performance
+- **Code Organization**:
 
-- **Sicherheit**: 
-  - Sichere Credential-Verwaltung mit n8n-Standards
-  - Validierung aller API-Eingaben
-  - Schutz vor Injection-Angriffen
-  - Sichere Handhabung von Authentifizierungsdaten
-  - Rate-Limiting für API-Requests
+  - Clear separation of node implementation and descriptions
+  - Modular structure for different SevDesk functionalities
+  - Consistent naming conventions for all operations
+  - Declarative node definition for better performance
 
-- **Performance**: 
-  - Effiziente API-Aufrufe mit Retry-Mechanismen
-  - Optimierte Datenstrukturen für API-Responses
-  - Batch-Operationen für große Datenmengen
-  - Direkte API-Kommunikation ohne Middleware-Overhead
+- **Security**:
 
-- **Wartbarkeit**: 
-  - Umfassende TypeScript-Typisierung für alle API-Interfaces
-  - Automatisierte Tests für alle Node-Funktionalitäten
-  - Klare Dokumentation aller API-Integrationen
-  - Versionierung von API-Änderungen
-  - Comprehensive Error-Logging für Debugging
-  - Regelmäßige Updates für API-Kompatibilität
-  - Docker-basierte Entwicklungsumgebung für Konsistenz
+  - Secure credential management with n8n standards
+  - Validation of all API inputs
+  - Protection against injection attacks
+  - Secure handling of authentication data
+  - Rate limiting for API requests
 
-- **Entwicklererfahrung**:
-  - Ein-Kommando-Setup mit `npm start`
-  - Automatisierte Workflow-Verwaltung (Backup, Upload, Delete)
-  - Interaktive Test-Workflow-Auswahl
-  - Vollautomatische Docker-Container-Verwaltung
-  - Browser-Integration für sofortigen Zugriff auf n8n
+- **Performance**:
+
+  - Efficient API calls with retry mechanisms
+  - Optimized data structures for API responses
+  - Batch operations for large datasets
+  - Direct API communication without middleware overhead
+
+- **Maintainability**:
+
+  - Comprehensive TypeScript typing for all API interfaces
+  - Automated tests for all node functionalities
+  - Clear documentation of all API integrations
+  - Versioning of API changes
+  - Comprehensive error logging for debugging
+  - Regular updates for API compatibility
+  - Docker-based development environment for consistency
+
+- **Developer Experience**:
+  - One-command setup with `npm start`
+  - Automated workflow management (backup, upload, delete)
+  - Interactive test workflow selection
+  - Fully automated Docker container management
+  - Browser integration for immediate access to n8n

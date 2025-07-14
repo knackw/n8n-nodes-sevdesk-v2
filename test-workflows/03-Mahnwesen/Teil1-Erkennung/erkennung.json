@@ -14,7 +14,7 @@
       },
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1,
+      "typeVersion": 1.2,
       "position": [
         250,
         300
@@ -46,11 +46,11 @@
     },
     {
       "parameters": {
-        "functionCode": "// Filter für überfällige Rechnungen und Kategorisierung nach Mahnstufen\nconst invoices = $input.item.json;\nconst today = new Date();\nconst config = $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config || {};\n\n// Konfigurierbare Mahnstufen aus Workflow-Konfiguration\nconst reminderLevels = config.reminderLevels || [\n  { days: 7, level: 1, fee: 5 },\n  { days: 14, level: 2, fee: 10 },\n  { days: 30, level: 3, fee: 15 }\n];\n\n// Hilfsfunktion zum Berechnen der Tage zwischen zwei Daten\nfunction daysBetween(date1, date2) {\n  const oneDay = 24 * 60 * 60 * 1000; // Stunden*Minuten*Sekunden*Millisekunden\n  return Math.round(Math.abs((date1 - date2) / oneDay));\n}\n\n// Prüfe, ob die Rechnung überfällig ist\nif (invoices && Array.isArray(invoices)) {\n  const overdueInvoices = invoices.filter(invoice => {\n    // Nur bezahlte Rechnungen ignorieren (Status 500)\n    if (invoice.status === 500) return false;\n    \n    // Prüfe, ob Fälligkeitsdatum überschritten ist\n    const dueDate = new Date(invoice.dueDate);\n    return dueDate < today;\n  });\n  \n  // Kategorisiere nach Mahnstufen\n  const categorizedInvoices = overdueInvoices.map(invoice => {\n    const dueDate = new Date(invoice.dueDate);\n    const daysOverdue = daysBetween(today, dueDate);\n    \n    let reminderLevel = 0;\n    let reminderFee = 0;\n    \n    // Mahnstufen aus Konfiguration anwenden\n    for (const level of reminderLevels) {\n      if (daysOverdue >= level.days) {\n        reminderLevel = level.level;\n        reminderFee = level.fee;\n      }\n    }\n    \n    // Verzugszinsen berechnen (konfigurierbar)\n    const baseAmount = parseFloat(invoice.sumNet);\n    const interestRate = config.interestRate || 0.09; // 9% Standard, falls nicht konfiguriert\n    const interestDays = daysOverdue;\n    const interestAmount = (baseAmount * interestRate * interestDays) / 365;\n    \n    return {\n      ...invoice,\n      daysOverdue,\n      reminderLevel,\n      interestAmount: parseFloat(interestAmount.toFixed(2)),\n      reminderFee,\n      totalAmount: parseFloat(invoice.sumGross) + parseFloat(interestAmount.toFixed(2)) + reminderFee\n    };\n  });\n  \n  // Nur Rechnungen mit Mahnstufe > 0 zurückgeben\n  return categorizedInvoices.filter(invoice => invoice.reminderLevel > 0);\n} else {\n  return [];\n}"
+        "code": "// Filter für überfällige Rechnungen und Kategorisierung nach Mahnstufen\nconst invoices = $input.item.json;\nconst today = new Date();\nconst config = $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config || {};\n\n// Konfigurierbare Mahnstufen aus Workflow-Konfiguration\nconst reminderLevels = config.reminderLevels || [\n  { days: 7, level: 1, fee: 5 },\n  { days: 14, level: 2, fee: 10 },\n  { days: 30, level: 3, fee: 15 }\n];\n\n// Hilfsfunktion zum Berechnen der Tage zwischen zwei Daten\nfunction daysBetween(date1, date2) {\n  const oneDay = 24 * 60 * 60 * 1000; // Stunden*Minuten*Sekunden*Millisekunden\n  return Math.round(Math.abs((date1 - date2) / oneDay));\n}\n\n// Prüfe, ob die Rechnung überfällig ist\nif (invoices && Array.isArray(invoices)) {\n  const overdueInvoices = invoices.filter(invoice => {\n    // Nur bezahlte Rechnungen ignorieren (Status 500)\n    if (invoice.status === 500) return false;\n    \n    // Prüfe, ob Fälligkeitsdatum überschritten ist\n    const dueDate = new Date(invoice.dueDate);\n    return dueDate < today;\n  });\n  \n  // Kategorisiere nach Mahnstufen\n  const categorizedInvoices = overdueInvoices.map(invoice => {\n    const dueDate = new Date(invoice.dueDate);\n    const daysOverdue = daysBetween(today, dueDate);\n    \n    let reminderLevel = 0;\n    let reminderFee = 0;\n    \n    // Mahnstufen aus Konfiguration anwenden\n    for (const level of reminderLevels) {\n      if (daysOverdue >= level.days) {\n        reminderLevel = level.level;\n        reminderFee = level.fee;\n      }\n    }\n    \n    // Verzugszinsen berechnen (konfigurierbar)\n    const baseAmount = parseFloat(invoice.sumNet);\n    const interestRate = config.interestRate || 0.09; // 9% Standard, falls nicht konfiguriert\n    const interestDays = daysOverdue;\n    const interestAmount = (baseAmount * interestRate * interestDays) / 365;\n    \n    return {\n      ...invoice,\n      daysOverdue,\n      reminderLevel,\n      interestAmount: parseFloat(interestAmount.toFixed(2)),\n      reminderFee,\n      totalAmount: parseFloat(invoice.sumGross) + parseFloat(interestAmount.toFixed(2)) + reminderFee\n    };\n  });\n  \n  // Nur Rechnungen mit Mahnstufe > 0 zurückgeben\n  return categorizedInvoices.filter(invoice => invoice.reminderLevel > 0);\n} else {\n  return [];\n}"
       },
       "name": "Überfällige Rechnungen filtern",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         850,
         300
@@ -60,7 +60,7 @@
       "parameters": {},
       "name": "SplitInBatches",
       "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 1,
+      "typeVersion": 3,
       "position": [
         1050,
         300
@@ -88,11 +88,11 @@
     },
     {
       "parameters": {
-        "functionCode": "// Kombiniere Rechnungs- und Kundendaten\nconst invoice = $node[\"SplitInBatches\"].json;\nconst customer = $input.item.json;\nconst config = $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config || {};\n\n// Kundenspezifische Regeln aus Konfiguration laden\nconst customerRules = config.customerRules || {};\nconst vipCategories = config.vipCategories || [];\n\n// Kundenspezifische Regeln prüfen\nlet skipReminder = false;\nlet customReminderLevel = null;\n\n// VIP-Kunden bekommen eine Mahnstufe weniger\nif (customer.category && vipCategories.includes(customer.category.id)) {\n  customReminderLevel = Math.max(0, invoice.reminderLevel - 1);\n}\n\n// Prüfe auf Ausnahmen aus der Konfiguration\nif (customerRules[customer.customerNumber] === \"DO_NOT_REMIND\") {\n  skipReminder = true;\n}\n\n// Daten für die Weiterverarbeitung vorbereiten\nreturn {\n  json: {\n    invoice: invoice,\n    customer: customer,\n    reminderLevel: customReminderLevel || invoice.reminderLevel,\n    skipReminder: skipReminder,\n    daysOverdue: invoice.daysOverdue,\n    interestAmount: invoice.interestAmount,\n    reminderFee: invoice.reminderFee,\n    totalAmount: invoice.totalAmount,\n    timestamp: new Date().toISOString(),\n    processed: false\n  }\n};"
+        "code": "// Kombiniere Rechnungs- und Kundendaten\nconst invoice = $node[\"SplitInBatches\"].json;\nconst customer = $input.item.json;\nconst config = $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config || {};\n\n// Kundenspezifische Regeln aus Konfiguration laden\nconst customerRules = config.customerRules || {};\nconst vipCategories = config.vipCategories || [];\n\n// Kundenspezifische Regeln prüfen\nlet skipReminder = false;\nlet customReminderLevel = null;\n\n// VIP-Kunden bekommen eine Mahnstufe weniger\nif (customer.category && vipCategories.includes(customer.category.id)) {\n  customReminderLevel = Math.max(0, invoice.reminderLevel - 1);\n}\n\n// Prüfe auf Ausnahmen aus der Konfiguration\nif (customerRules[customer.customerNumber] === \"DO_NOT_REMIND\") {\n  skipReminder = true;\n}\n\n// Daten für die Weiterverarbeitung vorbereiten\nreturn {\n  json: {\n    invoice: invoice,\n    customer: customer,\n    reminderLevel: customReminderLevel || invoice.reminderLevel,\n    skipReminder: skipReminder,\n    daysOverdue: invoice.daysOverdue,\n    interestAmount: invoice.interestAmount,\n    reminderFee: invoice.reminderFee,\n    totalAmount: invoice.totalAmount,\n    timestamp: new Date().toISOString(),\n    processed: false\n  }\n};"
       },
       "name": "Daten kombinieren",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         1450,
         300
@@ -111,7 +111,7 @@
       },
       "name": "Mahnung überspringen?",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         1650,
         300
@@ -142,7 +142,7 @@
       },
       "name": "Webhook zu Teil 2",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 1,
+      "typeVersion": 4.2,
       "position": [
         2050,
         300
@@ -167,7 +167,7 @@
       },
       "name": "Fehler aufgetreten?",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         2250,
         300
@@ -183,7 +183,7 @@
       },
       "name": "Support benachrichtigen",
       "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 1,
+      "typeVersion": 2.1,
       "position": [
         2650,
         200
@@ -200,9 +200,9 @@
         "chatId": "support-alerts",
         "text": "=⚠️ FEHLER im Mahnwesen-Workflow (Erkennung):\n\n{{ $node[\"Webhook zu Teil 2\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
       },
-      "name": "Signal-Benachrichtigung",
-      "type": "n8n-nodes-base.signalSend",
-      "typeVersion": 1,
+      "name": "Schedule-Notification",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
       "position": [
         2650,
         400
@@ -215,5 +215,107 @@
       }
     }
   ],
-  "connections": {}
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "SevDesk - Offene Rechnungen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SevDesk - Offene Rechnungen": {
+      "main": [
+        [
+          {
+            "node": "Überfällige Rechnungen filtern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Überfällige Rechnungen filtern": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitInBatches": {
+      "main": [
+        [
+          {
+            "node": "Kundendaten abrufen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kundendaten abrufen": {
+      "main": [
+        [
+          {
+            "node": "Daten kombinieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daten kombinieren": {
+      "main": [
+        [
+          {
+            "node": "Mahnung überspringen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mahnung überspringen?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Webhook zu Teil 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook zu Teil 2": {
+      "main": [
+        [
+          {
+            "node": "Fehler aufgetreten?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fehler aufgetreten?": {
+      "main": [
+        [
+          {
+            "node": "Support benachrichtigen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  }
 }

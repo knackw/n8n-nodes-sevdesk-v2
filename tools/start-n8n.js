@@ -6,7 +6,7 @@ const { execSync, spawn } = require('child_process');
 const readline = require('readline');
 const axios = require('axios');
 
-// Konfiguration aus .env laden
+// Load configuration from .env
 require('dotenv').config();
 
 // Environment configuration with consistent defaults
@@ -35,7 +35,7 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 
-// Hilfsfunktionen
+// Helper functions
 const log = (message, type = 'info') => {
     const timestamp = new Date().toLocaleTimeString();
     const icons = { info: 'ℹ️', success: '✅', error: '❌', warning: '⚠️', question: '❓' };
@@ -48,7 +48,7 @@ const question = (query) => {
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Docker-Funktionen
+// Docker functions
 const isDockerRunning = () => {
     try {
         execSync('docker ps', { stdio: 'ignore' });
@@ -72,34 +72,34 @@ const isN8nContainerRunning = () => {
 
 const stopN8nContainer = () => {
     try {
-        log('Stoppe n8n Container...');
+        log('Stopping n8n container...');
         execSync('docker-compose down', { stdio: 'inherit' });
-        log('Container gestoppt', 'success');
+        log('Container stopped', 'success');
     } catch (error) {
-        log(`Fehler beim Stoppen: ${error.message}`, 'error');
+        log(`Error stopping: ${error.message}`, 'error');
         throw error;
     }
 };
 
 const startN8nContainer = () => {
     try {
-        log('Starte n8n Container...');
+        log('Starting n8n container...');
         execSync('docker-compose up -d', { stdio: 'inherit' });
-        log('Container gestartet', 'success');
+        log('Container started', 'success');
     } catch (error) {
-        log(`Fehler beim Starten: ${error.message}`, 'error');
+        log(`Error starting: ${error.message}`, 'error');
         throw error;
     }
 };
 
-// n8n API-Funktionen
+// n8n API functions
 const waitForN8n = async (maxRetries = 30) => {
-    log('Warte auf n8n...');
+    log('Waiting for n8n...');
 
     for (let i = 0; i < maxRetries; i++) {
         try {
             await axios.get(`${CONFIG.n8nProtocol}://${CONFIG.n8nHost}:${CONFIG.n8nPort}/healthz`);
-            log('n8n ist bereit!', 'success');
+            log('n8n is ready!', 'success');
             return true;
         } catch {
             process.stdout.write('.');
@@ -107,13 +107,13 @@ const waitForN8n = async (maxRetries = 30) => {
         }
     }
 
-    log('n8n ist nicht erreichbar', 'error');
+    log('n8n is not reachable', 'error');
     return false;
 };
 
 const getApiHeaders = () => {
     if (!CONFIG.n8nApiKey) {
-        log('N8N_API_KEY ist nicht gesetzt. Stelle sicher, dass Sie einen API-Key in der .env-Datei haben.', 'warning');
+        log('N8N_API_KEY is not set. Make sure you have an API key in the .env file.', 'warning');
         return {};
     }
     return {
@@ -126,25 +126,25 @@ const getWorkflows = async () => {
     try {
         const headers = getApiHeaders();
         if (!headers['X-N8N-API-KEY']) {
-            log('Überspringe Workflow-Prüfung (kein API-Key)', 'warning');
+            log('Skipping workflow check (no API key)', 'warning');
             return [];
         }
 
         const response = await axios.get(`${CONFIG.n8nApiUrl}/workflows`, { headers });
         return response.data.data || [];
     } catch (error) {
-        log(`Fehler beim Abrufen der Workflows: ${error.message}`, 'error');
+        log(`Error fetching workflows: ${error.message}`, 'error');
         return [];
     }
 };
 
 const backupWorkflows = async (workflows) => {
     if (!workflows.length) {
-        log('Keine Workflows zum Backup vorhanden');
+        log('No workflows available for backup');
         return;
     }
 
-    // Erstelle backup Verzeichnis
+    // Create backup directory
     if (!fs.existsSync(CONFIG.backupDir)) {
         fs.mkdirSync(CONFIG.backupDir, { recursive: true });
     }
@@ -153,7 +153,7 @@ const backupWorkflows = async (workflows) => {
     const backupFolder = path.join(CONFIG.backupDir, `backup-${timestamp}`);
     fs.mkdirSync(backupFolder);
 
-    log(`Erstelle Backup in ${backupFolder}...`);
+    log(`Creating backup in ${backupFolder}...`);
 
     for (const workflow of workflows) {
         try {
@@ -165,37 +165,37 @@ const backupWorkflows = async (workflows) => {
             const filepath = path.join(backupFolder, filename);
 
             fs.writeFileSync(filepath, JSON.stringify(workflowData, null, 2));
-            log(`Workflow "${workflow.name}" gesichert`, 'success');
+            log(`Workflow "${workflow.name}" backed up`, 'success');
         } catch (error) {
-            log(`Fehler beim Backup von "${workflow.name}": ${error.message}`, 'error');
+            log(`Error backing up "${workflow.name}": ${error.message}`, 'error');
         }
     }
 
-    log(`Backup abgeschlossen: ${workflows.length} Workflows gesichert`, 'success');
+    log(`Backup completed: ${workflows.length} workflows backed up`, 'success');
 };
 
 const deleteWorkflows = async (workflows) => {
     if (!workflows.length) {
-        log('Keine Workflows zum Löschen vorhanden');
+        log('No workflows available for deletion');
         return;
     }
 
-    log(`Lösche ${workflows.length} Workflows...`);
+    log(`Deleting ${workflows.length} workflows...`);
 
     for (const workflow of workflows) {
         try {
             const headers = getApiHeaders();
             await axios.delete(`${CONFIG.n8nApiUrl}/workflows/${workflow.id}`, { headers });
-            log(`Workflow "${workflow.name}" gelöscht`, 'success');
+            log(`Workflow "${workflow.name}" deleted`, 'success');
         } catch (error) {
-            log(`Fehler beim Löschen von "${workflow.name}": ${error.message}`, 'error');
+            log(`Error deleting "${workflow.name}": ${error.message}`, 'error');
         }
     }
 
-    log('Alle Workflows gelöscht', 'success');
+    log('All workflows deleted', 'success');
 };
 
-// Workflow-Datei-Funktionen
+// Workflow file functions
 const findWorkflowFiles = (dir) => {
     const files = [];
 
@@ -252,40 +252,50 @@ const uploadWorkflow = async (filePath) => {
         const workflowData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
         const headers = getApiHeaders();
 
-        // Entferne ID für neue Workflows
+        // Clean the workflow for import
         delete workflowData.id;
+        delete workflowData.versionId;
+        delete workflowData.meta;
+        delete workflowData.tags;
+        delete workflowData.pinData;
 
-        // Ersetze Node-Typ für lokalen Custom-Node
+        // Ensure the "settings" property exists
+        if (!workflowData.settings) {
+            workflowData.settings = {};
+        }
+
+        // Replace Node type for local Custom-Node
         const workflowString = JSON.stringify(workflowData);
         const updatedWorkflowString = workflowString.replace(
-            /"type":\s*"n8n-nodes-sevdesk-v2\.sevDesk"/g,
+            /"type":\s*"sevDesk"/g,
             '"type": "CUSTOM.sevDesk"'
         );
         const updatedWorkflowData = JSON.parse(updatedWorkflowString);
 
         const response = await axios.post(`${CONFIG.n8nApiUrl}/workflows`, updatedWorkflowData, { headers });
-        log(`Workflow "${updatedWorkflowData.name}" hochgeladen (Node-Typ angepasst)`, 'success');
+        log(`Workflow "${updatedWorkflowData.name}" uploaded (Node type adjusted)`, 'success');
         return response.data.data;
     } catch (error) {
-        log(`Fehler beim Hochladen von ${path.basename(filePath)}: ${error.message}`, 'error');
+        const errorMessage = error.response ? JSON.stringify(error.response.data, null, 2) : error.message;
+        log(`Error uploading ${path.basename(filePath)}: ${errorMessage}`, 'error');
         return null;
     }
 };
 
 const selectWorkflowDirectory = async (directories) => {
     if (directories.length === 0) {
-        log('Keine Workflow-Verzeichnisse gefunden');
+        log('No workflow directories found');
         return null;
     }
 
-    console.log('\n📁 Verfügbare Workflow-Verzeichnisse:');
+    console.log('\n📁 Available workflow directories:');
     directories.forEach((dir, index) => {
-        console.log(`${index + 1}. ${dir.name} (${dir.workflowCount} Workflows)`);
+        console.log(`${index + 1}. ${dir.name} (${dir.workflowCount} workflows)`);
     });
-    console.log(`${directories.length + 1}. Alle Verzeichnisse`);
-    console.log('0. Abbrechen');
+    console.log(`${directories.length + 1}. All directories`);
+    console.log('0. Cancel');
 
-    const choice = await question('\nWählen Sie ein Verzeichnis (Nummer): ');
+    const choice = await question('\nSelect a directory (number): ');
     const choiceNum = parseInt(choice);
 
     if (choiceNum === 0) {
@@ -295,7 +305,7 @@ const selectWorkflowDirectory = async (directories) => {
     } else if (choiceNum >= 1 && choiceNum <= directories.length) {
         return [directories[choiceNum - 1]];
     } else {
-        log('Ungültige Auswahl', 'error');
+        log('Invalid selection', 'error');
         return await selectWorkflowDirectory(directories);
     }
 };
@@ -312,121 +322,125 @@ const openBrowser = () => {
         } else {
             execSync(`xdg-open ${url}`);
         }
-        log(`Browser geöffnet: ${url}`, 'success');
+        log(`Browser opened: ${url}`, 'success');
     } catch (error) {
-        log(`Konnte Browser nicht öffnen. Bitte öffnen Sie manuell: ${url}`, 'warning');
+        log(`Could not open browser. Please open manually: ${url}`, 'warning');
     }
 };
 
-// Hauptfunktion
+// Main function
 const main = async () => {
     console.log('🚀 n8n SevDesk-Node Starter');
     console.log('============================\n');
 
     try {
         // 1. Node build
-        log('1. Erstelle Build...');
+        log('1. Creating build...');
         execSync('npm run build', { stdio: 'inherit' });
-        log('Build erfolgreich', 'success');
+        log('Build successful', 'success');
 
-        // 2. Docker prüfen
-        log('2. Prüfe Docker-Status...');
-        if (!isDockerRunning()) {
-            log('Docker ist nicht verfügbar. Bitte starten Sie Docker.', 'error');
+        // 2. Add Node to Docker
+        log('2. Copy Node to Docker Volume...');
+        const nodeSourcePath = './dist';
+        const nodeTargetPath = './n8n_data/nodes';
+        
+        if (fs.existsSync(nodeSourcePath)) {
+            // Create nodes directory if not present
+            if (!fs.existsSync(nodeTargetPath)) {
+                fs.mkdirSync(nodeTargetPath, { recursive: true });
+            }
+            
+            // Copy the compiled Node
+            execSync(`cp -r ${nodeSourcePath}/* ${nodeTargetPath}/`, { stdio: 'inherit' });
+            log('Node successfully copied', 'success');
+        } else {
+            log('Build directory not found', 'error');
             process.exit(1);
         }
 
-        // 3. n8n Container stoppen falls läuft
+        // 3. Check Docker
+        log('3. Checking Docker status...');
+        if (!isDockerRunning()) {
+            log('Docker is not available. Please start Docker.', 'error');
+            process.exit(1);
+        }
+
+        // 4. Stop n8n container if running
         if (isN8nContainerRunning()) {
-            log('3. n8n Container läuft bereits...');
-            const shouldStop = await question('Container stoppen? (j/N): ');
-            if (shouldStop.toLowerCase().startsWith('j')) {
+            log('4. n8n container is already running...');
+            const shouldStop = await question('Stop container? (y/N): ');
+            if (shouldStop.toLowerCase().startsWith('y')) {
                 stopN8nContainer();
             }
         }
 
-        // 4. Docker starten
-        log('4. Starte Docker Container...');
+        // 5. Start Docker
+        log('5. Starting Docker container...');
         startN8nContainer();
 
-        // Warte auf n8n
+        // Wait for n8n
         const isReady = await waitForN8n();
         if (!isReady) {
-            log('n8n konnte nicht gestartet werden', 'error');
+            log('n8n could not be started', 'error');
             process.exit(1);
         }
 
-        // 5. Workflows prüfen
-        log('5. Prüfe vorhandene Workflows...');
+        // 6. Check workflows
+        log('6. Checking existing workflows...');
         const existingWorkflows = await getWorkflows();
-        log(`${existingWorkflows.length} Workflows gefunden`);
+        log(`${existingWorkflows.length} workflows found`);
 
-        // 6. Backup anbieten
+        // 7. Offer backup
         if (existingWorkflows.length > 0) {
-            const wantBackup = await question('6. Backup der vorhandenen Workflows erstellen? (J/n): ');
+            const wantBackup = await question('7. Create backup of existing workflows? (Y/n): ');
             if (!wantBackup.toLowerCase().startsWith('n')) {
                 await backupWorkflows(existingWorkflows);
             }
 
-            // 8. Workflows löschen anbieten
-            const shouldDelete = await question('8. Vorhandene Workflows löschen? (j/N): ');
-            if (shouldDelete.toLowerCase().startsWith('j')) {
+            // 8. Offer to delete workflows
+            const shouldDelete = await question('8. Delete existing workflows? (y/N): ');
+            if (shouldDelete.toLowerCase().startsWith('y')) {
                 await deleteWorkflows(existingWorkflows);
             }
         }
 
-        // 9-10. Test-Workflows hochladen
-        log('9. Suche Test-Workflows...');
+        // 9. Upload test workflows
+        log('9. Searching for test workflows...');
+        const workflowDirs = findWorkflowDirectories(CONFIG.testWorkflowsDir);
 
-        // Prüfe auf direkte JSON-Dateien
-        const directWorkflowFiles = findWorkflowFiles(CONFIG.testWorkflowsDir);
+        if (workflowDirs.length > 0) {
+            log(`${workflowDirs.length} workflow directories found`);
+            const selectedDirs = await selectWorkflowDirectory(workflowDirs);
 
-        if (directWorkflowFiles.length > 0) {
-            log(`${directWorkflowFiles.length} Workflow-Dateien gefunden`);
-            const shouldUpload = await question('Test-Workflows hochladen? (J/n): ');
-            if (!shouldUpload.toLowerCase().startsWith('n')) {
-                for (const file of directWorkflowFiles) {
-                    await uploadWorkflow(file);
+            if (selectedDirs) {
+                for (const dir of selectedDirs) {
+                    log(`Loading workflows from ${dir.name}...`);
+                    const files = findWorkflowFiles(dir.path);
+                    for (const file of files) {
+                        await uploadWorkflow(file);
+                    }
                 }
             }
         } else {
-            // Prüfe auf Workflow-Verzeichnisse
-            const workflowDirs = findWorkflowDirectories(CONFIG.testWorkflowsDir);
-
-            if (workflowDirs.length > 0) {
-                log(`${workflowDirs.length} Workflow-Verzeichnisse gefunden`);
-                const selectedDirs = await selectWorkflowDirectory(workflowDirs);
-
-                if (selectedDirs) {
-                    for (const dir of selectedDirs) {
-                        log(`Lade Workflows aus ${dir.name}...`);
-                        const files = findWorkflowFiles(dir.path);
-                        for (const file of files) {
-                            await uploadWorkflow(file);
-                        }
-                    }
-                }
-            } else {
-                log('Keine Test-Workflows gefunden', 'warning');
-            }
+            log('No test workflows found', 'warning');
         }
 
-        // 11. Browser öffnen
-        log('11. Öffne n8n im Browser...');
-        await sleep(2000); // Kurz warten
+        // 10. Open browser
+        log('10. Opening n8n in browser...');
+        await sleep(2000); // Wait briefly
         openBrowser();
 
-        log('\n🎉 Start-Prozess abgeschlossen!', 'success');
+        log('\n🎉 Start process completed!', 'success');
 
     } catch (error) {
-        log(`Fehler: ${error.message}`, 'error');
+        log(`Error: ${error.message}`, 'error');
         process.exit(1);
     } finally {
         rl.close();
     }
 };
 
-// Programm starten
+// Start program
 if (require.main === module) {
     main();
 }

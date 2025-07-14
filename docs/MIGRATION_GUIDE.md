@@ -1,5 +1,10 @@
 # Migration Guide: From Placeholder to Production Implementation
 
+**Version:** 2.4.1  
+**Updated:** 2025-07-14  
+**Status:** Production Ready  
+**Target API:** SevDesk API v2.0
+
 This guide helps you migrate from placeholder implementations to the fully functional SevDesk API integration in n8n-nodes-sevdesk-v2.
 
 ## Overview
@@ -17,44 +22,48 @@ The n8n-nodes-sevdesk-v2 node has evolved from placeholder implementations to a 
 ### 1. API Integration
 
 **Before (Placeholder):**
+
 ```javascript
 // Returned mock data
 return [
-  {
-    json: {
-      id: 'mock-123',
-      name: 'Mock Contact',
-      status: 'placeholder'
-    }
-  }
+	{
+		json: {
+			id: "mock-123",
+			name: "Mock Contact",
+			status: "placeholder",
+		},
+	},
 ];
 ```
 
 **After (Production):**
+
 ```javascript
 // Makes actual SevDesk API calls
 const response = await this.helpers.httpRequestWithAuthentication.call(
-  this,
-  'sevDeskApi',
-  {
-    method: 'GET',
-    url: '/Contact',
-    headers: {
-      'Authorization': `Token ${credentials.apiKey}`,
-      'Content-Type': 'application/json'
-    }
-  }
+	this,
+	"sevDeskApi",
+	{
+		method: "GET",
+		url: "/Contact",
+		headers: {
+			Authorization: `Token ${credentials.apiKey}`,
+			"Content-Type": "application/json",
+		},
+	},
 );
 ```
 
 ### 2. Authentication
 
 **Before:**
+
 - No actual API authentication
 - Credentials were ignored
 - All operations returned mock data
 
 **After:**
+
 - Full SevDesk API authentication
 - API key validation
 - Proper error handling for auth failures
@@ -62,11 +71,13 @@ const response = await this.helpers.httpRequestWithAuthentication.call(
 ### 3. Data Validation
 
 **Before:**
+
 - Minimal input validation
 - No business rule enforcement
 - Generic error messages
 
 **After:**
+
 - Comprehensive input validation
 - German business rule compliance
 - Detailed error messages with suggestions
@@ -74,18 +85,20 @@ const response = await this.helpers.httpRequestWithAuthentication.call(
 ### 4. Error Handling
 
 **Before:**
+
 ```javascript
 // Generic error handling
-throw new Error('Operation failed');
+throw new Error("Operation failed");
 ```
 
 **After:**
+
 ```javascript
 // Specific SevDesk error handling
 if (error.response?.status === 401) {
-  throw new SevDeskAuthenticationError('Invalid API key', error);
+	throw new SevDeskAuthenticationError("Invalid API key", error);
 } else if (error.response?.status === 422) {
-  throw new SevDeskValidationError('Business rule violation', error);
+	throw new SevDeskValidationError("Business rule violation", error);
 }
 ```
 
@@ -96,10 +109,11 @@ if (error.response?.status === 401) {
 **Action Required:** Verify your SevDesk API credentials
 
 1. **Check API Key Format**
+
    ```json
    {
-     "apiKey": "your-actual-sevdesk-api-key",
-     "apiVersion": "v1"
+   	"apiKey": "your-actual-sevdesk-api-key",
+   	"apiVersion": "v1"
    }
    ```
 
@@ -109,10 +123,11 @@ if (error.response?.status === 401) {
    - Verify successful authentication
 
 **Test Workflow:**
+
 ```json
 {
-  "resource": "basics",
-  "operation": "get"
+	"resource": "basics",
+	"operation": "get"
 }
 ```
 
@@ -123,6 +138,7 @@ if (error.response?.status === 401) {
 **Common Changes Needed:**
 
 1. **Response Data Structure**
+
    - Real API responses may have different field names
    - Additional metadata fields are now included
    - Nested objects follow SevDesk API structure
@@ -133,6 +149,7 @@ if (error.response?.status === 401) {
    - Implement retry logic for transient failures
 
 **Example Update:**
+
 ```javascript
 // Before: Expected mock data structure
 const contactName = items[0].json.name;
@@ -148,52 +165,56 @@ const contactName = items[0].json.objects?.[0]?.name || items[0].json.name;
 #### Contact Operations
 
 **Before:**
+
 ```json
 {
-  "resource": "contact",
-  "operation": "create",
-  "name": "Test Contact"
+	"resource": "contact",
+	"operation": "create",
+	"name": "Test Contact"
 }
 ```
 
 **After:**
+
 ```json
 {
-  "resource": "contact",
-  "operation": "create",
-  "name": "Test Contact",
-  "category": {
-    "id": 3,
-    "objectName": "Category"
-  },
-  "customerNumber": "K-001"
+	"resource": "contact",
+	"operation": "create",
+	"name": "Test Contact",
+	"category": {
+		"id": 3,
+		"objectName": "Category"
+	},
+	"customerNumber": "K-001"
 }
 ```
 
 #### Invoice Operations
 
 **Before:**
+
 ```json
 {
-  "resource": "invoice",
-  "operation": "create",
-  "amount": 100
+	"resource": "invoice",
+	"operation": "create",
+	"amount": 100
 }
 ```
 
 **After:**
+
 ```json
 {
-  "resource": "invoice",
-  "operation": "create",
-  "contact": {
-    "id": 123,
-    "objectName": "Contact"
-  },
-  "invoiceDate": "2025-01-15",
-  "status": 100,
-  "invoiceType": "RE",
-  "currency": "EUR"
+	"resource": "invoice",
+	"operation": "create",
+	"contact": {
+		"id": 123,
+		"objectName": "Contact"
+	},
+	"invoiceDate": "2025-01-15",
+	"status": 100,
+	"invoiceType": "RE",
+	"currency": "EUR"
 }
 ```
 
@@ -204,21 +225,25 @@ const contactName = items[0].json.objects?.[0]?.name || items[0].json.name;
 #### Common Required Fields by Resource:
 
 **Contact:**
+
 - `category` (object with id and objectName)
 - `customerNumber` (for customers)
 
 **Invoice:**
+
 - `contact` (object reference)
 - `invoiceDate` (ISO date format)
 - `status` (numeric status code)
 - `invoiceType` (RE, AN, etc.)
 
 **Voucher:**
+
 - `voucherDate` (ISO date format)
 - `supplier` (contact object reference)
 - `voucherType` (VOU, etc.)
 
 **Order:**
+
 - `contact` (object reference)
 - `orderDate` (ISO date format)
 - `orderType` (AN, etc.)
@@ -230,11 +255,13 @@ const contactName = items[0].json.objects?.[0]?.name || items[0].json.name;
 #### Date Formats
 
 **Before:** Any date format accepted
+
 ```
 "date": "15.01.2025"
 ```
 
 **After:** ISO date format required
+
 ```
 "date": "2025-01-15"
 ```
@@ -242,11 +269,13 @@ const contactName = items[0].json.objects?.[0]?.name || items[0].json.name;
 #### Object References
 
 **Before:** Simple ID reference
+
 ```
 "categoryId": 3
 ```
 
 **After:** Object reference format
+
 ```
 "category": {
   "id": 3,
@@ -257,11 +286,13 @@ const contactName = items[0].json.objects?.[0]?.name || items[0].json.name;
 #### Currency and Amounts
 
 **Before:** Simple number
+
 ```
 "amount": 100
 ```
 
 **After:** Proper decimal format
+
 ```
 "amount": 100.00,
 "currency": "EUR"
@@ -274,32 +305,35 @@ const contactName = items[0].json.objects?.[0]?.name || items[0].json.name;
 **Impact:** Workflows that parse response data
 
 **Before:**
+
 ```json
 {
-  "id": "123",
-  "name": "Contact Name",
-  "email": "test@example.com"
+	"id": "123",
+	"name": "Contact Name",
+	"email": "test@example.com"
 }
 ```
 
 **After:**
+
 ```json
 {
-  "objects": [
-    {
-      "id": "123",
-      "objectName": "Contact",
-      "name": "Contact Name",
-      "email": "test@example.com",
-      "create": "2025-01-15T10:00:00Z",
-      "update": "2025-01-15T10:00:00Z"
-    }
-  ],
-  "total": 1
+	"objects": [
+		{
+			"id": "123",
+			"objectName": "Contact",
+			"name": "Contact Name",
+			"email": "test@example.com",
+			"create": "2025-01-15T10:00:00Z",
+			"update": "2025-01-15T10:00:00Z"
+		}
+	],
+	"total": 1
 }
 ```
 
 **Migration:**
+
 ```javascript
 // Update data extraction logic
 const contacts = response.objects || [response];
@@ -311,23 +345,25 @@ const contact = contacts[0];
 **Impact:** Error handling logic
 
 **Before:**
+
 ```json
 {
-  "error": "Generic error message"
+	"error": "Generic error message"
 }
 ```
 
 **After:**
+
 ```json
 {
-  "error": {
-    "message": "Specific SevDesk error",
-    "code": 400,
-    "details": {
-      "field": "email",
-      "issue": "Invalid email format"
-    }
-  }
+	"error": {
+		"message": "Specific SevDesk error",
+		"code": 400,
+		"details": {
+			"field": "email",
+			"issue": "Invalid email format"
+		}
+	}
 }
 ```
 
@@ -346,9 +382,9 @@ const contact = contacts[0];
 
 ```json
 {
-  "resource": "contact",
-  "operation": "list",
-  "modifiedAfter": "2025-01-15T00:00:00Z"
+	"resource": "contact",
+	"operation": "list",
+	"modifiedAfter": "2025-01-15T00:00:00Z"
 }
 ```
 
@@ -356,12 +392,12 @@ const contact = contacts[0];
 
 ```json
 {
-  "resource": "invoice",
-  "operation": "list",
-  "status": 100,
-  "contactId": 123,
-  "dateFrom": "2025-01-01",
-  "dateTo": "2025-01-31"
+	"resource": "invoice",
+	"operation": "list",
+	"status": 100,
+	"contactId": 123,
+	"dateFrom": "2025-01-01",
+	"dateTo": "2025-01-31"
 }
 ```
 
@@ -369,20 +405,20 @@ const contact = contacts[0];
 
 ```json
 {
-  "resource": "batch",
-  "operation": "create",
-  "operations": [
-    {
-      "method": "POST",
-      "url": "/Contact",
-      "data": { "name": "Contact 1" }
-    },
-    {
-      "method": "POST", 
-      "url": "/Contact",
-      "data": { "name": "Contact 2" }
-    }
-  ]
+	"resource": "batch",
+	"operation": "create",
+	"operations": [
+		{
+			"method": "POST",
+			"url": "/Contact",
+			"data": { "name": "Contact 1" }
+		},
+		{
+			"method": "POST",
+			"url": "/Contact",
+			"data": { "name": "Contact 2" }
+		}
+	]
 }
 ```
 
@@ -390,10 +426,10 @@ const contact = contacts[0];
 
 ```json
 {
-  "resource": "voucher",
-  "operation": "upload",
-  "file": "base64-encoded-document",
-  "filename": "receipt.pdf"
+	"resource": "voucher",
+	"operation": "upload",
+	"file": "base64-encoded-document",
+	"filename": "receipt.pdf"
 }
 ```
 
@@ -401,24 +437,26 @@ const contact = contacts[0];
 
 ```json
 {
-  "resource": "invoice",
-  "operation": "sendByEmail",
-  "invoiceId": 456,
-  "sendToEmail": "customer@example.com",
-  "subject": "Your Invoice",
-  "text": "Please find attached..."
+	"resource": "invoice",
+	"operation": "sendByEmail",
+	"invoiceId": 456,
+	"sendToEmail": "customer@example.com",
+	"subject": "Your Invoice",
+	"text": "Please find attached..."
 }
 ```
 
 ## Migration Checklist
 
 ### Pre-Migration
+
 - [ ] Backup existing workflows
 - [ ] Document current workflow behavior
 - [ ] Obtain valid SevDesk API credentials
 - [ ] Test credentials with simple operations
 
 ### During Migration
+
 - [ ] Update credential configuration
 - [ ] Review and update each workflow step by step
 - [ ] Add proper error handling
@@ -426,6 +464,7 @@ const contact = contacts[0];
 - [ ] Test each operation individually
 
 ### Post-Migration
+
 - [ ] Perform end-to-end testing
 - [ ] Monitor for errors and performance issues
 - [ ] Update documentation and comments
@@ -437,7 +476,8 @@ const contact = contacts[0];
 ### 1. Authentication Failures
 
 **Symptom:** 401 Unauthorized errors
-**Solution:** 
+**Solution:**
+
 - Verify API key format and validity
 - Check SevDesk account permissions
 - Ensure API access is enabled in SevDesk
@@ -446,6 +486,7 @@ const contact = contacts[0];
 
 **Symptom:** 400 Bad Request errors
 **Solution:**
+
 - Convert dates to ISO format (YYYY-MM-DD)
 - Use object references instead of simple IDs
 - Validate required fields
@@ -454,6 +495,7 @@ const contact = contacts[0];
 
 **Symptom:** 422 Unprocessable Entity errors
 **Solution:**
+
 - Follow German accounting regulations
 - Check resource status before operations
 - Validate business relationships
@@ -462,6 +504,7 @@ const contact = contacts[0];
 
 **Symptom:** Slow response times or timeouts
 **Solution:**
+
 - Implement pagination for large datasets
 - Use batch operations for bulk data
 - Add appropriate delays between requests
@@ -472,8 +515,8 @@ const contact = contacts[0];
 
 ```json
 {
-  "resource": "basics",
-  "operation": "get"
+	"resource": "basics",
+	"operation": "get"
 }
 ```
 
@@ -482,8 +525,8 @@ const contact = contacts[0];
 ```javascript
 // Create
 const contact = await createContact({
-  name: "Test Contact",
-  category: { id: 3, objectName: "Category" }
+	name: "Test Contact",
+	category: { id: 3, objectName: "Category" },
 });
 
 // Read
@@ -491,7 +534,7 @@ const retrieved = await getContact(contact.id);
 
 // Update
 const updated = await updateContact(contact.id, {
-  description: "Updated description"
+	description: "Updated description",
 });
 
 // Delete
@@ -502,32 +545,36 @@ await deleteContact(contact.id);
 
 ```javascript
 try {
-  // Attempt operation with invalid data
-  await createContact({ name: "" }); // Should fail
+	// Attempt operation with invalid data
+	await createContact({ name: "" }); // Should fail
 } catch (error) {
-  // Verify proper error handling
-  console.log('Error handled correctly:', error.message);
+	// Verify proper error handling
+	console.log("Error handled correctly:", error.message);
 }
 ```
 
 ## Best Practices After Migration
 
 ### 1. Error Handling
+
 - Always wrap SevDesk operations in try-catch blocks
 - Implement retry logic for transient failures
 - Log errors for debugging purposes
 
 ### 2. Data Validation
+
 - Validate input data before API calls
 - Use TypeScript interfaces for type safety
 - Implement business rule validation
 
 ### 3. Performance Optimization
+
 - Use pagination for large datasets
 - Implement caching for frequently accessed data
 - Monitor API rate limits
 
 ### 4. Security
+
 - Never log sensitive data (API keys, personal information)
 - Validate all user inputs
 - Use secure credential storage
@@ -537,11 +584,13 @@ try {
 ### Migration Support Resources
 
 1. **Documentation**
+
    - [API Reference](./api-reference.md)
    - [Troubleshooting Guide](./troubleshooting.md)
    - [SevDesk API Documentation](https://api.sevdesk.de/)
 
 2. **Community Support**
+
    - n8n Community Forum
    - GitHub Issues
    - SevDesk Support
@@ -554,18 +603,21 @@ try {
 ## Migration Timeline Recommendations
 
 ### Small Workflows (1-5 nodes)
+
 - **Planning:** 1-2 hours
 - **Migration:** 2-4 hours
 - **Testing:** 1-2 hours
 - **Total:** 4-8 hours
 
 ### Medium Workflows (5-20 nodes)
+
 - **Planning:** 4-8 hours
 - **Migration:** 8-16 hours
 - **Testing:** 4-8 hours
 - **Total:** 16-32 hours
 
 ### Large Workflows (20+ nodes)
+
 - **Planning:** 1-2 days
 - **Migration:** 2-5 days
 - **Testing:** 1-2 days
@@ -585,4 +637,4 @@ The migration process, while requiring some effort, significantly improves the f
 
 ---
 
-*For additional migration support, consult the project documentation or reach out to the community for assistance.*
+_For additional migration support, consult the project documentation or reach out to the community for assistance._

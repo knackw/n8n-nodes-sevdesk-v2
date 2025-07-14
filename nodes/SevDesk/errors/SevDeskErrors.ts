@@ -292,6 +292,174 @@ export class SevDeskApiError extends SevDeskError {
 }
 
 /**
+ * Contact operation specific errors
+ */
+export class SevDeskContactError extends SevDeskError {
+	readonly errorCode = 'CONTACT_ERROR';
+	readonly httpStatusCode = 400;
+
+	constructor(
+		operation: string,
+		message: string,
+		public readonly contactId?: string,
+		originalError?: any
+	) {
+		super(message, originalError);
+	}
+
+	getDescription(): string {
+		const suggestions = {
+			'create': 'Ensure required fields (name, customerNumber, category) are provided and valid.',
+			'update': 'Check that the contact ID exists and you have permission to modify it.',
+			'delete': 'Verify the contact exists and is not referenced by other records (invoices, orders).',
+			'get': 'Check that the contact ID is valid and you have access to it.',
+			'checkCustomerNumberAvailability': 'Ensure the customer number format is valid.'
+		};
+		
+		return suggestions[this.message.toLowerCase()] || 'Please check the contact data and permissions.';
+	}
+}
+
+/**
+ * Invoice operation specific errors
+ */
+export class SevDeskInvoiceError extends SevDeskError {
+	readonly errorCode = 'INVOICE_ERROR';
+	readonly httpStatusCode = 400;
+
+	constructor(
+		operation: string,
+		message: string,
+		public readonly invoiceId?: string,
+		originalError?: any
+	) {
+		super(message, originalError);
+	}
+
+	getDescription(): string {
+		const suggestions = {
+			'create': 'Ensure contact ID, invoice date, and positions are provided. Check tax calculations.',
+			'update': 'Verify the invoice is still editable (not sent or paid) and data is valid.',
+			'delete': 'Check that the invoice exists and is not finalized or paid.',
+			'sendByEmail': 'Ensure the contact has a valid email address and invoice is finalized.',
+			'markAsSent': 'Verify the invoice is in the correct status to be marked as sent.',
+			'bookAmount': 'Check the amount, date, and check account are valid for payment booking.',
+			'cancel': 'Ensure the invoice can be cancelled (not already paid or cancelled).'
+		};
+		
+		return suggestions[this.message.toLowerCase()] || 'Please check the invoice data and status.';
+	}
+}
+
+/**
+ * Order operation specific errors
+ */
+export class SevDeskOrderError extends SevDeskError {
+	readonly errorCode = 'ORDER_ERROR';
+	readonly httpStatusCode = 400;
+
+	constructor(
+		operation: string,
+		message: string,
+		public readonly orderId?: string,
+		originalError?: any
+	) {
+		super(message, originalError);
+	}
+
+	getDescription(): string {
+		const suggestions = {
+			'create': 'Ensure contact ID, order date, and order positions are provided.',
+			'update': 'Verify the order is still editable and not converted to invoice.',
+			'delete': 'Check that the order exists and is not referenced by invoices.',
+			'createInvoice': 'Ensure the order is finalized and has valid positions for invoice creation.'
+		};
+		
+		return suggestions[this.message.toLowerCase()] || 'Please check the order data and status.';
+	}
+}
+
+/**
+ * Voucher operation specific errors
+ */
+export class SevDeskVoucherError extends SevDeskError {
+	readonly errorCode = 'VOUCHER_ERROR';
+	readonly httpStatusCode = 400;
+
+	constructor(
+		operation: string,
+		message: string,
+		public readonly voucherId?: string,
+		originalError?: any
+	) {
+		super(message, originalError);
+	}
+
+	getDescription(): string {
+		const suggestions = {
+			'create': 'Ensure voucher date, supplier, and amounts are provided. Check document upload.',
+			'update': 'Verify the voucher is still editable and not booked.',
+			'delete': 'Check that the voucher exists and is not booked to accounting.',
+			'upload': 'Ensure the file is valid (PDF, image) and under size limit (10MB).'
+		};
+		
+		return suggestions[this.message.toLowerCase()] || 'Please check the voucher data and document.';
+	}
+}
+
+/**
+ * Batch operation specific errors
+ */
+export class SevDeskBatchError extends SevDeskError {
+	readonly errorCode = 'BATCH_ERROR';
+	readonly httpStatusCode = 400;
+
+	constructor(
+		message: string,
+		public readonly batchId?: string,
+		public readonly failedOperations?: any[],
+		originalError?: any
+	) {
+		super(message, originalError);
+	}
+
+	getDescription(): string {
+		if (this.failedOperations && this.failedOperations.length > 0) {
+			return `Batch operation partially failed. ${this.failedOperations.length} operations failed. Check individual operation errors for details.`;
+		}
+		return 'Batch operation failed. Ensure all operations are valid and within batch size limits (max 100 operations).';
+	}
+}
+
+/**
+ * File operation specific errors
+ */
+export class SevDeskFileError extends SevDeskError {
+	readonly errorCode = 'FILE_ERROR';
+	readonly httpStatusCode = 400;
+
+	constructor(
+		operation: string,
+		message: string,
+		public readonly fileName?: string,
+		originalError?: any
+	) {
+		super(message, originalError);
+	}
+
+	getDescription(): string {
+		const suggestions = {
+			'upload': 'Check file format (PDF, JPG, PNG), size (max 10MB), and permissions.',
+			'download': 'Ensure the file exists and you have access permissions.',
+			'downloadPdf': 'Verify the document can be generated as PDF.',
+			'downloadXml': 'Check that XML export is available for this resource type.'
+		};
+		
+		return suggestions[this.message.toLowerCase()] || 'Please check the file operation and permissions.';
+	}
+}
+
+/**
  * Error factory for creating appropriate error types based on HTTP status codes and error details
  */
 export class SevDeskErrorFactory {
@@ -338,6 +506,49 @@ export class SevDeskErrorFactory {
 	}
 
 	/**
+	 * Create resource-specific error based on operation context
+	 */
+	static createResourceError(
+		resource: string,
+		operation: string,
+		message: string,
+		resourceId?: string,
+		originalError?: any
+	): SevDeskError {
+		switch (resource.toLowerCase()) {
+			case 'contact':
+				return new SevDeskContactError(operation, message, resourceId, originalError);
+			
+			case 'invoice':
+				return new SevDeskInvoiceError(operation, message, resourceId, originalError);
+			
+			case 'order':
+				return new SevDeskOrderError(operation, message, resourceId, originalError);
+			
+			case 'voucher':
+				return new SevDeskVoucherError(operation, message, resourceId, originalError);
+			
+			case 'batch':
+				return new SevDeskBatchError(message, resourceId, undefined, originalError);
+			
+			default:
+				return new SevDeskApiError(message, 400, originalError);
+		}
+	}
+
+	/**
+	 * Create file operation error
+	 */
+	static createFileError(
+		operation: string,
+		message: string,
+		fileName?: string,
+		originalError?: any
+	): SevDeskFileError {
+		return new SevDeskFileError(operation, message, fileName, originalError);
+	}
+
+	/**
 	 * Create error from network/connection issues
 	 */
 	static createConnectionError(originalError: any): SevDeskConnectionError {
@@ -350,5 +561,17 @@ export class SevDeskErrorFactory {
 	 */
 	static createConfigurationError(message: string, originalError?: any): SevDeskConfigurationError {
 		return new SevDeskConfigurationError(message, originalError);
+	}
+
+	/**
+	 * Create batch error with failed operations details
+	 */
+	static createBatchError(
+		message: string,
+		batchId?: string,
+		failedOperations?: any[],
+		originalError?: any
+	): SevDeskBatchError {
+		return new SevDeskBatchError(message, batchId, failedOperations, originalError);
 	}
 }

@@ -1,0 +1,491 @@
+{
+  "name": "SevDesk - Reporting - Teil 1: Datenextraktion (v2)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## SevDesk - Reporting - Teil 1: Datenextraktion\n\n**Zweck:**\nDieser Workflow extrahiert umfassende Geschäftsdaten aus SevDesk für die Erstellung automatisierter Reports und Dashboards. Er sammelt Finanzkennzahlen, Umsatzdaten und Betriebsstatistiken.\n\n**Datenquellen:**\n- Rechnungen und Umsätze\n- Belege und Ausgaben\n- Kunden- und Lieferantendaten\n- Banktransaktionen und Zahlungen\n- Steuer- und Buchhaltungsdaten\n\n**Report-Typen:**\n- Monatliche BWA (Betriebswirtschaftliche Auswertung)\n- Quartalsberichte für Management\n- Jahresabschluss-Vorbereitung\n- KPI-Dashboards\n- Steuerberater-Reports",
+        "height": 350,
+        "width": 450
+      },
+      "name": "Workflow-Beschreibung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "monthsInterval": 1
+            }
+          ]
+        }
+      },
+      "name": "Monatlicher Report",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reporting-extract",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        500
+      ],
+      "webhookId": "reporting-extract-webhook"
+    },
+    {
+      "parameters": {},
+      "name": "Trigger zusammenführen",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        450,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// Bestimme Berichtszeitraum und Report-Typ\nconst item = $input.item.json;\nlet reportConfig = {};\n\n// Webhook-Parameter (manueller Aufruf)\nif (item.body) {\n  reportConfig = {\n    report_type: item.body.report_type || 'monthly',\n    start_date: item.body.start_date,\n    end_date: item.body.end_date,\n    include_comparisons: item.body.include_comparisons || true,\n    format: item.body.format || 'comprehensive',\n    recipients: item.body.recipients || ['management@company.com']\n  };\n}\n// Schedule Trigger (automatischer monatlicher Bericht)\nelse {\n  const today = new Date();\n  const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);\n  const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);\n  \n  reportConfig = {\n    report_type: 'monthly',\n    start_date: firstDayLastMonth.toISOString().split('T')[0],\n    end_date: lastDayLastMonth.toISOString().split('T')[0],\n    include_comparisons: true,\n    format: 'comprehensive',\n    recipients: ['management@company.com', 'controller@company.com']\n  };\n}\n\n// Report-ID generieren\nconst reportId = `REPORT_${reportConfig.report_type.toUpperCase()}_${new Date().toISOString().replace(/[:.]/g, '_')}`;\n\nreturn {\n  json: {\n    report_id: reportId,\n    ...reportConfig,\n    extraction_started: new Date().toISOString(),\n    status: 'extraction_initialized'\n  }\n};"
+      },
+      "name": "Report-Parameter bestimmen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Report-Konfiguration:**\n\n**Report-Typen:**\n- monthly: Monatsbericht (Standard)\n- quarterly: Quartalsbericht\n- annual: Jahresbericht\n- weekly: Wochenbericht\n- custom: Benutzerdefiniert\n\n**Zeitraum-Bestimmung:**\n- Webhook: Übermittelte Parameter\n- Schedule: Automatisch Vormonat\n- Vergleichszeiträume optional\n\n**Format-Optionen:**\n- comprehensive: Vollständiger Bericht\n- summary: Zusammenfassung\n- kpi_only: Nur Kennzahlen\n- dashboard: Dashboard-Format",
+        "width": 280,
+        "height": 200
+      },
+      "name": "Konfiguration-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        650,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "invoice",
+        "operation": "getMany",
+        "additionalFields": {
+          "startDate": "={{ $json.start_date }}",
+          "endDate": "={{ $json.end_date }}",
+          "status": "200,1000",
+          "limit": 2000
+        }
+      },
+      "name": "SevDesk - Rechnungen laden",
+      "type": "n8n-nodes-sevdesk-v2.sevDesk",
+      "typeVersion": 1,
+      "position": [
+        950,
+        250
+      ],
+      "credentials": {
+        "sevDeskApi": {
+          "id": "6",
+          "name": "SevDesk API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "voucher",
+        "operation": "getMany",
+        "additionalFields": {
+          "startDate": "={{ $json.start_date }}",
+          "endDate": "={{ $json.end_date }}",
+          "status": "1000",
+          "limit": 2000
+        }
+      },
+      "name": "SevDesk - Belege laden",
+      "type": "n8n-nodes-sevdesk-v2.sevDesk",
+      "typeVersion": 1,
+      "position": [
+        950,
+        400
+      ],
+      "credentials": {
+        "sevDeskApi": {
+          "id": "6",
+          "name": "SevDesk API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "checkAccountTransaction",
+        "operation": "getMany",
+        "additionalFields": {
+          "startDate": "={{ $json.start_date }}",
+          "endDate": "={{ $json.end_date }}",
+          "limit": 2000
+        }
+      },
+      "name": "SevDesk - Transaktionen laden",
+      "type": "n8n-nodes-sevdesk-v2.sevDesk",
+      "typeVersion": 1,
+      "position": [
+        950,
+        550
+      ],
+      "credentials": {
+        "sevDeskApi": {
+          "id": "6",
+          "name": "SevDesk API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "getMany",
+        "additionalFields": {
+          "limit": 1000
+        }
+      },
+      "name": "SevDesk - Kontakte laden",
+      "type": "n8n-nodes-sevdesk-v2.sevDesk",
+      "typeVersion": 1,
+      "position": [
+        950,
+        700
+      ],
+      "credentials": {
+        "sevDeskApi": {
+          "id": "6",
+          "name": "SevDesk API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "**Parallele Datenextraktion:**\n\n**Rechnungen:**\n- Verschickte und gebuchte Rechnungen\n- Umsätze und Erträge\n- Kundenzahlungen\n\n**Belege:**\n- Gebuchte Eingangsrechnungen\n- Betriebsausgaben\n- Kostenarten-Analyse\n\n**Transaktionen:**\n- Kontobewegungen\n- Liquiditätsentwicklung\n- Zahlungsströme\n\n**Kontakte:**\n- Kunden- und Lieferantenstamm\n- Umsatzverteilung\n- Zahlungsverhalten",
+        "width": 300,
+        "height": 180
+      },
+      "name": "Datenextraktion-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        950,
+        50
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Daten zusammenführen",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1350,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// Berechne umfassende Geschäftskennzahlen\nconst baseData = $node[\"Report-Parameter bestimmen\"].json;\nconst rechnungen = $node[\"SevDesk - Rechnungen laden\"].json || [];\nconst belege = $node[\"SevDesk - Belege laden\"].json || [];\nconst transaktionen = $node[\"SevDesk - Transaktionen laden\"].json || [];\nconst kontakte = $node[\"SevDesk - Kontakte laden\"].json || [];\n\n// === UMSATZ-KENNZAHLEN ===\nconst umsatzKennzahlen = {\n  brutto_umsatz: rechnungen.reduce((sum, r) => sum + parseFloat(r.sumGross || 0), 0),\n  netto_umsatz: rechnungen.reduce((sum, r) => sum + parseFloat(r.sumNet || 0), 0),\n  umsatzsteuer: rechnungen.reduce((sum, r) => sum + parseFloat(r.sumTax || 0), 0),\n  anzahl_rechnungen: rechnungen.length,\n  durchschnittlicher_rechnungsbetrag: rechnungen.length > 0 ? \n    rechnungen.reduce((sum, r) => sum + parseFloat(r.sumGross || 0), 0) / rechnungen.length : 0\n};\n\n// === AUSGABEN-KENNZAHLEN ===\nconst ausgabenKennzahlen = {\n  gesamt_ausgaben: belege.reduce((sum, b) => sum + parseFloat(b.sumGross || 0), 0),\n  netto_ausgaben: belege.reduce((sum, b) => sum + parseFloat(b.sumNet || 0), 0),\n  vorsteuer: belege.reduce((sum, b) => sum + parseFloat(b.sumTax || 0), 0),\n  anzahl_belege: belege.length,\n  durchschnittlicher_belegbetrag: belege.length > 0 ? \n    belege.reduce((sum, b) => sum + parseFloat(b.sumGross || 0), 0) / belege.length : 0\n};\n\n// === ERGEBNIS-KENNZAHLEN ===\nconst ergebnisKennzahlen = {\n  brutto_ergebnis: umsatzKennzahlen.brutto_umsatz - ausgabenKennzahlen.gesamt_ausgaben,\n  netto_ergebnis: umsatzKennzahlen.netto_umsatz - ausgabenKennzahlen.netto_ausgaben,\n  umsatzrendite_prozent: umsatzKennzahlen.netto_umsatz > 0 ? \n    ((umsatzKennzahlen.netto_umsatz - ausgabenKennzahlen.netto_ausgaben) / umsatzKennzahlen.netto_umsatz * 100) : 0,\n  steuer_saldo: umsatzKennzahlen.umsatzsteuer - ausgabenKennzahlen.vorsteuer\n};\n\n// === LIQUIDITÄTS-KENNZAHLEN ===\nconst liquiditaetKennzahlen = {\n  einzahlungen: transaktionen.filter(t => parseFloat(t.amount || 0) > 0)\n    .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0),\n  auszahlungen: transaktionen.filter(t => parseFloat(t.amount || 0) < 0)\n    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || 0)), 0),\n  netto_cashflow: transaktionen.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0),\n  anzahl_transaktionen: transaktionen.length\n};\n\n// === KUNDEN-KENNZAHLEN ===\nconst kundenKennzahlen = {\n  gesamt_kunden: kontakte.filter(k => k.customerNumber).length,\n  neue_kunden: kontakte.filter(k => {\n    const createDate = new Date(k.createDate);\n    const startDate = new Date(baseData.start_date);\n    const endDate = new Date(baseData.end_date);\n    return createDate >= startDate && createDate <= endDate && k.customerNumber;\n  }).length,\n  aktive_kunden: [...new Set(rechnungen.map(r => r.contact?.id))].length,\n  top_kunden: [...new Set(rechnungen.map(r => r.contact?.id))]\n    .map(customerId => {\n      const customerInvoices = rechnungen.filter(r => r.contact?.id === customerId);\n      const totalAmount = customerInvoices.reduce((sum, r) => sum + parseFloat(r.sumGross || 0), 0);\n      const customer = kontakte.find(k => k.id === customerId);\n      return {\n        customer_id: customerId,\n        customer_name: customer?.name || 'Unbekannt',\n        umsatz: totalAmount,\n        anzahl_rechnungen: customerInvoices.length\n      };\n    })\n    .sort((a, b) => b.umsatz - a.umsatz)\n    .slice(0, 10)\n};\n\n// === KATEGORIEN-ANALYSE ===\nconst kategorienAnalyse = {\n  ausgaben_nach_kategorie: belege.reduce((acc, beleg) => {\n    const kategorie = beleg.category?.name || 'Sonstige';\n    acc[kategorie] = (acc[kategorie] || 0) + parseFloat(beleg.sumGross || 0);\n    return acc;\n  }, {}),\n  \n  umsatz_nach_monat: rechnungen.reduce((acc, rechnung) => {\n    const monat = rechnung.invoiceDate ? rechnung.invoiceDate.substring(0, 7) : 'Unbekannt';\n    acc[monat] = (acc[monat] || 0) + parseFloat(rechnung.sumGross || 0);\n    return acc;\n  }, {})\n};\n\n// === VERGLEICHSDATEN (Vorjahr) ===\nlet vergleichsdaten = null;\nif (baseData.include_comparisons) {\n  const vorjahrStart = new Date(baseData.start_date);\n  vorjahrStart.setFullYear(vorjahrStart.getFullYear() - 1);\n  const vorjahrEnd = new Date(baseData.end_date);\n  vorjahrEnd.setFullYear(vorjahrEnd.getFullYear() - 1);\n  \n  vergleichsdaten = {\n    vergleichszeitraum: {\n      start: vorjahrStart.toISOString().split('T')[0],\n      end: vorjahrEnd.toISOString().split('T')[0]\n    },\n    // Hier würden normalerweise Vorjahresdaten geladen werden\n    // Für Demo: Simulierte Werte\n    vorjahr_umsatz: umsatzKennzahlen.netto_umsatz * 0.85,\n    vorjahr_ausgaben: ausgabenKennzahlen.netto_ausgaben * 0.92,\n    wachstumsrate_umsatz: ((umsatzKennzahlen.netto_umsatz / (umsatzKennzahlen.netto_umsatz * 0.85)) - 1) * 100,\n    veraenderung_ausgaben: ((ausgabenKennzahlen.netto_ausgaben / (ausgabenKennzahlen.netto_ausgaben * 0.92)) - 1) * 100\n  };\n}\n\n// === FINALE DATENSTRUKTUR ===\nconst extractedData = {\n  report_info: baseData,\n  extraction_completed: new Date().toISOString(),\n  data_sources: {\n    rechnungen_count: rechnungen.length,\n    belege_count: belege.length,\n    transaktionen_count: transaktionen.length,\n    kontakte_count: kontakte.length\n  },\n  kennzahlen: {\n    umsatz: umsatzKennzahlen,\n    ausgaben: ausgabenKennzahlen,\n    ergebnis: ergebnisKennzahlen,\n    liquiditaet: liquiditaetKennzahlen,\n    kunden: kundenKennzahlen\n  },\n  analysen: kategorienAnalyse,\n  vergleichsdaten: vergleichsdaten,\n  rohdaten: {\n    rechnungen: rechnungen,\n    belege: belege,\n    transaktionen: transaktionen,\n    kontakte: kontakte\n  }\n};\n\nreturn {\n  json: extractedData\n};"
+      },
+      "name": "Kennzahlen berechnen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1650,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Kennzahlen-Berechnung:**\n\n**Umsatz-KPIs:**\n- Brutto-/Netto-Umsatz\n- Durchschnittliche Rechnungsbeträge\n- Umsatzsteuer\n\n**Ausgaben-KPIs:**\n- Gesamtausgaben nach Kategorien\n- Durchschnittliche Belegbeträge\n- Vorsteuer\n\n**Ergebnis-KPIs:**\n- Brutto-/Netto-Ergebnis\n- Umsatzrendite\n- Steuer-Saldo\n\n**Liquiditäts-KPIs:**\n- Cashflow-Analyse\n- Ein-/Auszahlungen\n- Transaktionsvolumen\n\n**Kunden-KPIs:**\n- Kundenwachstum\n- Top-10-Kunden\n- Umsatzverteilung\n\n**Vergleichsanalyse:**\n- Vorjahresvergleich\n- Wachstumsraten\n- Trend-Analysen",
+        "width": 320,
+        "height": 280
+      },
+      "name": "Kennzahlen-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        1650,
+        130
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5678/webhook/reporting-analysis",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Report-ID",
+              "value": "={{ $json.report_info.report_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "jsonBody": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "name": "An Teil 2 weiterleiten",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1950,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $node[\"An Teil 2 weiterleiten\"].json.error !== undefined }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Weiterleitung erfolgreich?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2150,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "reporting@company.com",
+        "toEmail": "support@company.com",
+        "subject": "Fehler bei Reporting-Datenextraktion",
+        "content": "Ein Fehler ist bei der Reporting-Datenextraktion aufgetreten:\n\n**Fehlerdetails:**\nFehler: {{ $node[\"An Teil 2 weiterleiten\"].json.error?.message || 'Unbekannter Fehler' }}\n\n**Report-Details:**\n- Report-ID: {{ $json.report_info?.report_id || 'Unbekannt' }}\n- Report-Typ: {{ $json.report_info?.report_type || 'Unbekannt' }}\n- Zeitraum: {{ $json.report_info?.start_date || 'Unbekannt' }} bis {{ $json.report_info?.end_date || 'Unbekannt' }}\n- Datenquellen:\n  - Rechnungen: {{ $json.data_sources?.rechnungen_count || 0 }}\n  - Belege: {{ $json.data_sources?.belege_count || 0 }}\n  - Transaktionen: {{ $json.data_sources?.transaktionen_count || 0 }}\n  - Kontakte: {{ $json.data_sources?.kontakte_count || 0 }}\n\n**Berechnete Kennzahlen:**\n- Umsatz: {{ $json.kennzahlen?.umsatz?.netto_umsatz || 0 }} €\n- Ausgaben: {{ $json.kennzahlen?.ausgaben?.netto_ausgaben || 0 }} €\n- Ergebnis: {{ $json.kennzahlen?.ergebnis?.netto_ergebnis || 0 }} €\n\n**Nächste Schritte:**\n1. Überprüfen Sie die SevDesk-API-Verbindung\n2. Validieren Sie die Zeitraum-Parameter\n3. Prüfen Sie die Webhook-Verbindung zu Teil 2\n4. Überprüfen Sie die Kennzahlen-Berechnungen\n\nBitte beheben Sie den Fehler und starten Sie die Extraktion erneut.",
+        "options": {}
+      },
+      "name": "Support benachrichtigen",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2350,
+        350
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "code": "// Erfolgreiche Datenextraktion protokollieren\nconst data = $input.item.json;\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil1-Datenextraktion',\n  status: 'success',\n  report_id: data.report_info?.report_id || 'Unbekannt',\n  report_type: data.report_info?.report_type || 'Unbekannt',\n  zeitraum: {\n    start: data.report_info?.start_date || 'Unbekannt',\n    end: data.report_info?.end_date || 'Unbekannt'\n  },\n  data_statistics: data.data_sources || {},\n  key_metrics: {\n    umsatz: data.kennzahlen?.umsatz?.netto_umsatz || 0,\n    ausgaben: data.kennzahlen?.ausgaben?.netto_ausgaben || 0,\n    ergebnis: data.kennzahlen?.ergebnis?.netto_ergebnis || 0,\n    cashflow: data.kennzahlen?.liquiditaet?.netto_cashflow || 0\n  },\n  nextStep: 'Teil2-Analyse'\n};\n\nconsole.log('Reporting Datenextraktion Teil 1 erfolgreich abgeschlossen:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    successLog,\n    status: 'Teil1-Completed'\n  }\n};"
+      },
+      "name": "Erfolg protokollieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2350,
+        550
+      ]
+    }
+  ],
+  "connections": {
+    "Monatlicher Report": {
+      "main": [
+        [
+          {
+            "node": "Trigger zusammenführen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Trigger zusammenführen",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Trigger zusammenführen": {
+      "main": [
+        [
+          {
+            "node": "Report-Parameter bestimmen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report-Parameter bestimmen": {
+      "main": [
+        [
+          {
+            "node": "SevDesk - Rechnungen laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "SevDesk - Belege laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "SevDesk - Transaktionen laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "SevDesk - Kontakte laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SevDesk - Rechnungen laden": {
+      "main": [
+        [
+          {
+            "node": "Daten zusammenführen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SevDesk - Belege laden": {
+      "main": [
+        [
+          {
+            "node": "Daten zusammenführen",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "SevDesk - Transaktionen laden": {
+      "main": [
+        [
+          {
+            "node": "Daten zusammenführen",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "SevDesk - Kontakte laden": {
+      "main": [
+        [
+          {
+            "node": "Daten zusammenführen",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Daten zusammenführen": {
+      "main": [
+        [
+          {
+            "node": "Kennzahlen berechnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kennzahlen berechnen": {
+      "main": [
+        [
+          {
+            "node": "An Teil 2 weiterleiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "An Teil 2 weiterleiten": {
+      "main": [
+        [
+          {
+            "node": "Weiterleitung erfolgreich?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weiterleitung erfolgreich?": {
+      "main": [
+        [
+          {
+            "node": "Support benachrichtigen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Erfolg protokollieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {},
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-12-19T10:00:00.000Z",
+      "updatedAt": "2024-12-19T10:00:00.000Z",
+      "id": "6",
+      "name": "Reporting"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "n8nVersion": "1.101.1"
+  },
+  "id": "6001",
+  "versionId": "v2.0.0"
+} 

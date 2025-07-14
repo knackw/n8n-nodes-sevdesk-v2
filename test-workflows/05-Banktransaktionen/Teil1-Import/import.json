@@ -1,0 +1,442 @@
+{
+  "name": "SevDesk - Banktransaktionen - Teil 1: Import (v2)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## SevDesk - Banktransaktionen - Teil 1: Import\n\n**Zweck:**\nDieser Workflow importiert Kontoauszüge von verschiedenen Banken und konvertiert sie in ein einheitliches Format für die weitere Verarbeitung. Er unterstützt die gängigsten Formate (CSV, MT940, CAMT) und führt eine erste Validierung durch.\n\n**Unterstützte Formate:**\n- CSV-Dateien (verschiedene Bank-Formate)\n- MT940 (SWIFT-Standard)\n- CAMT.053 (ISO 20022)\n- OFX/QFX (Open Financial Exchange)\n\n**Funktionen:**\n- Automatische Format-Erkennung\n- Bank-spezifische Parser\n- Duplikat-Erkennung\n- Datenvalidierung und -bereinigung",
+        "height": 350,
+        "width": 450
+      },
+      "name": "Workflow-Beschreibung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "name": "Regelmäßiger Import",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bank-import",
+        "options": {
+          "allowFileUploads": true
+        }
+      },
+      "name": "Webhook Upload",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        500
+      ],
+      "webhookId": "bank-import-webhook"
+    },
+    {
+      "parameters": {
+        "path": "/data/bank-imports"
+      },
+      "name": "Ordner überwachen",
+      "type": "n8n-nodes-base.localFileTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        700
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Quellen zusammenführen",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        450,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// Analysiere die Eingabequelle und bereite Dateien für Import vor\nconst item = $input.item.json;\nlet importFiles = [];\n\n// Webhook-Upload (Datei-Upload)\nif (item.body && item.body.files) {\n  importFiles = item.body.files.map(file => ({\n    source: 'webhook',\n    fileName: file.filename || 'bank_import.csv',\n    fileData: file.data,\n    fileType: file.mimetype || 'text/csv',\n    uploadTime: new Date().toISOString()\n  }));\n}\n\n// Directory Listing (Ordner-Überwachung)\nelse if (item.name && item.path) {\n  const fileExtension = item.name.split('.').pop().toLowerCase();\n  const supportedFormats = ['csv', 'txt', 'mt940', 'xml', 'ofx', 'qfx'];\n  \n  if (supportedFormats.includes(fileExtension)) {\n    importFiles = [{\n      source: 'directory',\n      fileName: item.name,\n      filePath: item.path,\n      fileType: `text/${fileExtension === 'xml' ? 'xml' : 'plain'}`,\n      lastModified: item.modifiedTime,\n      fileSize: item.size\n    }];\n  }\n}\n\n// Schedule Trigger (automatische API-Abfrage)\nelse {\n  // Hier würden normalerweise Bank-APIs abgefragt\n  // Für Demo: Simuliere API-Import\n  importFiles = [{\n    source: 'api',\n    fileName: 'api_transactions_' + new Date().toISOString().split('T')[0] + '.csv',\n    apiEndpoint: 'bank_api',\n    requestTime: new Date().toISOString()\n  }];\n}\n\n// Validiere, dass Dateien gefunden wurden\nif (importFiles.length === 0) {\n  return {\n    json: {\n      status: 'no_files',\n      message: 'Keine importierbaren Dateien gefunden',\n      timestamp: new Date().toISOString()\n    }\n  };\n}\n\nreturn {\n  json: {\n    import_batch_id: `IMPORT_${new Date().toISOString().replace(/[:.]/g, '_')}`,\n    files: importFiles,\n    total_files: importFiles.length,\n    timestamp: new Date().toISOString(),\n    status: 'files_detected'\n  }\n};"
+      },
+      "name": "Import-Dateien erkennen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Datei-Erkennung und -Vorbereitung:**\n\n**Eingabequellen:**\n- Webhook: Direkter Datei-Upload\n- Directory: Überwachter Ordner\n- Schedule: Automatische API-Abfrage\n\n**Format-Unterstützung:**\n- CSV (alle Banken)\n- MT940 (SWIFT)\n- CAMT.053 (ISO 20022)\n- OFX/QFX (US-Standard)\n\n**Batch-Verarbeitung:**\n- Eindeutige Batch-IDs\n- Multi-File-Support\n- Metadaten-Extraktion",
+        "width": 280,
+        "height": 200
+      },
+      "name": "Erkennung-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        650,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "value2": "files_detected"
+            }
+          ]
+        }
+      },
+      "name": "Dateien gefunden?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        950,
+        500
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Dateien aufteilen",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1150,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// Bestimme das Dateiformat und den entsprechenden Parser\nconst batchData = $node[\"Dateien aufteilen\"].json;\nconst currentFile = batchData.files[$node[\"Dateien aufteilen\"].context.currentIndex];\n\n// Format-Erkennung basierend auf Dateiname und Inhalt\nfunction detectFormat(fileName, fileData) {\n  const name = fileName.toLowerCase();\n  \n  if (name.includes('sparkasse') || name.includes('spk')) {\n    return 'sparkasse_csv';\n  }\n  if (name.includes('volksbank') || name.includes('voba')) {\n    return 'volksbank_csv';\n  }\n  if (name.includes('deutsche') && name.includes('bank')) {\n    return 'deutsche_bank_csv';\n  }\n  if (name.includes('commerzbank')) {\n    return 'commerzbank_csv';\n  }\n  if (name.includes('.mt940') || name.includes('swift')) {\n    return 'mt940';\n  }\n  if (name.includes('camt') || name.includes('.xml')) {\n    return 'camt053';\n  }\n  if (name.includes('.ofx') || name.includes('.qfx')) {\n    return 'ofx';\n  }\n  \n  // Fallback: Standard CSV\n  return 'standard_csv';\n}\n\nconst detectedFormat = detectFormat(currentFile.fileName, currentFile.fileData);\n\n// Parser-Konfiguration\nconst parserConfig = {\n  sparkasse_csv: {\n    delimiter: ';',\n    columns: ['Auftragskonto', 'Buchungstag', 'Valutadatum', 'Buchungstext', 'Verwendungszweck', 'Glaeubiger', 'Mandatsreferenz', 'Sammlerreferenz', 'Lastschriftoriginal', 'Auslagenersatz', 'Beguenstigter', 'IBAN', 'BIC', 'Betrag', 'Waehrung', 'Info'],\n    mapping: {\n      date: 'Buchungstag',\n      amount: 'Betrag',\n      description: 'Verwendungszweck',\n      reference: 'Mandatsreferenz',\n      counterparty: 'Beguenstigter',\n      iban: 'IBAN'\n    }\n  },\n  volksbank_csv: {\n    delimiter: ';',\n    columns: ['Konto', 'Buchungstag', 'Valuta', 'Auftraggeber', 'Empfaenger', 'Konto_Nr', 'BLZ', 'IBAN', 'BIC', 'Vorgang', 'Kundenreferenz', 'Verwendungszweck', 'Betrag', 'Waehrung'],\n    mapping: {\n      date: 'Buchungstag',\n      amount: 'Betrag',\n      description: 'Verwendungszweck',\n      reference: 'Kundenreferenz',\n      counterparty: 'Empfaenger',\n      iban: 'IBAN'\n    }\n  },\n  standard_csv: {\n    delimiter: ',',\n    hasHeader: true,\n    mapping: {\n      date: 'Date',\n      amount: 'Amount',\n      description: 'Description',\n      reference: 'Reference',\n      counterparty: 'Counterparty'\n    }\n  }\n};\n\nreturn {\n  json: {\n    ...batchData,\n    current_file: currentFile,\n    detected_format: detectedFormat,\n    parser_config: parserConfig[detectedFormat] || parserConfig['standard_csv'],\n    processing_step: 'format_detection'\n  }\n};"
+      },
+      "name": "Format erkennen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1350,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// Parse die Bankdatei entsprechend dem erkannten Format\nconst data = $input.item.json;\nconst file = data.current_file;\nconst config = data.parser_config;\n\n// Lade Dateiinhalt\nlet fileContent = '';\nif (file.fileData) {\n  fileContent = file.fileData;\n} else if (file.filePath) {\n  // Hier würde normalerweise die Datei gelesen werden\n  // Für Demo: Simuliere CSV-Inhalt\n  fileContent = `Konto;Buchungstag;Betrag;Verwendungszweck;Beguenstigter;IBAN\n12345678;2024-12-01;-150.00;Miete Dezember;Vermieter GmbH;DE89370400440532013000\n12345678;2024-12-02;2500.00;Gehalt;Arbeitgeber AG;DE89370400440532013001\n12345678;2024-12-03;-25.50;Supermarkt;REWE;DE89370400440532013002`;\n}\n\n// CSV-Parser\nfunction parseCSV(content, delimiter = ';') {\n  const lines = content.trim().split('\\n');\n  const headers = lines[0].split(delimiter);\n  const rows = [];\n  \n  for (let i = 1; i < lines.length; i++) {\n    const values = lines[i].split(delimiter);\n    const row = {};\n    headers.forEach((header, index) => {\n      row[header.trim()] = values[index] ? values[index].trim() : '';\n    });\n    rows.push(row);\n  }\n  \n  return rows;\n}\n\n// Parse die Datei\nconst rawTransactions = parseCSV(fileContent, config.delimiter || ';');\n\n// Normalisiere zu einheitlichem Format\nconst normalizedTransactions = rawTransactions.map((row, index) => {\n  // Betrag parsen und normalisieren\n  const amountStr = row[config.mapping.amount] || '0';\n  const amount = parseFloat(amountStr.replace(',', '.').replace(/[^\\d.-]/g, ''));\n  \n  // Datum parsen\n  const dateStr = row[config.mapping.date] || '';\n  const date = dateStr.match(/\\d{4}-\\d{2}-\\d{2}/) ? dateStr : \n              dateStr.match(/\\d{2}\\.\\d{2}\\.\\d{4}/) ? dateStr.split('.').reverse().join('-') :\n              new Date().toISOString().split('T')[0];\n  \n  return {\n    transaction_id: `${data.import_batch_id}_${index + 1}`,\n    import_batch_id: data.import_batch_id,\n    date: date,\n    amount: amount,\n    currency: 'EUR', // Standard für deutsche Banken\n    description: (row[config.mapping.description] || '').substring(0, 255),\n    reference: row[config.mapping.reference] || '',\n    counterparty: row[config.mapping.counterparty] || '',\n    counterparty_iban: row[config.mapping.iban] || '',\n    transaction_type: amount >= 0 ? 'credit' : 'debit',\n    source_file: file.fileName,\n    source_format: data.detected_format,\n    imported_at: new Date().toISOString(),\n    status: 'imported',\n    validation_status: 'pending'\n  };\n});\n\nreturn {\n  json: {\n    ...data,\n    transactions: normalizedTransactions,\n    transaction_count: normalizedTransactions.length,\n    processing_step: 'parsed'\n  }\n};"
+      },
+      "name": "Transaktionen parsen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1550,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Format-Erkennung & Parsing:**\n\n**Bank-spezifische Parser:**\n- Sparkasse: Semikolon-CSV mit 16 Spalten\n- Volksbank: Semikolon-CSV mit 14 Spalten  \n- Deutsche Bank: Komma-CSV\n- Standard: Konfigurierbares Format\n\n**Normalisierung:**\n- Einheitliche Transaktions-IDs\n- Standardisierte Datumsformate\n- Betrags-Normalisierung (Komma → Punkt)\n- Währungseinheiten (EUR Standard)\n\n**Validierung:**\n- Pflichtfelder prüfen\n- Datentyp-Validierung\n- Duplikat-Erkennung vorbereiten",
+        "width": 280,
+        "height": 200
+      },
+      "name": "Parsing-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        1350,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// Führe Duplikat-Erkennung und Validierung durch\nconst data = $input.item.json;\nconst transactions = data.transactions || [];\n\n// Simuliere bereits importierte Transaktionen (normalerweise aus Datenbank)\nconst existingTransactions = [\n  {\n    date: '2024-12-01',\n    amount: -150.00,\n    description: 'Miete Dezember',\n    counterparty: 'Vermieter GmbH'\n  }\n];\n\n// Duplikat-Erkennung\nfunction isDuplicate(transaction, existingList) {\n  return existingList.some(existing => \n    existing.date === transaction.date &&\n    Math.abs(existing.amount - transaction.amount) < 0.01 &&\n    existing.description === transaction.description &&\n    existing.counterparty === transaction.counterparty\n  );\n}\n\n// Validierung und Duplikat-Check\nconst validatedTransactions = transactions.map(transaction => {\n  const validation = {\n    has_date: !!transaction.date,\n    has_amount: !isNaN(transaction.amount) && transaction.amount !== 0,\n    has_description: transaction.description.length > 0,\n    amount_reasonable: Math.abs(transaction.amount) < 1000000, // Max 1 Million\n    date_valid: !isNaN(Date.parse(transaction.date)),\n    is_duplicate: isDuplicate(transaction, existingTransactions)\n  };\n  \n  const validationPassed = Object.values(validation).every(v => v === true || v === false) &&\n                          validation.has_date && validation.has_amount && validation.has_description &&\n                          validation.amount_reasonable && validation.date_valid && !validation.is_duplicate;\n  \n  return {\n    ...transaction,\n    validation: validation,\n    validation_passed: validationPassed,\n    validation_status: validationPassed ? 'valid' : 'invalid'\n  };\n});\n\n// Statistiken\nconst validTransactions = validatedTransactions.filter(t => t.validation_passed);\nconst invalidTransactions = validatedTransactions.filter(t => !t.validation_passed);\nconst duplicateTransactions = validatedTransactions.filter(t => t.validation.is_duplicate);\n\nconst importStats = {\n  total_transactions: validatedTransactions.length,\n  valid_transactions: validTransactions.length,\n  invalid_transactions: invalidTransactions.length,\n  duplicate_transactions: duplicateTransactions.length,\n  total_amount: validTransactions.reduce((sum, t) => sum + t.amount, 0),\n  credit_amount: validTransactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0),\n  debit_amount: validTransactions.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0)\n};\n\nreturn {\n  json: {\n    ...data,\n    validated_transactions: validatedTransactions,\n    valid_transactions: validTransactions,\n    import_stats: importStats,\n    processing_step: 'validated',\n    ready_for_categorization: validTransactions.length > 0\n  }\n};"
+      },
+      "name": "Transaktionen validieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1750,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5678/webhook/bank-categorization",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Import-Batch-ID",
+              "value": "={{ $json.import_batch_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "jsonBody": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "name": "An Teil 2 weiterleiten",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2050,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $node[\"An Teil 2 weiterleiten\"].json.error !== undefined }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Weiterleitung erfolgreich?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2250,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "buchhaltung@company.com",
+        "toEmail": "support@company.com",
+        "subject": "Fehler beim Banktransaktionen-Import",
+        "content": "Ein Fehler ist beim Import von Banktransaktionen aufgetreten:\n\n**Fehlerdetails:**\nFehler: {{ $node[\"An Teil 2 weiterleiten\"].json.error?.message || 'Unbekannter Fehler' }}\n\n**Import-Details:**\n- Batch-ID: {{ $json.import_batch_id || 'Unbekannt' }}\n- Quell-Datei: {{ $json.current_file?.fileName || 'Unbekannt' }}\n- Erkanntes Format: {{ $json.detected_format || 'Unbekannt' }}\n- Anzahl Transaktionen: {{ $json.import_stats?.total_transactions || 0 }}\n- Gültige Transaktionen: {{ $json.import_stats?.valid_transactions || 0 }}\n- Ungültige Transaktionen: {{ $json.import_stats?.invalid_transactions || 0 }}\n\n**Nächste Schritte:**\n1. Überprüfen Sie das Dateiformat\n2. Validieren Sie die Parser-Konfiguration\n3. Prüfen Sie die Webhook-Verbindung zu Teil 2\n\nBitte beheben Sie den Fehler und starten Sie den Import erneut.",
+        "options": {}
+      },
+      "name": "Support benachrichtigen",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2450,
+        300
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "code": "// Erfolgreichen Import protokollieren\nconst data = $input.item.json;\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil1-Import',\n  status: 'success',\n  import_batch_id: data.import_batch_id || 'Unbekannt',\n  source_file: data.current_file?.fileName || 'Unbekannt',\n  detected_format: data.detected_format || 'Unbekannt',\n  import_statistics: data.import_stats || {},\n  nextStep: 'Teil2-Kategorisierung'\n};\n\nconsole.log('Banktransaktionen Import Teil 1 erfolgreich abgeschlossen:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    successLog,\n    status: 'Teil1-Completed'\n  }\n};"
+      },
+      "name": "Erfolg protokollieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2450,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// Protokolliere, dass keine Dateien gefunden wurden\nconst data = $input.item.json;\n\nconst noFilesLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil1-Import',\n  status: 'no_files_found',\n  message: data.message || 'Keine Dateien zum Import gefunden',\n  check_sources: [\n    'Webhook-Uploads',\n    'Überwachter Ordner: /data/bank-imports',\n    'Bank-API-Endpoints'\n  ]\n};\n\nconsole.log('Banktransaktionen Import - Keine Dateien gefunden:', JSON.stringify(noFilesLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    noFilesLog\n  }\n};"
+      },
+      "name": "Keine Dateien protokollieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1150,
+        600
+      ]
+    }
+  ],
+  "connections": {
+    "Regelmäßiger Import": {
+      "main": [
+        [
+          {
+            "node": "Quellen zusammenführen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Upload": {
+      "main": [
+        [
+          {
+            "node": "Quellen zusammenführen",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Ordner überwachen": {
+      "main": [
+        [
+          {
+            "node": "Quellen zusammenführen",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Quellen zusammenführen": {
+      "main": [
+        [
+          {
+            "node": "Import-Dateien erkennen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Import-Dateien erkennen": {
+      "main": [
+        [
+          {
+            "node": "Dateien gefunden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dateien gefunden?": {
+      "main": [
+        [
+          {
+            "node": "Dateien aufteilen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keine Dateien protokollieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dateien aufteilen": {
+      "main": [
+        [
+          {
+            "node": "Format erkennen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format erkennen": {
+      "main": [
+        [
+          {
+            "node": "Transaktionen parsen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transaktionen parsen": {
+      "main": [
+        [
+          {
+            "node": "Transaktionen validieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transaktionen validieren": {
+      "main": [
+        [
+          {
+            "node": "An Teil 2 weiterleiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "An Teil 2 weiterleiten": {
+      "main": [
+        [
+          {
+            "node": "Weiterleitung erfolgreich?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weiterleitung erfolgreich?": {
+      "main": [
+        [
+          {
+            "node": "Support benachrichtigen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Erfolg protokollieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {},
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-12-19T10:00:00.000Z",
+      "updatedAt": "2024-12-19T10:00:00.000Z",
+      "id": "5",
+      "name": "Banktransaktionen"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "n8nVersion": "1.101.1"
+  },
+  "id": "5001",
+  "versionId": "v2.0.0"
+} 

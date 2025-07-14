@@ -1,14 +1,16 @@
 # SevDesk Test-Workflows - Übersicht
 
-Dieses Verzeichnis enthält vorgefertigte n8n-Workflows für die wichtigsten SevDesk-Anwendungsfälle. Alle Workflows sind darauf ausgelegt, die täglichen Buchhaltungs- und Verwaltungsaufgaben in einem mittelständischen Unternehmen zu automatisieren.
+Dieses Verzeichnis enthält 24 vorgefertigte n8n-Workflows für die wichtigsten SevDesk-Anwendungsfälle. Alle Workflows sind für n8n 1.101.1 optimiert und darauf ausgelegt, die täglichen Buchhaltungs- und Verwaltungsaufgaben in einem mittelständischen Unternehmen zu automatisieren.
 
 ## 🎯 **Hauptfunktionen**
 
 Die Test-Workflows demonstrieren die Kernfunktionalitäten des SevDesk-Nodes:
 - Direkte Integration mit der SevDesk API v2
+- n8n 1.101.1 Kompatibilität mit aktuellen typeVersions
 - Automatisierte Dokumentenverarbeitung
 - Workflow-basierte Geschäftsprozesse
 - Umfassende Fehlerbehandlung
+- Deutsche Buchhaltungsstandards (SKR03, GoBD, DATEV)
 
 ## 📁 **Workflow-Kategorien**
 

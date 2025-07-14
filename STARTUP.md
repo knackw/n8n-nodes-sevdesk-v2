@@ -1,13 +1,17 @@
-# 🚀 Startup Script for SevDesk Node
+# 🚀 Startup Guide for SevDesk Node
 
-The new `npm start` command provides a fully automated solution for development with the SevDesk node.
+**Version:** 2.4.1  
+**Updated:** 2025-07-14  
+**Status:** Production Ready
+
+The `npm start` command provides a fully automated solution for development with the SevDesk node.
 
 ## ✨ Features
 
 The startup script automatically performs the following steps:
 
 1. **🔨 Node Build** - Compiles the TypeScript code
-2. **🐳 Docker Management** - Checks and manages Docker containers  
+2. **🐳 Docker Management** - Checks and manages Docker containers
 3. **📊 Workflow Management** - Backup, delete and upload workflows
 4. **🌐 Browser Start** - Opens n8n automatically in browser
 
@@ -38,6 +42,7 @@ npm start
 ## 🔄 Detailed Process
 
 ### Step 1: Build
+
 ```
 ✅ 1. Create build...
    → npm run build
@@ -46,6 +51,7 @@ npm start
 ```
 
 ### Step 2: Docker Check
+
 ```
 ✅ 2. Check Docker status...
    → Docker available?
@@ -53,6 +59,7 @@ npm start
 ```
 
 ### Step 3: Container Management
+
 ```
 ❓ 3. n8n container already running...
    → Stop container? (y/N)
@@ -60,6 +67,7 @@ npm start
 ```
 
 ### Step 4: Container Start
+
 ```
 ✅ 4. Start Docker container...
    → docker-compose up -d
@@ -68,6 +76,7 @@ npm start
 ```
 
 ### Step 5: Workflow Analysis
+
 ```
 ✅ 5. Check existing workflows...
    → n8n API connection
@@ -75,6 +84,7 @@ npm start
 ```
 
 ### Step 6: Backup (if workflows exist)
+
 ```
 ❓ 6. Create backup of existing workflows? (Y/n)
    → Backup in ./backup/backup-TIMESTAMP/ folder
@@ -82,6 +92,7 @@ npm start
 ```
 
 ### Step 7: Deletion (if workflows exist)
+
 ```
 ❓ 8. Delete existing workflows? (y/N)
    → Delete all workflows via API
@@ -89,6 +100,7 @@ npm start
 ```
 
 ### Step 8: Test Workflows
+
 ```
 ✅ 9. Search test workflows...
    → Scan ./test-workflows/ directory
@@ -97,6 +109,7 @@ npm start
 ```
 
 ### Step 9: Browser Start
+
 ```
 ✅ 11. Open n8n in browser...
    → Automatically open http://localhost:5678
@@ -110,6 +123,7 @@ npm start
 The script searches in `./test-workflows/` for:
 
 1. **Direct JSON files:**
+
    ```
    test-workflows/
    ├── workflow1.json
@@ -141,7 +155,7 @@ For multiple directories:
 4. All Directories
 0. Cancel
 
-❓ Choose a directory (number): 
+❓ Choose a directory (number):
 ```
 
 ## 🔑 API Key Configuration
@@ -161,8 +175,9 @@ For multiple directories:
 ### With API Key
 
 All workflow management functions available:
+
 - ✅ Create backup
-- ✅ Delete workflows  
+- ✅ Delete workflows
 - ✅ Upload test workflows
 - ✅ Full automation
 
@@ -171,30 +186,40 @@ All workflow management functions available:
 ### Common Issues
 
 **Docker not available:**
+
 ```
 ❌ Docker is not available. Please start Docker.
 ```
+
 **Solution:** Start Docker Desktop
 
 **n8n not reachable:**
+
 ```
 ❌ n8n is not reachable
 ```
-**Solution:** 
+
+**Solution:**
+
 - Check container logs: `docker-compose logs -f`
 - Restart container: `docker-compose restart`
 
 **API key missing:**
+
 ```
 ⚠️ N8N_API_KEY is not set
 ```
+
 **Solution:** Create API key in n8n and add to .env
 
 **Build error:**
+
 ```
 ❌ Error during build
 ```
+
 **Solution:**
+
 - Install dependencies: `npm install`
 - Fix TypeScript errors
 

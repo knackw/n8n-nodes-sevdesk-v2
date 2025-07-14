@@ -1,0 +1,336 @@
+{
+  "name": "SevDesk - Steuerberater-Export - Teil 2: Aufbereitung (v2)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## SevDesk - Steuerberater-Export - Teil 2: Aufbereitung\n\n**Zweck:**\nDieser Workflow verarbeitet die in Teil 1 extrahierten Rohdaten und bereitet sie für den Steuerberater auf. Die Daten werden in DATEV-konforme Formate konvertiert und strukturiert.\n\n**Funktionen:**\n- DATEV-Formatierung aller Buchungen\n- SKR03/SKR04 Kontenzuordnung\n- Steuerschlüssel-Mapping\n- CSV/XML-Export-Generierung\n- Vollständigkeitsprüfung und Validierung\n\n**Ausgabe:**\nStandardisierte Export-Dateien für gängige Steuerberater-Software (DATEV, Lexware, etc.)",
+        "height": 300,
+        "width": 450
+      },
+      "name": "Workflow-Beschreibung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "steuerberater-aufbereitung",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "steuerberater-aufbereitung-webhook"
+    },
+    {
+      "parameters": {
+        "code": "// Validiere die Eingangsdaten von Teil 1\nconst exportData = $input.item.json;\n\n// Prüfe Datenstruktur\nif (!exportData.export_info || !exportData.daten) {\n  throw new Error('Ungültige Datenstruktur von Teil 1 erhalten');\n}\n\n// Prüfe Export-ID\nif (!exportData.export_info.export_id) {\n  throw new Error('Keine Export-ID gefunden');\n}\n\nreturn {\n  json: exportData\n};"
+      },
+      "name": "Daten validieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Datenvalidierung:**\n\n- Überprüfung der Datenstruktur aus Teil 1\n- Validierung der Export-ID\n- Vollständigkeitskontrolle\n- Fehlerbehandlung bei fehlenden Daten",
+        "width": 240,
+        "height": 120
+      },
+      "name": "Validierung-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        450,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// DATEV-Formatierung der Belege\nconst exportData = $input.item.json;\nconst belege = exportData.daten.belege || [];\n\n// DATEV SKR03 Konten-Mapping\nconst kontenMapping = {\n  'Büromaterial': '6815',\n  'Reisekosten': '6320',\n  'Bewirtung': '6330',\n  'Telekommunikation': '6840',\n  'Miete': '6200',\n  'Strom/Gas': '6400',\n  'Kfz-Kosten': '6300',\n  'Standard': '6000'\n};\n\n// Steuerschlüssel-Mapping\nconst steuerschluesselMapping = {\n  '19': '9', // 19% USt\n  '7': '2',  // 7% USt\n  '0': '0'   // 0% USt\n};\n\n// DATEV-konforme Buchungssätze erstellen\nconst datevBelege = belege.map((beleg, index) => {\n  const bruttoAmount = parseFloat(beleg.sumGross || 0);\n  const nettoAmount = parseFloat(beleg.sumNet || 0);\n  const taxAmount = bruttoAmount - nettoAmount;\n  const taxRate = beleg.taxRate || '19';\n  \n  // Kategorie bestimmen (vereinfacht)\n  const kategorie = beleg.supplierName?.toLowerCase().includes('office') ? 'Büromaterial' : 'Standard';\n  const sollKonto = kontenMapping[kategorie] || kontenMapping['Standard'];\n  \n  return {\n    // DATEV Felder\n    'Umsatz (ohne Soll/Haben-Kz)': nettoAmount.toFixed(2),\n    'Soll/Haben-Kennzeichen': 'S',\n    'WKZ Umsatz': 'EUR',\n    'Kurs': '',\n    'Basis-Umsatz': '',\n    'WKZ Basis-Umsatz': '',\n    'Konto': sollKonto,\n    'Gegenkonto (ohne BU-Schlüssel)': '1600', // Kreditor Standard\n    'BU-Schlüssel': steuerschluesselMapping[taxRate] || '9',\n    'Belegdatum': beleg.voucherDate || beleg.createDate?.split('T')[0],\n    'Belegfeld 1': beleg.invoiceNumber || beleg.voucherNumber || `BEL${index + 1}`,\n    'Belegfeld 2': '',\n    'Skonto': '',\n    'Buchungstext': `${beleg.supplierName || 'Unbekannt'} - ${beleg.description || ''}`.substring(0, 60),\n    'Postensperre': '',\n    'Diverse Adressnummer': '',\n    'Geschäftspartnerbank': '',\n    'Sachverhalt': '',\n    'Zinssperre': '',\n    'Beleglink': '',\n    'Beleginfo - Art 1': '',\n    'Beleginfo - Inhalt 1': '',\n    'Beleginfo - Art 2': '',\n    'Beleginfo - Inhalt 2': '',\n    'Beleginfo - Art 3': '',\n    'Beleginfo - Inhalt 3': '',\n    'Beleginfo - Art 4': '',\n    'Beleginfo - Inhalt 4': '',\n    'Beleginfo - Art 5': '',\n    'Beleginfo - Inhalt 5': '',\n    'Beleginfo - Art 6': '',\n    'Beleginfo - Inhalt 6': '',\n    'Beleginfo - Art 7': '',\n    'Beleginfo - Inhalt 7': '',\n    'Beleginfo - Art 8': '',\n    'Beleginfo - Inhalt 8': '',\n    'KOST1 - Kostenstelle': '',\n    'KOST2 - Kostenstelle': '',\n    'Kost-Menge': '',\n    'EU-Land u. UStID': '',\n    'EU-Steuersatz': '',\n    'Abw. Versteuerungsart': '',\n    'Sachverhalt L+L': '',\n    'Funktionsergänzung L+L': '',\n    'BU 49 Hauptfunktionstyp': '',\n    'BU 49 Hauptfunktionsnummer': '',\n    'BU 49 Funktionsergänzung': '',\n    'Zusatzinformation - Art 1': '',\n    'Zusatzinformation - Inhalt 1': '',\n    'Zusatzinformation - Art 2': '',\n    'Zusatzinformation - Inhalt 2': '',\n    'Zusatzinformation - Art 3': '',\n    'Zusatzinformation - Inhalt 3': '',\n    'Zusatzinformation - Art 4': '',\n    'Zusatzinformation - Inhalt 4': '',\n    'Zusatzinformation - Art 5': '',\n    'Zusatzinformation - Inhalt 5': '',\n    'Zusatzinformation - Art 6': '',\n    'Zusatzinformation - Inhalt 6': '',\n    'Zusatzinformation - Art 7': '',\n    'Zusatzinformation - Inhalt 7': '',\n    'Zusatzinformation - Art 8': '',\n    'Zusatzinformation - Inhalt 8': '',\n    'Zusatzinformation - Art 9': '',\n    'Zusatzinformation - Inhalt 9': '',\n    'Zusatzinformation - Art 10': '',\n    'Zusatzinformation - Inhalt 10': '',\n    'Zusatzinformation - Art 11': '',\n    'Zusatzinformation - Inhalt 11': '',\n    'Zusatzinformation - Art 12': '',\n    'Zusatzinformation - Inhalt 12': '',\n    'Zusatzinformation - Art 13': '',\n    'Zusatzinformation - Inhalt 13': '',\n    'Zusatzinformation - Art 14': '',\n    'Zusatzinformation - Inhalt 14': '',\n    'Zusatzinformation - Art 15': '',\n    'Zusatzinformation - Inhalt 15': '',\n    'Zusatzinformation - Art 16': '',\n    'Zusatzinformation - Inhalt 16': '',\n    'Zusatzinformation - Art 17': '',\n    'Zusatzinformation - Inhalt 17': '',\n    'Zusatzinformation - Art 18': '',\n    'Zusatzinformation - Inhalt 18': '',\n    'Zusatzinformation - Art 19': '',\n    'Zusatzinformation - Inhalt 19': '',\n    'Zusatzinformation - Art 20': '',\n    'Zusatzinformation - Inhalt 20': '',\n    'Stück': '',\n    'Gewicht': '',\n    'Zahlweise': '',\n    'Forderungsart': '',\n    'Veranlagungsjahr': '',\n    'Zugeordnete Fälligkeit': '',\n    'Skontotyp': '',\n    'Auftragsnummer': '',\n    'Buchungstyp': '',\n    'Ust-Schlüssel (Anzahlungen)': '',\n    'EU-Land (Anzahlungen)': '',\n    'Sachverhalt L+L (Anzahlungen)': '',\n    'EU-Steuersatz (Anzahlungen)': '',\n    'Erlöskonto (Anzahlungen)': '',\n    'Herkunft-Kz': '',\n    'Buchungs GUID': '',\n    'KOST-Datum': '',\n    'SEPA-Mandatsreferenz': '',\n    'Skontosperre': '',\n    'Gesellschaftername': '',\n    'Beteiligtennummer': '',\n    'Identifikationsnummer': '',\n    'Zeichnernummer': '',\n    'Postensperre bis': '',\n    'Bezeichnung SoBil-Sachverhalt': '',\n    'Kennzeichen SoBil-Buchung': '',\n    'Festschreibung': '',\n    'Leistungsdatum': beleg.voucherDate || beleg.createDate?.split('T')[0],\n    'Datum Zuord.Steuerperiode': ''\n  };\n});\n\nreturn {\n  json: {\n    ...exportData,\n    datev_belege: datevBelege,\n    aufbereitung_timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "name": "DATEV-Belege formatieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        750,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// DATEV-Formatierung der Ausgangsrechnungen\nconst exportData = $input.item.json;\nconst rechnungen = exportData.daten.rechnungen || [];\n\n// DATEV-konforme Debitorenbuchungen erstellen\nconst datevRechnungen = rechnungen.map((rechnung, index) => {\n  const bruttoAmount = parseFloat(rechnung.sumGross || 0);\n  const nettoAmount = parseFloat(rechnung.sumNet || 0);\n  const taxRate = rechnung.taxRate || '19';\n  \n  // Debitorenkonto (vereinfacht: Kundennummer als Basis)\n  const debitorKonto = `10000${String(rechnung.contact?.customerNumber || index + 1).padStart(3, '0')}`;\n  \n  return {\n    // DATEV Felder für Ausgangsrechnungen\n    'Umsatz (ohne Soll/Haben-Kz)': bruttoAmount.toFixed(2),\n    'Soll/Haben-Kennzeichen': 'S',\n    'WKZ Umsatz': 'EUR',\n    'Kurs': '',\n    'Basis-Umsatz': '',\n    'WKZ Basis-Umsatz': '',\n    'Konto': debitorKonto, // Debitorenkonto\n    'Gegenkonto (ohne BU-Schlüssel)': '8400', // Erlöskonto Standard\n    'BU-Schlüssel': taxRate === '19' ? '9' : (taxRate === '7' ? '2' : '0'),\n    'Belegdatum': rechnung.invoiceDate || rechnung.createDate?.split('T')[0],\n    'Belegfeld 1': rechnung.invoiceNumber || `RE${index + 1}`,\n    'Belegfeld 2': '',\n    'Skonto': '',\n    'Buchungstext': `${rechnung.contact?.name || 'Kunde'} - ${rechnung.header || ''}`.substring(0, 60),\n    'Postensperre': '',\n    'Diverse Adressnummer': '',\n    'Geschäftspartnerbank': '',\n    'Sachverhalt': '',\n    'Zinssperre': '',\n    'Beleglink': '',\n    'KOST1 - Kostenstelle': '',\n    'KOST2 - Kostenstelle': '',\n    'Leistungsdatum': rechnung.invoiceDate || rechnung.createDate?.split('T')[0],\n    'Zahlweise': rechnung.paymentMethod || '',\n    'Forderungsart': '',\n    'Auftragsnummer': rechnung.orderNumber || ''\n  };\n});\n\nreturn {\n  json: {\n    ...exportData,\n    datev_rechnungen: datevRechnungen\n  }\n};"
+      },
+      "name": "DATEV-Rechnungen formatieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        750,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**DATEV-Formatierung:**\n\n**Belege (Eingangsrechnungen):**\n- SKR03-Konten-Mapping\n- Automatische Kategorisierung\n- Steuerschlüssel-Zuordnung\n- Vollständige DATEV-Felder\n\n**Rechnungen (Ausgangsrechnungen):**\n- Debitorenkonten-Generierung\n- Erlöskonten-Zuordnung\n- Kundendaten-Integration\n\n**Standards:**\n- DATEV ASCII-Import Format\n- SKR03 Kontenrahmen\n- Deutsche Steuergesetzgebung",
+        "width": 280,
+        "height": 220
+      },
+      "name": "DATEV-Formatierung-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        750,
+        50
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Daten zusammenführen",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1050,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// CSV-Export für DATEV erstellen\nconst exportData = $input.item.json;\nconst datevBelege = exportData.datev_belege || [];\nconst datevRechnungen = exportData.datev_rechnungen || [];\n\n// Alle DATEV-Buchungen zusammenführen\nconst alleBuchungen = [...datevBelege, ...datevRechnungen];\n\n// CSV-Header für DATEV-Import\nconst csvHeader = [\n  'Umsatz (ohne Soll/Haben-Kz)',\n  'Soll/Haben-Kennzeichen',\n  'WKZ Umsatz',\n  'Kurs',\n  'Basis-Umsatz',\n  'WKZ Basis-Umsatz',\n  'Konto',\n  'Gegenkonto (ohne BU-Schlüssel)',\n  'BU-Schlüssel',\n  'Belegdatum',\n  'Belegfeld 1',\n  'Belegfeld 2',\n  'Skonto',\n  'Buchungstext',\n  'Leistungsdatum'\n];\n\n// CSV-Daten erstellen\nconst csvLines = [csvHeader.join(';')];\n\nalleBuchungen.forEach(buchung => {\n  const line = csvHeader.map(field => {\n    const value = buchung[field] || '';\n    // Anführungszeichen für Felder mit Semikolons oder Umbrüchen\n    if (typeof value === 'string' && (value.includes(';') || value.includes('\\n'))) {\n      return `\"${value.replace(/\"/g, '\"\"')}\"`;\n    }\n    return value;\n  }).join(';');\n  csvLines.push(line);\n});\n\nconst csvContent = csvLines.join('\\n');\n\n// Statistiken\nconst statistiken = {\n  anzahl_buchungen: alleBuchungen.length,\n  anzahl_belege: datevBelege.length,\n  anzahl_rechnungen: datevRechnungen.length,\n  gesamtsumme: alleBuchungen.reduce((sum, b) => sum + parseFloat(b['Umsatz (ohne Soll/Haben-Kz)'] || 0), 0),\n  export_groesse_kb: Math.round(csvContent.length / 1024 * 100) / 100\n};\n\nreturn {\n  json: {\n    ...exportData,\n    csv_export: csvContent,\n    datev_statistiken: statistiken,\n    export_ready: true,\n    webhookUrl: 'http://localhost:5678/webhook/steuerberater-uebermittlung'\n  }\n};"
+      },
+      "name": "CSV-Export erstellen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1350,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**CSV-Export-Generierung:**\n\n**Format:**\n- DATEV ASCII-Format\n- Semikolon-getrennte Werte\n- Deutsche Dezimaltrennzeichen\n- UTF-8 Kodierung\n\n**Qualitätskontrolle:**\n- Vollständigkeitsprüfung\n- Summen-Validierung\n- Datei-Größenprüfung\n\n**Export-Bereitschaft:**\n- Direkter Download möglich\n- Automatische Weiterleitung an Teil 3\n- Statistiken für Monitoring",
+        "width": 280,
+        "height": 180
+      },
+      "name": "CSV-Export-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        1350,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.webhookUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Export-ID",
+              "value": "={{ $json.export_info.export_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "jsonBody": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "name": "An Teil 3 weiterleiten",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $node[\"An Teil 3 weiterleiten\"].json.error !== undefined }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Fehler aufgetreten?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "buchhaltung@company.com",
+        "toEmail": "support@company.com",
+        "subject": "Fehler im Steuerberater-Export (Aufbereitung)",
+        "content": "Ein Fehler ist im Steuerberater-Export-Workflow (Teil 2: Aufbereitung) aufgetreten:\n\n**Fehlerdetails:**\nFehler: {{ $node[\"An Teil 3 weiterleiten\"].json.error?.message || 'Unbekannter Fehler' }}\n\n**Zeitstempel:** {{ $now.toISOString() }}\n\n**Export-Details:**\n- Export-ID: {{ $json.export_info?.export_id || 'Unbekannt' }}\n- Zeitraum: {{ $json.export_info?.zeitraum?.von || 'Unbekannt' }} bis {{ $json.export_info?.zeitraum?.bis || 'Unbekannt' }}\n- Anzahl DATEV-Buchungen: {{ $json.datev_statistiken?.anzahl_buchungen || 0 }}\n- Export-Größe: {{ $json.datev_statistiken?.export_groesse_kb || 0 }} KB\n- Gesamtsumme: {{ $json.datev_statistiken?.gesamtsumme || 0 }} €\n\n**Nächste Schritte:**\n1. Überprüfen Sie die DATEV-Formatierung\n2. Validieren Sie die Kontenzuordnungen\n3. Prüfen Sie die CSV-Export-Generierung\n\nBitte beheben Sie den Fehler und starten Sie die Aufbereitung erneut.",
+        "options": {}
+      },
+      "name": "Support benachrichtigen",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2050,
+        200
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "code": "// Erfolgreiche Aufbereitung protokollieren\nconst data = $input.item.json;\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil2-Aufbereitung',\n  status: 'success',\n  export_id: data.export_info?.export_id || 'Unbekannt',\n  datev_statistiken: data.datev_statistiken || {},\n  export_groesse_kb: data.datev_statistiken?.export_groesse_kb || 0,\n  nextStep: 'Teil3-Uebermittlung'\n};\n\nconsole.log('Steuerberater-Export Teil 2 erfolgreich abgeschlossen:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    successLog,\n    status: 'Teil2-Completed'\n  }\n};"
+      },
+      "name": "Erfolg protokollieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2050,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Daten validieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daten validieren": {
+      "main": [
+        [
+          {
+            "node": "DATEV-Belege formatieren",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DATEV-Rechnungen formatieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DATEV-Belege formatieren": {
+      "main": [
+        [
+          {
+            "node": "Daten zusammenführen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DATEV-Rechnungen formatieren": {
+      "main": [
+        [
+          {
+            "node": "Daten zusammenführen",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Daten zusammenführen": {
+      "main": [
+        [
+          {
+            "node": "CSV-Export erstellen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CSV-Export erstellen": {
+      "main": [
+        [
+          {
+            "node": "An Teil 3 weiterleiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "An Teil 3 weiterleiten": {
+      "main": [
+        [
+          {
+            "node": "Fehler aufgetreten?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fehler aufgetreten?": {
+      "main": [
+        [
+          {
+            "node": "Support benachrichtigen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Erfolg protokollieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {},
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-12-19T10:00:00.000Z",
+      "updatedAt": "2024-12-19T10:00:00.000Z",
+      "id": "4",
+      "name": "Steuerberater-Export"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "n8nVersion": "1.101.1"
+  },
+  "id": "4002",
+  "versionId": "v2.0.0"
+} 

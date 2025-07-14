@@ -13,6 +13,50 @@ export const invoicePosOperations: INodeProperties[] = [
 		},
 		options: [
 			{
+				name: "Create",
+				value: "create",
+				description: "Create an invoice position",
+				action: "Create an invoice position",
+				routing: {
+					request: {
+						method: "POST",
+						url: "/InvoicePos",
+					},
+					output: {
+						postReceive: [
+							{
+								type: "rootProperty",
+								properties: {
+									property: "objects",
+								},
+							},
+						],
+					},
+				},
+			},
+			{
+				name: "Get",
+				value: "get",
+				description: "Get an invoice position",
+				action: "Get an invoice position",
+				routing: {
+					request: {
+						method: "GET",
+						url: "=/InvoicePos/{{$parameter.invoicePosId}}",
+					},
+					output: {
+						postReceive: [
+							{
+								type: "rootProperty",
+								properties: {
+									property: "objects",
+								},
+							},
+						],
+					},
+				},
+			},
+			{
 				name: "Get Many",
 				value: "getMany",
 				description: "Get many invoice positions",
@@ -42,12 +86,158 @@ export const invoicePosOperations: INodeProperties[] = [
 					},
 				},
 			},
+			{
+				name: "Update",
+				value: "update",
+				description: "Update an invoice position",
+				action: "Update an invoice position",
+				routing: {
+					request: {
+						method: "PUT",
+						url: "=/InvoicePos/{{$parameter.invoicePosId}}",
+					},
+					output: {
+						postReceive: [
+							{
+								type: "rootProperty",
+								properties: {
+									property: "objects",
+								},
+							},
+						],
+					},
+				},
+			},
+			{
+				name: "Delete",
+				value: "delete",
+				description: "Delete an invoice position",
+				action: "Delete an invoice position",
+				routing: {
+					request: {
+						method: "DELETE",
+						url: "=/InvoicePos/{{$parameter.invoicePosId}}",
+					},
+					output: {
+						postReceive: [
+							{
+								type: "rootProperty",
+								properties: {
+									property: "objects",
+								},
+							},
+						],
+					},
+				},
+			},
 		],
 		default: "getMany",
 	},
 ];
 
 export const invoicePosFields: INodeProperties[] = [
+	// Invoice Position ID for get, update, delete operations
+	{
+		displayName: "Invoice Position ID",
+		name: "invoicePosId",
+		type: "string",
+		description: "Invoice Position ID",
+		required: true,
+		default: "",
+		displayOptions: {
+			show: {
+				resource: ["invoicePos"],
+				operation: ["get", "update", "delete"],
+			},
+		},
+	},
+
+	// Fields for create and update operations
+	{
+		displayName: "Invoice",
+		name: "invoice",
+		type: "collection",
+		description: "Invoice",
+		required: true,
+		default: {},
+		options: [
+			{
+				displayName: "ID",
+				name: "id",
+				type: "string",
+				default: "",
+			},
+			{
+				displayName: "Object Name",
+				name: "objectName",
+				type: "string",
+				default: "Invoice",
+			},
+		],
+		displayOptions: {
+			show: {
+				resource: ["invoicePos"],
+				operation: ["create", "update"],
+			},
+		},
+	},
+
+	{
+		displayName: "Quantity",
+		name: "quantity",
+		type: "number",
+		description: "Quantity of the position",
+		default: 1,
+		displayOptions: {
+			show: {
+				resource: ["invoicePos"],
+				operation: ["create", "update"],
+			},
+		},
+	},
+
+	{
+		displayName: "Price",
+		name: "price",
+		type: "number",
+		description: "Price per unit",
+		default: 0,
+		displayOptions: {
+			show: {
+				resource: ["invoicePos"],
+				operation: ["create", "update"],
+			},
+		},
+	},
+
+	{
+		displayName: "Name",
+		name: "name",
+		type: "string",
+		description: "Name of the position",
+		default: "",
+		displayOptions: {
+			show: {
+				resource: ["invoicePos"],
+				operation: ["create", "update"],
+			},
+		},
+	},
+
+	{
+		displayName: "Position Number",
+		name: "positionNumber",
+		type: "number",
+		description: "Position number in the invoice",
+		default: 1,
+		displayOptions: {
+			show: {
+				resource: ["invoicePos"],
+				operation: ["create", "update"],
+			},
+		},
+	},
+
 	{
 		displayName: "Return All",
 		name: "returnAll",

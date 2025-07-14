@@ -38,6 +38,7 @@ export class ResourceRegistry {
 		{ name: "Credit Note Po", value: "creditNotePos", handler: "handleGenericOperation" },
 		{ name: "Export", value: "export", handler: "handleExportOperation" },
 		{ name: "Invoice", value: "invoice", handler: "handleInvoiceOperation" },
+		{ name: "Invoice Position", value: "invoicePos", handler: "handleGenericOperation" },
 		{ name: "Layout", value: "layout", handler: "handleGenericOperation" },
 		{ name: "Order", value: "order", handler: "handleOrderOperation" },
 		{ name: "Order Position", value: "orderPos", handler: "handleGenericOperation" },
@@ -46,7 +47,7 @@ export class ResourceRegistry {
 		{ name: "Report", value: "report", handler: "handleReportOperation" },
 		{ name: "Tag", value: "tag", handler: "handleTagOperation" },
 		{ name: "Tag Relation", value: "tagRelation", handler: "handleGenericOperation" },
-		{ name: "Unit", value: "unit", handler: "handleGenericOperation" },
+		{ name: "Unity", value: "unity", handler: "handleGenericOperation" },
 		{ name: "Voucher", value: "voucher", handler: "handleVoucherOperation" },
 		{ name: "VoucherPo", value: "voucherPo", handler: "handleGenericOperation" },
 	] as const;
@@ -70,6 +71,7 @@ export class ResourceRegistry {
 		{ name: "Credit Note Po", value: "creditNotePos", handler: "handleGenericOperation" },
 		{ name: "Export", value: "export", handler: "handleExportOperation" },
 		{ name: "Invoice", value: "invoice", handler: "handleInvoiceOperation" },
+		{ name: "Invoice Position", value: "invoicePos", handler: "handleGenericOperation" },
 		{ name: "Layout", value: "layout", handler: "handleGenericOperation" },
 		{ name: "Order", value: "order", handler: "handleOrderOperation" },
 		{ name: "Order Position", value: "orderPos", handler: "handleGenericOperation" },
@@ -78,7 +80,7 @@ export class ResourceRegistry {
 		{ name: "Report", value: "report", handler: "handleReportOperation" },
 		{ name: "Tag", value: "tag", handler: "handleTagOperation" },
 		{ name: "Tag Relation", value: "tagRelation", handler: "handleGenericOperation" },
-		{ name: "Unit", value: "unit", handler: "handleGenericOperation" },
+		{ name: "Unity", value: "unity", handler: "handleGenericOperation" },
 		{ name: "Voucher", value: "voucher", handler: "handleVoucherOperation" },
 		{ name: "VoucherPo", value: "voucherPo", handler: "handleGenericOperation" },
 	];

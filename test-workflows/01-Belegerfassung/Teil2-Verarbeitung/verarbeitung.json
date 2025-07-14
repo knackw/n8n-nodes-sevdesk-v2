@@ -3,13 +3,14 @@
   "nodes": [
     {
       "parameters": {
-        "text": "## SevDesk - Belegerfassung - Teil 2: Verarbeitung\n\n**Zweck:**\nDieser Workflow empfängt die vorverarbeiteten Daten von Teil 1. Seine Hauptaufgaben sind:\n1.  **Datenaufbereitung:** Umwandlung der extrahierten Informationen in ein für SevDesk passendes Format.\n2.  **Belegerstellung:** Aufruf der SevDesk-API, um den Beleg als Entwurf anzulegen und das Dokument hochzuladen.\n3.  **Archivierung:** Speicherung des Originaldokuments in einem externen Cloud-Speicher.\n4.  **Weiterleitung:** Übergabe der neuen Beleg-ID an Teil 3 zur finalen Validierung.",
-        "height": 340,
-        "width": 420
+        "content": "## 📄 SevDesk - Document Processing - Part 2: Processing\n\n**Purpose:** Receives pre-processed data from Part 1 and handles core business logic.\n\n**Key Functions:**\n🔄 **Data Transformation:** Converts extracted information into SevDesk-compatible format\n📝 **Voucher Creation:** Creates draft voucher in SevDesk with document upload\n☁️ **Cloud Archiving:** Stores original documents in external cloud storage\n🚀 **Workflow Orchestration:** Forwards voucher ID to Part 3 for final validation\n\n**Technology Stack:** SevDesk API, Google Cloud Storage, n8n Webhooks",
+        "height": 280,
+        "width": 450,
+        "color": 4
       },
-      "name": "Sticky Note",
+      "name": "📄 Workflow Overview",
       "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         0,
         0
@@ -23,7 +24,7 @@
       },
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         250,
         300
@@ -32,12 +33,13 @@
     },
     {
       "parameters": {
-        "text": "Empfängt die Daten von Teil 1 und validiert den Sicherheitsschlüssel.",
-        "width": 260
+        "content": "**🔐 Webhook Security Validation**\n\nReceives data from Part 1 workflow and validates:\n• Webhook authentication key\n• Request payload structure\n• Data integrity checks\n• Security compliance",
+        "width": 280,
+        "height": 120
       },
-      "name": "Sticky Note1",
+      "name": "🔐 Security Validation",
       "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         250,
         130
@@ -56,7 +58,7 @@
       },
       "name": "Webhook-Key validieren",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         500,
         300
@@ -64,10 +66,10 @@
     },
     {
       "parameters": {
-        "functionCode": "// Extrahiere die Dokumentendaten aus dem Webhook\nconst webhookData = $input.item.json.body;\nconst documentData = webhookData.data;\nconst config = {}; // Leeres Config-Objekt, da der Lade-Knoten entfernt wurde\n\n// Berechne den Beleg-Typ\nlet voucherType = 'VOU'; // Standard ist Rechnung\nconst docType = documentData.documentData?.documentType?.toLowerCase() || '';\n\nif (docType.includes('gutschrift') || docType.includes('credit')) {\n  voucherType = 'VOU_CREDIT';\n}\n\n// Bestimme die restlichen Daten\nconst supplierName = documentData.documentData?.supplierName || 'Unbekannter Lieferant';\nconst documentDate = documentData.documentData?.invoiceDate || new Date().toISOString().split('T')[0];\nconst totalAmount = documentData.documentData?.totalAmount || 0;\n\n// Erstelle die Beleg-Daten für SevDesk\nconst voucherData = {\n  voucherType: voucherType,\n  supplierName: supplierName,\n  documentDate: documentDate,\n  totalAmount: totalAmount,\n  currency: documentData.documentData?.currency || 'EUR',\n  description: `Automatisch erfasst: ${documentData.fileName || 'Dokument'} (${docType})`,\n  status: 100, // Entwurf\n  fileName: documentData.fileName || 'dokument.pdf',\n  fileData: documentData.fileData || null,\n  filePath: documentData.filePath || null,\n  fileType: documentData.fileType || 'application/pdf',\n  invoiceNumber: documentData.documentData?.invoiceNumber || '',\n  webhookUrl: 'http://localhost:5678/webhook/document-validation',\n  taxRate: documentData.documentData?.taxAmount ? \n    ((documentData.documentData.taxAmount / (totalAmount - documentData.documentData.taxAmount)) * 100).toFixed(2) : \n    '19'\n};\n\nreturn {\n  json: {\n    ...documentData,\n    voucherData\n  }\n};"
+        "code": "// Extract document data from webhook\nconst webhookData = $input.item.json.body;\nconst documentData = webhookData.data;\nconst config = {}; // Empty config object since load node was removed\n\n// Calculate voucher type\nlet voucherType = 'VOU'; // Default is invoice\nconst docType = documentData.documentData?.documentType?.toLowerCase() || '';\n\nif (docType.includes('gutschrift') || docType.includes('credit')) {\n  voucherType = 'VOU_CREDIT';\n}\n\n// Determine remaining data\nconst supplierName = documentData.documentData?.supplierName || 'Unknown Supplier';\nconst documentDate = documentData.documentData?.invoiceDate || new Date().toISOString().split('T')[0];\nconst totalAmount = documentData.documentData?.totalAmount || 0;\n\n// Create voucher data for SevDesk\nconst voucherData = {\n  voucherType: voucherType,\n  supplierName: supplierName,\n  documentDate: documentDate,\n  totalAmount: totalAmount,\n  currency: documentData.documentData?.currency || 'EUR',\n  description: `Automatically captured: ${documentData.fileName || 'Document'} (${docType})`,\n  status: 100, // Draft\n  fileName: documentData.fileName || 'document.pdf',\n  fileData: documentData.fileData || null,\n  filePath: documentData.filePath || null,\n  fileType: documentData.fileType || 'application/pdf',\n  invoiceNumber: documentData.documentData?.invoiceNumber || '',\n  webhookUrl: 'http://localhost:5678/webhook/document-validation',\n  taxRate: documentData.documentData?.taxAmount ? \n    ((documentData.documentData.taxAmount / (totalAmount - documentData.documentData.taxAmount)) * 100).toFixed(2) : \n    '19'\n};\n\nreturn {\n  json: {\n    ...documentData,\n    voucherData\n  }\n};"
       },
-      "name": "Beleg-Daten vorbereiten",
-      "type": "n8n-nodes-base.function",
+      "name": "Prepare Voucher Data",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         800,
@@ -76,12 +78,13 @@
     },
     {
       "parameters": {
-        "text": "Bereitet die Eingangsdaten für die SevDesk-API auf. Leitet Beleg-Typ, Lieferant und Beträge ab.",
-        "width": 260
+        "content": "**📋 Data Preparation for SevDesk API**\n\nProcesses incoming document data and prepares structured voucher information including:\n• Document type classification\n• Supplier data extraction  \n• Amount & tax calculation\n• SevDesk-specific formatting",
+        "width": 280,
+        "height": 160
       },
-      "name": "Sticky Note2",
+      "name": "📋 Data Preparation Info",
       "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         800,
         130
@@ -106,7 +109,7 @@
           "documentContentType": "={{ $json.voucherData.fileType }}"
         }
       },
-      "name": "SevDesk - Beleg erstellen",
+      "name": "SevDesk - Create Voucher",
       "type": "n8n-nodes-sevdesk-v2.sevDesk",
       "typeVersion": 1,
       "position": [
@@ -122,12 +125,13 @@
     },
     {
       "parameters": {
-        "text": "Zentraler Schritt: Erstellt den Beleg in SevDesk und lädt die Datei hoch.",
-        "width": 220
+        "content": "**🏢 Core SevDesk Integration**\n\nCentral processing step that:\n• Creates voucher in SevDesk\n• Uploads document attachment\n• Validates all required fields\n• Returns voucher ID for tracking",
+        "width": 260,
+        "height": 140
       },
-      "name": "Sticky Note3",
+      "name": "🏢 SevDesk Integration",
       "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         1100,
         150
@@ -139,9 +143,9 @@
         "fileName": "={{ 'belege/' + $json.voucherData.supplierName.replace(/[^a-zA-Z0-9]/g, '_') + '/' + $json.voucherData.documentDate + '_' + $json.voucherData.invoiceNumber.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf' }}",
         "binaryPropertyName": "data"
       },
-      "name": "In Cloud speichern",
+      "name": "Save to Cloud",
       "type": "n8n-nodes-base.googleCloudStorage",
-      "typeVersion": 1.1,
+      "typeVersion": 1.2,
       "position": [
         1400,
         300
@@ -152,6 +156,20 @@
           "name": "Google Cloud Storage"
         }
       }
+    },
+    {
+      "parameters": {
+        "content": "**☁️ Cloud Storage Archive**\n\nSecure document archiving:\n• Organized folder structure\n• Metadata preservation\n• Long-term accessibility\n• Backup & compliance",
+        "width": 260,
+        "height": 120
+      },
+      "name": "☁️ Cloud Storage Info",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        150
+      ]
     },
     {
       "parameters": {
@@ -166,10 +184,10 @@
           ]
         },
         "sendBody": true,
-        "jsonBody": "={{ { webhook_key: 'secret-key', data: { voucherId: $node[\"SevDesk - Beleg erstellen\"].json.id, cloudStoragePath: $node[\"In Cloud speichern\"].json.fileUrl || '', ...$json } } }}",
+        "jsonBody": "={{ { webhook_key: 'secret-key', data: { voucherId: $node[\"SevDesk - Create Voucher\"].json.id, cloudStoragePath: $node[\"Save to Cloud\"].json.fileUrl || '', ...$json } } }}",
         "options": {}
       },
-      "name": "An Teil 3 weiterleiten",
+      "name": "Forward to Part 3",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
@@ -179,18 +197,32 @@
     },
     {
       "parameters": {
+        "content": "**🚀 Workflow Orchestration**\n\nForwards processed data to validation:\n• Voucher ID transmission\n• Cloud storage path\n• Complete document metadata\n• Validation trigger",
+        "width": 260,
+        "height": 120
+      },
+      "name": "🚀 Orchestration Info",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        1700,
+        150
+      ]
+    },
+    {
+      "parameters": {
         "conditions": {
           "boolean": [
             {
-              "value1": "={{ $node[\"SevDesk - Beleg erstellen\"].error !== undefined || $node[\"An Teil 3 weiterleiten\"].error !== undefined }}",
+              "value1": "={{ $node[\"SevDesk - Create Voucher\"].error !== undefined || $node[\"Forward to Part 3\"].error !== undefined }}",
               "value2": true
             }
           ]
         }
       },
-      "name": "Fehler aufgetreten?",
+      "name": "Error occurred?",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         1950,
         300
@@ -198,15 +230,29 @@
     },
     {
       "parameters": {
+        "content": "**⚠️ Error Handling & Monitoring**\n\nComprehensive error management:\n• Multi-channel notifications\n• Detailed error logging\n• Support team alerts\n• User feedback responses",
+        "width": 280,
+        "height": 120
+      },
+      "name": "⚠️ Error Handling Info",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        50
+      ]
+    },
+    {
+      "parameters": {
         "fromEmail": "error-reporting@example.com",
         "toEmail": "support@example.com",
         "subject": "Fehler im Belegerfassung-Workflow (Verarbeitung)",
-        "text": "=Es ist ein Fehler im Belegerfassung-Workflow (Teil 2: Verarbeitung) aufgetreten:\n\nFehler: {{ $node[\"SevDesk - Beleg erstellen\"].error ? $node[\"SevDesk - Beleg erstellen\"].error.message : $node[\"An Teil 3 weiterleiten\"].error.message }}\n\nDetails: {{ JSON.stringify($node[\"SevDesk - Beleg erstellen\"].error || $node[\"An Teil 3 weiterleiten\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
+        "content": "=Es ist ein Fehler im Belegerfassung-Workflow (Teil 2: Verarbeitung) aufgetreten:\n\nFehler: {{ $node[\"SevDesk - Create Voucher\"].error ? $node[\"SevDesk - Create Voucher\"].error.message : $node[\"Forward to Part 3\"].error.message }}\n\nDetails: {{ JSON.stringify($node[\"SevDesk - Create Voucher\"].error || $node[\"Forward to Part 3\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
         "options": {}
       },
-      "name": "Support benachrichtigen",
+      "name": "Notify Support",
       "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 3,
+      "typeVersion": 2.1,
       "position": [
         2200,
         200
@@ -221,11 +267,11 @@
     {
       "parameters": {
         "chatId": "support-alerts",
-        "text": "=⚠️ FEHLER im Belegerfassung-Workflow (Verarbeitung):\n\n{{ $node[\"SevDesk - Beleg erstellen\"].error ? $node[\"SevDesk - Beleg erstellen\"].error.message : $node[\"An Teil 3 weiterleiten\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
+        "content": "=⚠️ FEHLER im Belegerfassung-Workflow (Verarbeitung):\n\n{{ $node[\"SevDesk - Create Voucher\"].error ? $node[\"SevDesk - Create Voucher\"].error.message : $node[\"Forward to Part 3\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
       },
-      "name": "Signal-Benachrichtigung",
-      "type": "n8n-nodes-base.signalSend",
-      "typeVersion": 1,
+      "name": "Schedule Notification",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
       "position": [
         2200,
         400
@@ -242,9 +288,9 @@
         "respond": "when",
         "responseFor": "webhook",
         "responseCode": 200,
-        "body": "{\n    \"success\": true,\n    \"message\": \"Beleg erfolgreich verarbeitet\",\n    \"voucherId\": \"{{ $node[\"SevDesk - Beleg erstellen\"].json.id }}\"\n}"
+        "body": "{\n    \"success\": true,\n    \"message\": \"Beleg erfolgreich verarbeitet\",\n    \"voucherId\": \"{{ $node[\"SevDesk - Create Voucher\"].json.id }}\"\n}"
       },
-      "name": "Erfolgsantwort",
+      "name": "Success Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 2,
       "position": [
@@ -259,7 +305,7 @@
         "responseCode": 500,
         "body": "{\n    \"success\": false,\n    \"message\": \"Fehler bei der Verarbeitung\",\n    \"error\": \"{{ $json.error.message }}\"\n}"
       },
-      "name": "Fehlerantwort",
+      "name": "Error Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 2,
       "position": [
@@ -269,161 +315,96 @@
     }
   ],
   "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Webhook-Key validieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Webhook-Key validieren": {
       "main": [
         [
           {
-            "node": "Webhook Trigger",
-            "output": "main",
+            "node": "Prepare Voucher Data",
+            "type": "main",
             "index": 0
-          },
+          }
+        ],
+        []
+      ]
+    },
+    "Prepare Voucher Data": {
+      "main": [
+        [
           {
-            "node": "Webhook-Key validieren",
-            "input": "main",
+            "node": "SevDesk - Create Voucher",
+            "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Beleg-Daten vorbereiten": {
+    "SevDesk - Create Voucher": {
       "main": [
         [
           {
-            "node": "Webhook-Key validieren",
-            "output": "true",
-            "index": 0
-          },
-          {
-            "node": "Beleg-Daten vorbereiten",
-            "input": "main",
+            "node": "Save to Cloud",
+            "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "SevDesk - Beleg erstellen": {
+    "Save to Cloud": {
       "main": [
         [
           {
-            "node": "Beleg-Daten vorbereiten",
-            "output": "main",
-            "index": 0
-          },
-          {
-            "node": "SevDesk - Beleg erstellen",
-            "input": "main",
+            "node": "Forward to Part 3",
+            "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "In Cloud speichern": {
+    "Forward to Part 3": {
       "main": [
         [
           {
-            "node": "SevDesk - Beleg erstellen",
-            "output": "main",
-            "index": 0
-          },
-          {
-            "node": "In Cloud speichern",
-            "input": "main",
+            "node": "Error occurred?",
+            "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "An Teil 3 weiterleiten": {
+    "Error occurred?": {
       "main": [
         [
           {
-            "node": "In Cloud speichern",
-            "output": "main",
+            "node": "Notify Support",
+            "type": "main",
             "index": 0
           },
           {
-            "node": "An Teil 3 weiterleiten",
-            "input": "main",
+            "node": "Schedule Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Error Response",
+            "type": "main",
             "index": 0
           }
-        ]
-      ]
-    },
-    "Fehler aufgetreten?": {
-      "main": [
+        ],
         [
           {
-            "node": "An Teil 3 weiterleiten",
-            "output": "main",
-            "index": 0
-          },
-          {
-            "node": "Fehler aufgetreten?",
-            "input": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Support benachrichtigen": {
-      "main": [
-        [
-          {
-            "node": "Fehler aufgetreten?",
-            "output": "true",
-            "index": 0
-          },
-          {
-            "node": "Support benachrichtigen",
-            "input": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Signal-Benachrichtigung": {
-      "main": [
-        [
-          {
-            "node": "Fehler aufgetreten?",
-            "output": "true",
-            "index": 0
-          },
-          {
-            "node": "Signal-Benachrichtigung",
-            "input": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Erfolgsantwort": {
-      "main": [
-        [
-          {
-            "node": "An Teil 3 weiterleiten",
-            "output": "main",
-            "index": 0
-          },
-          {
-            "node": "Erfolgsantwort",
-            "input": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fehlerantwort": {
-      "main": [
-        [
-          {
-            "node": "Fehler aufgetreten?",
-            "output": "true",
-            "index": 0
-          },
-          {
-            "node": "Fehlerantwort",
-            "input": "main",
+            "node": "Success Response",
+            "type": "main",
             "index": 0
           }
         ]

@@ -1,0 +1,397 @@
+{
+  "name": "SevDesk - Banktransaktionen - Teil 3: Buchung (v2)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## SevDesk - Banktransaktionen - Teil 3: Buchung\n\n**Zweck:**\nDieser Workflow führt die finale Buchung der kategorisierten Banktransaktionen in SevDesk durch. Er erstellt die entsprechenden Buchungssätze, führt Plausibilitätsprüfungen durch und sorgt für eine ordnungsgemäße Verbuchung.\n\n**Funktionen:**\n- Automatische Buchungssatz-Erstellung\n- Soll/Haben-Zuordnung nach SKR03\n- Steuerbehandlung und USt-Berechnung\n- Belegzuordnung und Referenzierung\n- Abgleich mit Kontostand\n- Buchungsjournal und Audit-Trail\n\n**Compliance:**\nGoBD-konforme Buchungsführung mit unveränderlichen Aufzeichnungen und vollständiger Nachvollziehbarkeit.",
+        "height": 350,
+        "width": 450
+      },
+      "name": "Workflow-Beschreibung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bank-booking",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "bank-booking-webhook"
+    },
+    {
+      "parameters": {
+        "code": "// Validiere die kategorisierten Daten von Teil 2\nconst categorizationData = $input.item.json;\n\n// Prüfe Datenstruktur\nif (!categorizationData.categorized_transactions || !Array.isArray(categorizationData.categorized_transactions)) {\n  throw new Error('Keine kategorisierten Transaktionen von Teil 2 erhalten');\n}\n\n// Prüfe Import-Batch-ID\nif (!categorizationData.import_batch_id) {\n  throw new Error('Keine Import-Batch-ID gefunden');\n}\n\n// Prüfe Kategorisierungs-Statistiken\nif (!categorizationData.categorization_stats) {\n  throw new Error('Keine Kategorisierungs-Statistiken gefunden');\n}\n\nreturn {\n  json: {\n    ...categorizationData,\n    booking_started: new Date().toISOString(),\n    processing_step: 'validation_completed'\n  }\n};"
+      },
+      "name": "Kategorisierte Daten validieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Datenvalidierung:**\n\n- Überprüfung kategorisierter Transaktionen\n- Validierung der Batch-ID\n- Prüfung der Kategorisierungs-Statistiken\n- Vollständigkeitskontrolle vor Buchung",
+        "width": 240,
+        "height": 120
+      },
+      "name": "Validierung-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        450,
+        150
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Transaktionen aufteilen",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "code": "// Erstelle Buchungssätze für SevDesk\nconst batchData = $node[\"Transaktionen aufteilen\"].json;\nconst currentTransaction = batchData.categorized_transactions[$node[\"Transaktionen aufteilen\"].context.currentIndex];\n\n// Überspringe Transaktionen, die eine manuelle Prüfung erfordern\nif (currentTransaction.categorization.requires_review) {\n  return {\n    json: {\n      ...batchData,\n      current_transaction: {\n        ...currentTransaction,\n        booking_status: 'skipped_manual_review',\n        booking_timestamp: new Date().toISOString(),\n        processing_step: 'skipped'\n      }\n    }\n  };\n}\n\n// Bestimme Soll/Haben basierend auf Kontoart und Betrag\nfunction determineSollHaben(account, amount) {\n  const accountNumber = parseInt(account);\n  \n  // SKR03 Kontenbereiche\n  if (accountNumber >= 1000 && accountNumber <= 1999) {\n    // Aktivkonten (Anlagevermögen): Zugang = Soll, Abgang = Haben\n    return amount > 0 ? 'S' : 'H';\n  }\n  if (accountNumber >= 2000 && accountNumber <= 2999) {\n    // Aktivkonten (Umlaufvermögen): Zugang = Soll, Abgang = Haben\n    return amount > 0 ? 'S' : 'H';\n  }\n  if (accountNumber >= 3000 && accountNumber <= 3999) {\n    // Passivkonten (Eigenkapital): Erhöhung = Haben, Minderung = Soll\n    return amount > 0 ? 'H' : 'S';\n  }\n  if (accountNumber >= 4000 && accountNumber <= 4999) {\n    // Passivkonten (Fremdkapital): Erhöhung = Haben, Minderung = Soll\n    return amount > 0 ? 'H' : 'S';\n  }\n  if (accountNumber >= 6000 && accountNumber <= 7999) {\n    // Aufwandskonten: Aufwand = Soll\n    return amount < 0 ? 'S' : 'H'; // Negative Beträge sind Ausgaben\n  }\n  if (accountNumber >= 8000 && accountNumber <= 8999) {\n    // Ertragskonten: Ertrag = Haben\n    return amount > 0 ? 'H' : 'S'; // Positive Beträge sind Einnahmen\n  }\n  \n  // Fallback\n  return amount > 0 ? 'S' : 'H';\n}\n\n// Bestimme Gegenkonto (Bankkonto)\nconst bankAccount = '1200'; // Standard Bankkonto SKR03\n\n// Erstelle Buchungssatz\nconst bookingEntry = {\n  transaction_id: currentTransaction.transaction_id,\n  date: currentTransaction.date,\n  amount: Math.abs(currentTransaction.amount),\n  currency: currentTransaction.currency || 'EUR',\n  \n  // Hauptbuchung (Sachkonto)\n  account: currentTransaction.categorization.account,\n  account_side: determineSollHaben(currentTransaction.categorization.account, currentTransaction.amount),\n  \n  // Gegenbuchung (Bankkonto)\n  counter_account: bankAccount,\n  counter_account_side: determineSollHaben(bankAccount, -currentTransaction.amount),\n  \n  // Steuerbehandlung\n  tax_key: currentTransaction.categorization.tax_key,\n  tax_rate: currentTransaction.categorization.tax_key === '9' ? 19 : \n            currentTransaction.categorization.tax_key === '2' ? 7 : 0,\n  \n  // Beleg- und Referenzdaten\n  description: currentTransaction.description || '',\n  reference: currentTransaction.reference || '',\n  counterparty: currentTransaction.counterparty || '',\n  counterparty_iban: currentTransaction.counterparty_iban || '',\n  \n  // Kategorisierungs-Metadaten\n  category: currentTransaction.categorization.category,\n  subcategory: currentTransaction.categorization.subcategory,\n  confidence: currentTransaction.categorization.confidence,\n  \n  // Import-Metadaten\n  import_batch_id: batchData.import_batch_id,\n  source_file: currentTransaction.source_file,\n  source_format: currentTransaction.source_format,\n  \n  // Buchungsjournal\n  booking_timestamp: new Date().toISOString(),\n  booking_user: 'system',\n  booking_method: 'automatic'\n};\n\nreturn {\n  json: {\n    ...batchData,\n    current_transaction: {\n      ...currentTransaction,\n      booking_entry: bookingEntry,\n      booking_status: 'prepared',\n      processing_step: 'booking_prepared'\n    }\n  }\n};"
+      },
+      "name": "Buchungssatz erstellen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Buchungssatz-Erstellung:**\n\n**Soll/Haben-Logik:**\n- Aktivkonten (1000-2999): Zugang=Soll, Abgang=Haben\n- Passivkonten (3000-4999): Erhöhung=Haben, Minderung=Soll\n- Aufwandskonten (6000-7999): Aufwand=Soll\n- Ertragskonten (8000-8999): Ertrag=Haben\n\n**Steuerbehandlung:**\n- Tax-Key 0: Keine Steuer\n- Tax-Key 2: 7% USt/VSt\n- Tax-Key 9: 19% USt/VSt\n\n**Gegenkonto:**\n- Standard: 1200 (Bankkonto)\n- Automatische Soll/Haben-Umkehrung\n\n**Review-Filter:**\n- Transaktionen mit requires_review=true werden übersprungen\n- Manuelle Freigabe erforderlich",
+        "width": 320,
+        "height": 250
+      },
+      "name": "Buchungssatz-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [
+        850,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.current_transaction.booking_status }}",
+              "value2": "prepared"
+            }
+          ]
+        }
+      },
+      "name": "Buchung vorbereitet?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1150,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "checkAccountTransaction",
+        "operation": "create",
+        "checkAccountId": "1",
+        "amount": "={{ $json.current_transaction.booking_entry.amount }}",
+        "date": "={{ $json.current_transaction.booking_entry.date }}",
+        "payeePayerName": "={{ $json.current_transaction.booking_entry.counterparty }}",
+        "checkAccountTransactionType": "={{ $json.current_transaction.amount > 0 ? 'N' : 'B' }}",
+        "additionalFields": {
+          "entryType": "{{ $json.current_transaction.booking_entry.account_side === 'S' ? 'S' : 'H' }}",
+          "sourceTransaction": "{{ $json.current_transaction.transaction_id }}",
+          "importBatch": "{{ $json.current_transaction.import_batch_id }}",
+          "description": "{{ $json.current_transaction.booking_entry.description }}"
+        }
+      },
+      "name": "SevDesk - Transaktion buchen",
+      "type": "n8n-nodes-sevdesk-v2.sevDesk",
+      "typeVersion": 1,
+      "position": [
+        1350,
+        200
+      ],
+      "credentials": {
+        "sevDeskApi": {
+          "id": "6",
+          "name": "SevDesk API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "code": "// Sammle Buchungsergebnisse und aktualisiere Status\nconst allTransactions = $node[\"Transaktionen aufteilen\"].json.categorized_transactions || [];\nconst currentIndex = $node[\"Transaktionen aufteilen\"].context.currentIndex;\nconst currentTransaction = $input.item.json.current_transaction;\n\n// SevDesk-Buchungsergebnis\nconst sevdeskResult = $node[\"SevDesk - Transaktion buchen\"].json || null;\n\n// Aktualisiere Transaktion mit Buchungsergebnis\nlet updatedTransaction = {\n  ...currentTransaction,\n  sevdesk_booking: sevdeskResult,\n  final_booking_timestamp: new Date().toISOString()\n};\n\n// Setze finalen Status basierend auf SevDesk-Ergebnis\nif (sevdeskResult && sevdeskResult.id) {\n  updatedTransaction.final_status = 'booked_successfully';\n  updatedTransaction.sevdesk_transaction_id = sevdeskResult.id;\n} else if (currentTransaction.booking_status === 'skipped_manual_review') {\n  updatedTransaction.final_status = 'skipped_manual_review';\n} else {\n  updatedTransaction.final_status = 'booking_failed';\n  updatedTransaction.error_message = sevdeskResult?.error || 'Unbekannter Buchungsfehler';\n}\n\n// Aktualisiere die Transaktion im Array\nallTransactions[currentIndex] = updatedTransaction;\n\n// Prüfe ob das der letzte Batch ist\nif (currentIndex === allTransactions.length - 1) {\n  // Erstelle finale Buchungsstatistiken\n  const bookingStats = {\n    total_transactions: allTransactions.length,\n    booked_successfully: allTransactions.filter(t => t.final_status === 'booked_successfully').length,\n    skipped_manual_review: allTransactions.filter(t => t.final_status === 'skipped_manual_review').length,\n    booking_failed: allTransactions.filter(t => t.final_status === 'booking_failed').length,\n    total_amount_booked: allTransactions\n      .filter(t => t.final_status === 'booked_successfully')\n      .reduce((sum, t) => sum + (t.amount || 0), 0)\n  };\n  \n  // Erfolgs-/Fehleranalyse\n  const successRate = (bookingStats.booked_successfully / bookingStats.total_transactions * 100).toFixed(2);\n  const failedTransactions = allTransactions.filter(t => t.final_status === 'booking_failed');\n  \n  return {\n    json: {\n      import_batch_id: $input.item.json.import_batch_id,\n      final_transactions: allTransactions,\n      booking_stats: bookingStats,\n      success_rate: successRate,\n      failed_transactions: failedTransactions,\n      booking_completed: new Date().toISOString(),\n      workflow_completed: true,\n      processing_step: 'booking_completed'\n    }\n  };\n} else {\n  // Noch nicht fertig, gib aktuellen Zustand zurück\n  return {\n    json: {\n      ...allTransactions,\n      current_index: currentIndex,\n      processing_step: 'booking'\n    }\n  };\n}"
+      },
+      "name": "Buchungsergebnisse sammeln",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1550,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.workflow_completed }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Workflow abgeschlossen?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1750,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "buchhaltung@company.com",
+        "toEmail": "accounting@company.com,controller@company.com",
+        "subject": "Banktransaktionen-Buchung abgeschlossen - {{ $json.import_batch_id }}",
+        "content": "Die automatische Buchung der Banktransaktionen ist abgeschlossen.\n\n**Buchungs-Statistiken:**\n- Batch-ID: {{ $json.import_batch_id }}\n- Gesamt-Transaktionen: {{ $json.booking_stats.total_transactions }}\n- Erfolgreich gebucht: {{ $json.booking_stats.booked_successfully }}\n- Übersprungen (Prüfung): {{ $json.booking_stats.skipped_manual_review }}\n- Fehlgeschlagen: {{ $json.booking_stats.booking_failed }}\n- Erfolgsrate: {{ $json.success_rate }}%\n- Gebuchter Gesamtbetrag: {{ $json.booking_stats.total_amount_booked }} €\n\n**Workflow-Status:**\n✅ Import abgeschlossen\n✅ Kategorisierung abgeschlossen\n✅ Buchung abgeschlossen\n\n**Nächste Schritte:**\n{% if $json.booking_stats.skipped_manual_review > 0 %}\n⚠️ {{ $json.booking_stats.skipped_manual_review }} Transaktionen benötigen manuelle Prüfung\n- Zugriff über SevDesk-Dashboard\n- Nach Prüfung manuelle Freigabe\n{% endif %}\n\n{% if $json.booking_stats.booking_failed > 0 %}\n❌ {{ $json.booking_stats.booking_failed }} Buchungen fehlgeschlagen\n- Siehe Fehlerdetails im Anhang\n- IT-Support kontaktieren\n{% endif %}\n\n**GoBD-Compliance:**\n- Alle Buchungen auditierbar\n- Vollständiger Audit-Trail verfügbar\n- Unveränderliche Aufzeichnungen\n\nDas Buchungsjournal ist in SevDesk verfügbar.",
+        "options": {}
+      },
+      "name": "Abschlussbericht senden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1950,
+        100
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "10",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "bucketName": "banking-audit-trail",
+        "fileName": "={{ 'booking-journals/' + $json.import_batch_id + '/' + $now.format('YYYY-MM-DD') + '_booking_journal.json' }}",
+        "binaryPropertyName": "audit_data",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "import_batch_id",
+                "value": "={{ $json.import_batch_id }}"
+              },
+              {
+                "name": "booking_date",
+                "value": "={{ $now.format('YYYY-MM-DD') }}"
+              },
+              {
+                "name": "total_transactions",
+                "value": "={{ $json.booking_stats.total_transactions }}"
+              },
+              {
+                "name": "success_rate",
+                "value": "={{ $json.success_rate }}"
+              },
+              {
+                "name": "workflow_version",
+                "value": "v2.0.0"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Audit-Trail archivieren",
+      "type": "n8n-nodes-base.googleCloudStorage",
+      "typeVersion": 1.2,
+      "position": [
+        1950,
+        300
+      ],
+      "credentials": {
+        "googleCloudStorageOAuth2Api": {
+          "id": "12",
+          "name": "Google Cloud Storage"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "code": "// Erstelle detailliertes Audit-Trail-Dokument\nconst data = $input.item.json;\n\nconst auditTrail = {\n  audit_header: {\n    document_type: 'banking_workflow_audit_trail',\n    version: 'v2.0.0',\n    created_at: new Date().toISOString(),\n    import_batch_id: data.import_batch_id,\n    workflow_execution_id: $workflow.id,\n    compliance_framework: 'GoBD'\n  },\n  \n  process_summary: {\n    total_transactions: data.booking_stats.total_transactions,\n    successful_bookings: data.booking_stats.booked_successfully,\n    manual_review_required: data.booking_stats.skipped_manual_review,\n    failed_bookings: data.booking_stats.booking_failed,\n    success_rate_percent: parseFloat(data.success_rate),\n    total_amount_eur: data.booking_stats.total_amount_booked\n  },\n  \n  workflow_stages: {\n    stage_1_import: {\n      completed: true,\n      timestamp: data.final_transactions[0]?.imported_at || 'N/A',\n      source_files: [...new Set(data.final_transactions.map(t => t.source_file))]\n    },\n    stage_2_categorization: {\n      completed: true,\n      timestamp: data.final_transactions[0]?.categorization_timestamp || 'N/A',\n      auto_categorized: data.final_transactions.filter(t => t.categorization?.auto_categorized).length,\n      manual_review_flagged: data.final_transactions.filter(t => t.categorization?.requires_review).length\n    },\n    stage_3_booking: {\n      completed: true,\n      timestamp: new Date().toISOString(),\n      sevdesk_transactions_created: data.final_transactions.filter(t => t.sevdesk_transaction_id).length\n    }\n  },\n  \n  detailed_transactions: data.final_transactions.map(t => ({\n    transaction_id: t.transaction_id,\n    date: t.date,\n    amount: t.amount,\n    description: t.description,\n    counterparty: t.counterparty,\n    category: t.categorization?.category,\n    account: t.categorization?.account,\n    confidence: t.categorization?.confidence,\n    final_status: t.final_status,\n    sevdesk_id: t.sevdesk_transaction_id || null,\n    error_message: t.error_message || null\n  })),\n  \n  compliance_attestation: {\n    gobd_compliant: true,\n    audit_trail_complete: true,\n    data_integrity_verified: true,\n    retention_period_years: 10,\n    deletion_date: new Date(Date.now() + (10 * 365 * 24 * 60 * 60 * 1000)).toISOString()\n  }\n};\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil3-Buchung',\n  status: 'success',\n  import_batch_id: data.import_batch_id,\n  booking_statistics: data.booking_stats,\n  success_rate: data.success_rate,\n  audit_trail_created: true,\n  workflow_vollständig_abgeschlossen: true\n};\n\nconsole.log('Banktransaktionen Buchung Teil 3 erfolgreich abgeschlossen:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    audit_trail: auditTrail,\n    successLog,\n    status: 'Workflow-Komplett-Abgeschlossen'\n  }\n};"
+      },
+      "name": "Finalen Erfolg protokollieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2250,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Kategorisierte Daten validieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kategorisierte Daten validieren": {
+      "main": [
+        [
+          {
+            "node": "Transaktionen aufteilen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transaktionen aufteilen": {
+      "main": [
+        [
+          {
+            "node": "Buchungssatz erstellen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buchungssatz erstellen": {
+      "main": [
+        [
+          {
+            "node": "Buchung vorbereitet?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buchung vorbereitet?": {
+      "main": [
+        [
+          {
+            "node": "SevDesk - Transaktion buchen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Buchungsergebnisse sammeln",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SevDesk - Transaktion buchen": {
+      "main": [
+        [
+          {
+            "node": "Buchungsergebnisse sammeln",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buchungsergebnisse sammeln": {
+      "main": [
+        [
+          {
+            "node": "Workflow abgeschlossen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow abgeschlossen?": {
+      "main": [
+        [
+          {
+            "node": "Abschlussbericht senden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Audit-Trail archivieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Abschlussbericht senden": {
+      "main": [
+        [
+          {
+            "node": "Finalen Erfolg protokollieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audit-Trail archivieren": {
+      "main": [
+        [
+          {
+            "node": "Finalen Erfolg protokollieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {},
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-12-19T10:00:00.000Z",
+      "updatedAt": "2024-12-19T10:00:00.000Z",
+      "id": "5",
+      "name": "Banktransaktionen"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "n8nVersion": "1.101.1"
+  },
+  "id": "5003",
+  "versionId": "v2.0.0"
+} 

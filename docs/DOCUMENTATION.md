@@ -1,385 +1,278 @@
-# SevDesk Node Dokumentation
+# SevDesk Node Documentation
 
-## Inhaltsverzeichnis
+**Version:** 2.4.1  
+**Updated:** 2025-07-14  
+**Status:** Production Ready  
+**API Version:** SevDesk API v2.0
 
-1. [Übersicht](#übersicht)
+## Table of Contents
+
+1. [Overview](#overview)
 2. [Installation](#installation)
-3. [Konfiguration](#konfiguration)
-4. [Ressourcen](#ressourcen)
-5. [Operationen](#operationen)
-6. [Erweiterte Funktionen](#erweiterte-funktionen)
-7. [Beispiele](#beispiele)
-8. [Fehlerbehebung](#fehlerbehebung)
-9. [API-Referenz](#api-referenz)
+3. [Configuration](#configuration)
+4. [Resources](#resources)
+5. [Operations](#operations)
+6. [Advanced Features](#advanced-features)
+7. [Examples](#examples)
+8. [Troubleshooting](#troubleshooting)
+9. [API Reference](#api-reference)
 10. [Best Practices](#best-practices)
-11. [Entwicklung](#entwicklung)
+11. [Development](#development)
 
-## Übersicht
+## Overview
 
-Der SevDesk Node für n8n bietet eine direkte Integration mit der SevDesk Buchhaltungsplattform. SevDesk ist eine beliebte deutsche Buchhaltungssoftware, die eine robuste API für Automatisierung und Integration bietet.
+The SevDesk node for n8n provides direct integration with the SevDesk accounting platform. SevDesk is a popular German accounting software that offers a robust API for automation and integration.
 
-### Hauptfunktionen
+### Main Features
 
-- **Vollständige CRUD-Operationen**: Erstellen, lesen, aktualisieren und löschen für alle wichtigen Entitäten
-- **API v2 Unterstützung**: Neueste API-Version mit Rückwärtskompatibilität
-- **Umfassende Filterung**: Erweiterte Such- und Filterfunktionen
-- **Dateiverwaltung**: Upload und Download von Dokumenten
-- **Batch-Operationen**: Effiziente Verarbeitung mehrerer Elemente
-- **Fehlerbehandlung**: Robuste Fehlerbehandlung mit detailliertem Feedback
-- **Direkte API-Integration**: Keine externen Abhängigkeiten oder Zwischenschichten
-- **Einfache Konfiguration**: Nur API-Schlüssel und Version erforderlich
+- **Complete CRUD Operations**: Create, read, update and delete for all important entities
+- **API v2 Support**: Latest API version with backward compatibility
+- **Comprehensive Filtering**: Advanced search and filter functions
+- **File Management**: Upload and download of documents
+- **Batch Operations**: Efficient processing of multiple items
+- **Error Handling**: Robust error handling with detailed feedback
+- **Direct API Integration**: No external dependencies or intermediate layers
+- **Simple Configuration**: Only API key and version required
 
-### Unterstützte Ressourcen
+### Supported Resources
 
-| Ressource | Status | Beschreibung |
-|-----------|--------|--------------|
-| Kontakte | ✅ Vollständig | Kontaktverwaltung mit Adressen und benutzerdefinierten Feldern |
-| Rechnungen | ✅ Vollständig | Vollständiger Rechnungslebenszyklus einschließlich PDF-Generierung |
-| Aufträge | ✅ Vollständig | Auftragsverwaltung mit Positionen |
-| Belege | ✅ Vollständig | Belegverwaltung mit Dateianhängen |
-| Artikel | ✅ Vollständig | Lagerverwaltung mit Bestandsverfolgung |
-| Bankwesen | ✅ Vollständig | Bankkonten und Transaktionen |
-| Tags | ✅ Vollständig | Flexibles Tagging-System |
-| Berichte | ✅ Vollständig | PDF-Berichtsgenerierung |
-| Gutschriften | 🔄 In Bearbeitung | Gutschriftenverwaltung |
-| Exporte | 🔄 In Bearbeitung | Datenexport-Funktionalität |
+| Resource     | Status      | Description                                         |
+| ------------ | ----------- | --------------------------------------------------- |
+| Contacts     | ✅ Complete | Contact management with addresses and custom fields |
+| Invoices     | ✅ Complete | Complete invoice lifecycle including PDF generation |
+| Orders       | ✅ Complete | Order management with positions                     |
+| Vouchers     | ✅ Complete | Document management with file attachments           |
+| Parts        | ✅ Complete | Inventory management with stock tracking            |
+| Banking      | ✅ Complete | Bank accounts and transactions                      |
+| Tags         | ✅ Complete | Flexible tagging system                             |
+| Reports      | ✅ Complete | PDF report generation                               |
+| Credit Notes | ✅ Complete | Credit note management                              |
+| Exports      | ✅ Complete | Data export functionality                           |
 
 ## Installation
 
-### Über n8n Community Nodes
+### Via n8n Community Nodes
 
 ```bash
 npm install n8n-nodes-sevdesk-v2
 ```
 
-### Manuelle Installation
+### Manual Installation
 
-1. Repository klonen
-2. Dependencies installieren: `npm install`
-3. Build erstellen: `npm run build`
-4. Node verlinken: `npm link`
+1. Clone repository
+2. Install dependencies: `npm install`
+3. Create build: `npm run build`
+4. Link node: `npm link`
 
-## Konfiguration
+## Configuration
 
-### SevDesk API-Credentials
+### SevDesk API Credentials
 
-Die SevDesk-Node benötigt nur zwei einfache Konfigurationsparameter:
+The SevDesk node requires only two simple configuration parameters:
 
-1. **API Key**: Ihr SevDesk API-Schlüssel
-2. **API Version**: v2 (empfohlen) oder v1 (Legacy)
+1. **API Key**: Your SevDesk API key
+2. **API Version**: v2 (recommended) or v1 (legacy)
 
-#### API-Schlüssel erstellen
+#### Creating API Key
 
-1. Melden Sie sich bei SevDesk an
-2. Gehen Sie zu **Einstellungen** > **Benutzerverwaltung** > **API**
-3. Erstellen Sie einen neuen API-Schlüssel
-4. Konfigurieren Sie die Credentials in n8n
+1. Log in to SevDesk
+2. Go to **Settings** > **User Management** > **API**
+3. Create a new API key
+4. Configure credentials in n8n
 
-## Erweiterte Funktionen
+## Advanced Features
 
-### Bulk-Operationen
+### Bulk Operations
 
-Für effiziente Verarbeitung großer Datenmengen unterstützt der Node Batch-Operationen:
+For efficient processing of large datasets, the node supports batch operations:
 
 ```javascript
-// Mehrere Kontakte gleichzeitig erstellen
+// Create multiple contacts simultaneously
 const contacts = [
-  { name: "Kunde 1", customerNumber: "K001" },
-  { name: "Kunde 2", customerNumber: "K002" },
-  { name: "Kunde 3", customerNumber: "K003" }
+	{ name: "Customer 1", customerNumber: "K001" },
+	{ name: "Customer 2", customerNumber: "K002" },
+	{ name: "Customer 3", customerNumber: "K003" },
 ];
 
-// Batch-Verarbeitung mit Fehlerbehandlung
+// Batch processing with error handling
 for (const contact of contacts) {
-  try {
-    await sevDeskApi.createContact(contact);
-  } catch (error) {
-    console.error(`Fehler beim Erstellen von ${contact.name}:`, error);
-  }
+	try {
+		await sevDeskApi.createContact(contact);
+	} catch (error) {
+		console.error(`Failed to create contact: ${error.message}`);
+	}
 }
 ```
 
-### Datei-Upload/Download
+### File Handling
 
-Der SevDesk Node unterstützt den Upload und Download von Dokumenten:
+The node supports file operations for document management:
 
 ```javascript
-// Beleg mit Anhang hochladen
-const voucher = {
-  date: "2024-01-15",
-  supplier: { id: "123" },
-  voucherType: "VOU",
-  status: "50",
-  attachment: {
-    filename: "rechnung.pdf",
-    content: base64Content
-  }
+// Upload voucher document
+const voucherData = {
+	voucherDate: "2025-01-15",
+	supplier: { id: 123, objectName: "Contact" },
+	document: binaryData, // File content
 };
+
+await sevDeskApi.createVoucher(voucherData);
 ```
 
-### Fehlerbehandlung
+### Rate Limiting
 
-Umfassende Fehlerbehandlung mit automatischen Retry-Mechanismen:
+Automatic rate limiting ensures compliance with SevDesk API limits:
+
+- **Standard Account**: 1000 requests/hour
+- **Premium Account**: 5000 requests/hour
+- **Professional Account**: 10000 requests/hour
+
+The node automatically handles rate limiting with exponential backoff and retry mechanisms.
+
+## Error Handling
+
+The node provides comprehensive error handling:
 
 ```javascript
-// Automatische Wiederholung bei temporären Fehlern
-const maxRetries = 3;
-let attempt = 0;
-
-while (attempt < maxRetries) {
-  try {
-    const result = await sevDeskApi.createInvoice(invoiceData);
-    return result;
-  } catch (error) {
-    attempt++;
-    if (attempt >= maxRetries) throw error;
-    await sleep(1000 * attempt); // Exponential backoff
-  }
+try {
+	const result = await sevDeskApi.createInvoice(invoiceData);
+	return result;
+} catch (error) {
+	if (error.statusCode === 401) {
+		throw new Error("Invalid API credentials");
+	} else if (error.statusCode === 429) {
+		throw new Error("Rate limit exceeded");
+	} else {
+		throw new Error(`SevDesk API error: ${error.message}`);
+	}
 }
-```
-
-## Beispiele
-
-### Einfacher Rechnungs-Workflow
-
-```javascript
-// 1. Neuen Kontakt erstellen
-const contact = await sevDesk.contact.create({
-  name: "Max Mustermann",
-  customerNumber: "CUST-001",
-  category: { id: "3" }
-});
-
-// 2. Artikel erstellen
-const part = await sevDesk.part.create({
-  name: "Beratungsleistung",
-  partNumber: "BER-001",
-  price: 100.00,
-  unity: { id: "1" }
-});
-
-// 3. Rechnung erstellen
-const invoice = await sevDesk.invoice.create({
-  contact: { id: contact.id },
-  invoiceDate: new Date().toISOString().split('T')[0],
-  status: "100",
-  invoiceType: "RE"
-});
-
-// 4. Rechnungsposition hinzufügen
-const invoicePos = await sevDesk.invoicePos.create({
-  invoice: { id: invoice.id },
-  part: { id: part.id },
-  quantity: 1,
-  price: 100.00
-});
-
-// 5. Rechnung finalisieren und versenden
-const finalInvoice = await sevDesk.invoice.sendBy({
-  id: invoice.id,
-  sendType: "VPR" // Per E-Mail
-});
-```
-
-### Belegerkennung und -verarbeitung
-
-```javascript
-// PDF-Beleg aus E-Mail-Anhang verarbeiten
-const attachment = $input.item.binary.attachment;
-
-// Beleg in SevDesk erstellen
-const voucher = await sevDesk.voucher.create({
-  date: extractedData.date,
-  supplier: { id: supplierId },
-  sumNet: extractedData.netAmount,
-  sumTax: extractedData.taxAmount,
-  sumGross: extractedData.grossAmount,
-  voucherType: "VOU",
-  status: "50"
-});
-
-// PDF-Datei anhängen
-const document = await sevDesk.voucherPos.createDocument({
-  voucher: { id: voucher.id },
-  filename: attachment.fileName,
-  content: attachment.data
-});
-```
-
-### Mahnwesen-Automation
-
-```javascript
-// Überfällige Rechnungen finden
-const overdueInvoices = await sevDesk.invoice.getMany({
-  'status[lt]': '200', // Nicht bezahlt
-  'dueDate[lt]': new Date().toISOString().split('T')[0]
-});
-
-// Mahnungen erstellen
-for (const invoice of overdueInvoices) {
-  const daysOverdue = calculateDaysOverdue(invoice.dueDate);
-  
-  if (daysOverdue > 30) {
-    // 3. Mahnung
-    await createDunningNotice(invoice, 3);
-  } else if (daysOverdue > 14) {
-    // 2. Mahnung
-    await createDunningNotice(invoice, 2);
-  } else if (daysOverdue > 7) {
-    // 1. Mahnung
-    await createDunningNotice(invoice, 1);
-  }
-}
-```
-
-## API-Referenz
-
-### Standard-Operationen
-
-Alle Ressourcen unterstützen die folgenden Basis-Operationen:
-
-- **Create**: Neue Entität erstellen
-- **Get**: Einzelne Entität abrufen
-- **Get Many**: Multiple Entitäten abrufen (mit Filterung)
-- **Update**: Entität aktualisieren
-- **Delete**: Entität löschen
-
-### Erweiterte Operationen
-
-Zusätzliche Operationen je nach Ressource:
-
-- **Send By Email**: Dokumente per E-Mail versenden
-- **Render PDF**: PDF-Dokumente generieren
-- **Book**: Buchungen durchführen
-- **Cancel**: Stornierungen
-- **Copy**: Entitäten duplizieren
-
-### Filter-Parameter
-
-Umfassende Filteroptionen für Get Many-Operationen:
-
-```javascript
-// Erweiterte Filterung
-const invoices = await sevDesk.invoice.getMany({
-  'contact.id': '123',                    // Spezifischer Kontakt
-  'invoiceDate[gte]': '2024-01-01',      // Datum größer gleich
-  'invoiceDate[lte]': '2024-12-31',      // Datum kleiner gleich
-  'status[in]': ['100', '200'],          // Status in Liste
-  'sumGross[gt]': '1000',                // Betrag größer als
-  'orderBy': 'invoiceDate',              // Sortierung
-  'orderType': 'DESC',                   // Sortierreihenfolge
-  'limit': '50',                         // Anzahl Ergebnisse
-  'offset': '0'                          // Offset für Pagination
-});
 ```
 
 ## Best Practices
 
-### Performance-Optimierung
+### 1. Use Batch Operations
 
-1. **Batch-Verarbeitung**: Verwenden Sie Schleifen für große Datenmengen
-2. **Caching**: Vermeiden Sie wiederholte API-Aufrufe für statische Daten
-3. **Pagination**: Nutzen Sie limit/offset für große Datensätze
-4. **Rate Limiting**: Beachten Sie SevDesk API-Limits
+For multiple records, use batch operations to improve performance and reduce API calls.
 
-### Fehlerbehandlung
+### 2. Implement Proper Error Handling
 
-1. **Retry-Mechanismen**: Implementieren Sie Wiederholungslogik
-2. **Validierung**: Prüfen Sie Eingabedaten vor API-Aufrufen
-3. **Logging**: Protokollieren Sie Fehler für Debugging
-4. **Fallback**: Definieren Sie Fallback-Strategien
+Always handle potential API errors gracefully with appropriate retry logic.
 
-### Sicherheit
+### 3. Cache Master Data
 
-1. **API-Key-Schutz**: Verwenden Sie n8n Credentials für sichere Speicherung
-2. **Datenvalidierung**: Validieren Sie alle Eingaben
-3. **Minimal Privileges**: Verwenden Sie API-Keys mit minimalen Berechtigungen
-4. **Audit Trail**: Protokollieren Sie alle Änderungen
+Cache frequently accessed data like categories, countries, and units to reduce API calls.
 
-## Entwicklung
+### 4. Monitor Rate Limits
 
-### Setup für Entwickler
+Keep track of your API usage to avoid hitting rate limits.
+
+### 5. Use Webhooks
+
+For real-time data synchronization, consider using webhooks instead of polling.
+
+### 6. Validate Data
+
+Validate data before sending to the API to prevent errors and improve performance.
+
+## Development
+
+### Setting Up Development Environment
+
+1. Clone the repository:
 
 ```bash
-# Repository klonen
-git clone <repository-url>
+git clone https://github.com/knackw/n8n-nodes-sevdesk-v2.git
 cd n8n-nodes-sevdesk-v2
+```
 
-# Dependencies installieren
+2. Install dependencies:
+
+```bash
 npm install
+```
 
-# TypeScript kompilieren
-npm run build
+3. Create environment configuration:
 
-# Tests ausführen
-npm test
+```bash
+cp ENV-TEMPLATE.md .env
+# Edit .env with your settings
+```
 
-# Docker-Entwicklungsumgebung starten
+4. Start development environment:
+
+```bash
 npm start
-```
-
-### Architektur
-
-```
-nodes/
-├── SevDesk/
-│   ├── SevDesk.node.ts              # Haupt-Node-Implementation
-│   ├── SevDeskResourceManager.ts    # API-Management
-│   └── descriptions/                # Ressourcen-Beschreibungen
-│       ├── ContactDescription.ts
-│       ├── InvoiceDescription.ts
-│       └── ...
-credentials/
-└── SevDeskApi.credentials.ts        # Credential-Definition
 ```
 
 ### Testing
 
+Run the test suite:
+
 ```bash
-# Unit Tests
-npm run test:unit
+# All tests
+npm test
 
-# Integration Tests
-npm run test:integration
-
-# E2E Tests
-npm run test:e2e
-
-# Coverage Report
+# Coverage report
 npm run test:coverage
+
+# Watch mode
+npm run test:watch
 ```
 
-### Beitragen
+### Building
 
-1. Fork das Repository
-2. Feature-Branch erstellen
-3. Tests hinzufügen
-4. Pull Request erstellen
+Build the project:
 
-## Fehlerbehebung
+```bash
+# Development build
+npm run build
 
-### Häufige Probleme
+# Production build
+npm run build:prod
+```
 
-| Problem | Lösung |
-|---------|--------|
-| "Unauthorized" | API-Key überprüfen |
-| "Rate Limit" | Anfragen reduzieren/verzögern |
-| "Not Found" | Ressourcen-ID überprüfen |
-| Timeout | Netzwerkverbindung prüfen |
+### Credit Notes
 
-### Debug-Modus
+Create and manage credit notes:
 
 ```javascript
-// Debugging aktivieren
-const sevDesk = new SevDeskResourceManager(credentials, {
-  debug: true,
-  logRequests: true,
-  logResponses: true
-});
+// Create credit note
+const creditNoteData = {
+	contact: { id: 123, objectName: "Contact" },
+	creditNoteDate: "2025-01-15",
+	status: "100",
+	currency: "EUR",
+};
+
+await sevDeskApi.createCreditNote(creditNoteData);
 ```
 
-### Support
+### Export Operations
 
-- **GitHub Issues**: Für Bugs und Feature-Requests
-- **Community Forum**: Für allgemeine Fragen
-- **SevDesk Docs**: Für API-spezifische Fragen
+Export data in various formats:
+
+```javascript
+// Export contacts to CSV
+const exportData = {
+	resource: "contact",
+	format: "csv",
+	dateFrom: "2025-01-01",
+	dateTo: "2025-01-31",
+};
+
+const exportResult = await sevDeskApi.createExport(exportData);
+```
+
+## API Reference
+
+For detailed API reference, see [API_REFERENCE.md](API_REFERENCE.md).
+
+## Support
+
+- **GitHub Issues**: [Report bugs and request features](https://github.com/knackw/n8n-nodes-sevdesk-v2/issues)
+- **Documentation**: Complete documentation in the `/docs` folder
+- **Community**: n8n Community Forum
+
+---
+
+_This documentation is part of the n8n-nodes-sevdesk-v2 project - a production-ready SevDesk integration for n8n workflows._

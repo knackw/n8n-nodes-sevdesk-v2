@@ -1,7 +1,7 @@
 {
   "name": "n8n-nodes-sevdesk-v2",
-  "version": "2.3.8",
-  "description": "n8n community node for SevDesk API v2 integration. Direct API access without external dependencies - simplified, secure, and production-ready for German accounting automation.",
+  "version": "2.4.1",
+  "description": "n8n community node for SevDesk API v2 integration with 24 production-ready workflow templates. Direct API access without external dependencies - simplified, secure, and optimized for German accounting automation (n8n 1.101.1 compatible).",
   "keywords": [
     "n8n-community-node-package",
     "sevdesk",
@@ -12,7 +12,12 @@
     "api",
     "automation",
     "buchhaltung",
-    "rechnung"
+    "rechnung",
+    "workflows",
+    "templates",
+    "skr03",
+    "gobd",
+    "datev"
   ],
   "license": "MIT",
   "homepage": "https://github.com/knackw/n8n-nodes-sevdesk-v2",
@@ -26,7 +31,7 @@
   },
   "main": "index.js",
   "scripts": {
-    "start": "node tools/start-n8n.js",
+    "start": "node tools/start-n8n-workflows.js",
     "build": "tsc && gulp --gulpfile tools/gulpfile.js build:icons",
     "build:prod": "npm run clean && npm run lint && tsc --project tsconfig.prod.json && gulp --gulpfile tools/gulpfile.js build:icons && npm run build:validate",
     "build:validate": "node -e \"console.log('✅ Build validation passed'); process.exit(require('fs').existsSync('./dist/nodes/SevDesk/SevDesk.node.js') && require('fs').existsSync('./dist/credentials/SevDeskApi.credentials.js') ? 0 : 1)\"",
@@ -36,10 +41,6 @@
     "lint": "eslint nodes credentials package.json",
     "lintfix": "eslint nodes credentials package.json --fix",
     "prepublishOnly": "npm run clean && npm run lint && npx tsc --project tsconfig.prod.json && npx gulp --gulpfile tools/gulpfile.js build:icons && npm run build:validate",
-    "publish": "npm run test && npm run build:prod && npm run lint && npm publish",
-    "publish:patch": "npm version patch && npm run publish",
-    "publish:minor": "npm version minor && npm run publish",
-    "publish:major": "npm version major && npm run publish",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

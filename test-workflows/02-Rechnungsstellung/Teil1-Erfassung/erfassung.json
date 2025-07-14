@@ -14,7 +14,7 @@
       },
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1,
+      "typeVersion": 1.2,
       "position": [
         250,
         300
@@ -28,7 +28,7 @@
       },
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         250,
         500
@@ -44,7 +44,7 @@
       },
       "name": "Signal Trigger",
       "type": "n8n-nodes-base.signal",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         250,
         700
@@ -60,7 +60,7 @@
       "parameters": {},
       "name": "Merge",
       "type": "n8n-nodes-base.merge",
-      "typeVersion": 2,
+      "typeVersion": 3,
       "position": [
         450,
         500
@@ -68,11 +68,11 @@
     },
     {
       "parameters": {
-        "functionCode": "// Analysiere den Auslöser und extrahiere Rechnungsinformationen\nconst item = $input.item.json;\nlet invoiceData = {};\nconst config = $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config || {};\n\n// Wenn der Auslöser ein Webhook ist\nif (item.headers) {\n  // Daten aus dem Webhook-Body extrahieren\n  invoiceData = item.body || {};\n}\n\n// Wenn der Auslöser eine Signal-Nachricht ist\nelse if (item.message) {\n  // Nachrichtentext parsen\n  const message = item.message;\n  \n  // Einfaches Parsing für Befehle wie \"/rechnung kunde:123 betrag:500 text:Projektarbeit Juni\"\n  const customerMatch = message.match(/kunde:(\\w+)/);\n  const amountMatch = message.match(/betrag:(\\d+(\\.\\d+)?)/);\n  const textMatch = message.match(/text:([^\\s]+.*)/);\n  \n  if (customerMatch) invoiceData.customerId = customerMatch[1];\n  if (amountMatch) invoiceData.amount = parseFloat(amountMatch[1]);\n  if (textMatch) invoiceData.text = textMatch[1];\n}\n\n// Wenn der Auslöser der Zeitplan ist, prüfe auf wiederkehrende Rechnungen\nelse {\n  // Hier würde man normalerweise eine Datenbankabfrage machen\n  // Für dieses Beispiel verwenden wir die Konfiguration\n  const recurringInvoices = config.recurringInvoices || [];\n  const today = new Date();\n  const dayOfMonth = today.getDate();\n  \n  // Filtere Rechnungen, die heute fällig sind\n  const dueInvoices = recurringInvoices.filter(inv => inv.dayOfMonth === dayOfMonth);\n  \n  if (dueInvoices.length > 0) {\n    // Verwende die erste fällige Rechnung\n    invoiceData = dueInvoices[0];\n    invoiceData.isRecurring = true;\n  }\n}\n\n// Validiere die Daten\nif (!invoiceData.customerId) {\n  throw new Error('Keine Kunden-ID angegeben');\n}\n\nreturn {\n  json: {\n    ...invoiceData,\n    timestamp: new Date().toISOString(),\n    processed: false,\n    webhookUrl: config.webhookUrls?.erstellung || 'http://localhost:5678/webhook/invoice-creation'\n  }\n};"
+        "code": "// Analysiere den Auslöser und extrahiere Rechnungsinformationen\nconst item = $input.item.json;\nlet invoiceData = {};\nconst config = $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config || {};\n\n// Wenn der Auslöser ein Webhook ist\nif (item.headers) {\n  // Daten aus dem Webhook-Body extrahieren\n  invoiceData = item.body || {};\n}\n\n// Wenn der Auslöser eine Signal-Nachricht ist\nelse if (item.message) {\n  // Nachrichtentext parsen\n  const message = item.message;\n  \n  // Einfaches Parsing für Befehle wie \"/rechnung kunde:123 betrag:500 text:Projektarbeit Juni\"\n  const customerMatch = message.match(/kunde:(\\w+)/);\n  const amountMatch = message.match(/betrag:(\\d+(\\.\\d+)?)/);\n  const textMatch = message.match(/text:([^\\s]+.*)/);\n  \n  if (customerMatch) invoiceData.customerId = customerMatch[1];\n  if (amountMatch) invoiceData.amount = parseFloat(amountMatch[1]);\n  if (textMatch) invoiceData.text = textMatch[1];\n}\n\n// Wenn der Auslöser der Zeitplan ist, prüfe auf wiederkehrende Rechnungen\nelse {\n  // Hier würde man normalerweise eine Datenbankabfrage machen\n  // Für dieses Beispiel verwenden wir die Konfiguration\n  const recurringInvoices = config.recurringInvoices || [];\n  const today = new Date();\n  const dayOfMonth = today.getDate();\n  \n  // Filtere Rechnungen, die heute fällig sind\n  const dueInvoices = recurringInvoices.filter(inv => inv.dayOfMonth === dayOfMonth);\n  \n  if (dueInvoices.length > 0) {\n    // Verwende die erste fällige Rechnung\n    invoiceData = dueInvoices[0];\n    invoiceData.isRecurring = true;\n  }\n}\n\n// Validiere die Daten\nif (!invoiceData.customerId) {\n  throw new Error('Keine Kunden-ID angegeben');\n}\n\nreturn {\n  json: {\n    ...invoiceData,\n    timestamp: new Date().toISOString(),\n    processed: false,\n    webhookUrl: config.webhookUrls?.erstellung || 'http://localhost:5678/webhook/invoice-creation'\n  }\n};"
       },
       "name": "Rechnungsdaten extrahieren",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         850,
         500
@@ -131,7 +131,7 @@
       },
       "name": "An Teil 2 weiterleiten",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 1,
+      "typeVersion": 4.2,
       "position": [
         1250,
         500
@@ -150,7 +150,7 @@
       },
       "name": "Fehler aufgetreten?",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         1450,
         500
@@ -166,7 +166,7 @@
       },
       "name": "Support benachrichtigen",
       "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 1,
+      "typeVersion": 2.1,
       "position": [
         1850,
         400
@@ -184,8 +184,8 @@
         "text": "=⚠️ FEHLER im Rechnungsstellung-Workflow (Erfassung):\n\n{{ $node[\"Kundendaten abrufen\"].error ? $node[\"Kundendaten abrufen\"].error.message : $node[\"An Teil 2 weiterleiten\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
       },
       "name": "Signal-Benachrichtigung",
-      "type": "n8n-nodes-base.signalSend",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
       "position": [
         1850,
         600
@@ -198,5 +198,100 @@
       }
     }
   ],
-  "connections": {}
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Signal Trigger": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Rechnungsdaten extrahieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rechnungsdaten extrahieren": {
+      "main": [
+        [
+          {
+            "node": "Kundendaten abrufen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kundendaten abrufen": {
+      "main": [
+        [
+          {
+            "node": "An Teil 2 weiterleiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "An Teil 2 weiterleiten": {
+      "main": [
+        [
+          {
+            "node": "Fehler aufgetreten?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fehler aufgetreten?": {
+      "main": [
+        [
+          {
+            "node": "Support benachrichtigen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Signal-Benachrichtigung",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  }
 }

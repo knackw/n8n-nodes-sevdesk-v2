@@ -1,109 +1,109 @@
 #!/bin/bash
 
-# Test-Skript für SevDesk-Node Docker Installation
-# Prüft ob der Node korrekt installiert wurde
+# Test script for SevDesk-Node Docker installation
+# Checks if the Node is correctly installed
 
 echo "🧪 SevDesk-Node Docker Test"
 echo "=========================="
 
-# Prüfe ob Docker läuft
+# Check if Docker is running
 if ! docker --version > /dev/null 2>&1; then
-    echo "❌ Docker ist nicht installiert oder läuft nicht"
+    echo "❌ Docker is not installed or not running"
     exit 1
 fi
 
-echo "✅ Docker ist verfügbar"
+echo "✅ Docker is available"
 
-# Prüfe ob docker-compose verfügbar ist
+# Check if docker-compose is available
 if ! docker-compose --version > /dev/null 2>&1; then
-    echo "❌ docker-compose ist nicht installiert"
+    echo "❌ docker-compose is not installed"
     exit 1
 fi
 
-echo "✅ docker-compose ist verfügbar"
+echo "✅ docker-compose is available"
 
-# Prüfe notwendige Dateien
+# Check necessary files
 if [ ! -f "docker-compose.yml" ]; then
-    echo "❌ docker-compose.yml nicht gefunden"
+    echo "❌ docker-compose.yml not found"
     exit 1
 fi
 
 if [ ! -f "install-packages.sh" ]; then
-    echo "❌ install-packages.sh nicht gefunden"
+    echo "❌ install-packages.sh not found"
     exit 1
 fi
 
 if [ ! -f "package.json" ]; then
-    echo "❌ package.json nicht gefunden"
+    echo "❌ package.json not found"
     exit 1
 fi
 
-echo "✅ Alle notwendigen Dateien vorhanden"
+echo "✅ All necessary files present"
 
-# Starte Container
-echo "🚀 Starte Docker-Container..."
+# Start container
+echo "🚀 Starting Docker container..."
 docker-compose up -d
 
 if [ $? -ne 0 ]; then
-    echo "❌ Fehler beim Starten des Containers"
+    echo "❌ Error starting container"
     exit 1
 fi
 
-echo "✅ Container gestartet"
+echo "✅ Container started"
 
-# Warte auf Initialisierung
-echo "⏳ Warte auf Container-Initialisierung (30 Sekunden)..."
+# Wait for initialization
+echo "⏳ Waiting for container initialization (30 seconds)..."
 sleep 30
 
-# Prüfe ob Container läuft
+# Check if container is running
 if ! docker-compose ps | grep -q "Up"; then
-    echo "❌ Container läuft nicht"
+    echo "❌ Container is not running"
     docker-compose logs
     exit 1
 fi
 
-echo "✅ Container läuft"
+echo "✅ Container is running"
 
-# Prüfe n8n-Erreichbarkeit
-echo "🌐 Prüfe n8n-Erreichbarkeit..."
+# Check n8n reachability
+echo "🌐 Checking n8n reachability..."
 if curl -s http://localhost:5678 > /dev/null; then
-    echo "✅ n8n ist erreichbar auf http://localhost:5678"
+    echo "✅ n8n is reachable at http://localhost:5678"
 else
-    echo "❌ n8n ist nicht erreichbar"
-    echo "📋 Container-Logs:"
+    echo "❌ n8n is not reachable"
+    echo "📋 Container logs:"
     docker-compose logs --tail=20
     exit 1
 fi
 
-# Prüfe SevDesk-Node Installation
-echo "🔍 Prüfe SevDesk-Node Installation..."
+# Check SevDesk-Node installation
+echo "🔍 Checking SevDesk-Node installation..."
 if docker-compose exec -T n8n sh -c "ls /home/node/.n8n/nodes/ | grep sevdesk" > /dev/null 2>&1; then
-    echo "✅ SevDesk-Node ist installiert"
+    echo "✅ SevDesk-Node is installed"
 else
-    echo "❌ SevDesk-Node nicht gefunden"
-    echo "📋 Verfügbare Nodes:"
+    echo "❌ SevDesk-Node not found"
+    echo "📋 Available nodes:"
     docker-compose exec -T n8n sh -c "ls -la /home/node/.n8n/nodes/"
 fi
 
-# Prüfe npm link
-echo "🔗 Prüfe npm-Link..."
+# Check npm link
+echo "🔗 Checking npm link..."
 if docker-compose exec -T n8n sh -c "npm list -g n8n-nodes-sevdesk-v2" > /dev/null 2>&1; then
-    echo "✅ SevDesk-Node ist global verlinkt"
+    echo "✅ SevDesk-Node is globally linked"
 else
-    echo "⚠️  SevDesk-Node nicht global verlinkt (möglicherweise normal)"
+    echo "⚠️  SevDesk-Node not globally linked (possibly normal)"
 fi
 
 echo ""
-echo "🎉 Test abgeschlossen!"
+echo "🎉 Test completed!"
 echo ""
-echo "📋 Nächste Schritte:"
-echo "1. Öffnen Sie http://localhost:5678 in Ihrem Browser"
-echo "2. Erstellen Sie einen neuen Workflow"
-echo "3. Suchen Sie nach 'SevDesk' in der Node-Liste"
-echo "4. Falls der Node nicht sichtbar ist, führen Sie aus: docker-compose restart"
+echo "📋 Next steps:"
+echo "1. Open http://localhost:5678 in your browser"
+echo "2. Create a new workflow"
+echo "3. Search for 'SevDesk' in the node list"
+echo "4. If the node is not visible, run: docker-compose restart"
 echo ""
-echo "🛠️  Debugging-Kommandos:"
-echo "   docker-compose logs -f     # Logs anzeigen"
-echo "   docker-compose ps          # Container-Status"
-echo "   docker-compose restart     # Container neustarten"
-echo "   docker-compose down        # Container stoppen" 
+echo "🛠️  Debugging commands:"
+echo "   docker-compose logs -f     # Show logs"
+echo "   docker-compose ps          # Container status"
+echo "   docker-compose restart     # Restart container"
+echo "   docker-compose down        # Stop container" 

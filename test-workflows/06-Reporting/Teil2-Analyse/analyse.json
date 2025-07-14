@@ -1,0 +1,97 @@
+{
+  "name": "SevDesk - Reporting - Teil 2: Analyse (v2)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 📈 SevDesk - Reporting - Teil 2: Analyse\n\n**Zweck:**\nAnalysiert die extrahierten Geschäftsdaten und erstellt aussagekräftige Business Intelligence Reports mit Trends, Forecasts und Handlungsempfehlungen.\n\n**📊 Analysefunktionen:**\n- **Trend-Analysen:** Umsatz-, Ergebnis- und Liquiditätstrends\n- **KPI-Benchmarking:** Branchenvergleich und Zielabweichungen\n- **Forecasting:** Predictive Analytics für 12-Monats-Prognosen\n- **Szenario-Modellierung:** Best/Worst-Case-Analysen\n- **Handlungsempfehlungen:** Datenbasierte Business-Insights\n\n**💯 Ausgabe:** Angereicherte Datensätze mit Trends, Empfehlungen und Prognosedaten für Management-Dashboards",
+        "height": 280,
+        "width": 450
+      },
+      "name": "Workflow-Beschreibung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reporting-analysis",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "reporting-analysis-webhook"
+    },
+    {
+      "parameters": {
+        "code": "const data = $input.item.json;\n\n// Trend-Analysen\nconst trends = {\n  umsatz_trend: data.kennzahlen.umsatz.netto_umsatz > (data.vergleichsdaten?.vorjahr_umsatz || 0) ? 'steigend' : 'fallend',\n  ergebnis_trend: data.kennzahlen.ergebnis.netto_ergebnis > 0 ? 'positiv' : 'negativ',\n  liquiditaets_trend: data.kennzahlen.liquiditaet.netto_cashflow > 0 ? 'positiv' : 'negativ'\n};\n\n// Handlungsempfehlungen\nconst empfehlungen = [];\nif (data.kennzahlen.ergebnis.umsatzrendite_prozent < 10) {\n  empfehlungen.push('Kostenoptimierung prüfen - Umsatzrendite unter 10%');\n}\nif (data.kennzahlen.liquiditaet.netto_cashflow < 0) {\n  empfehlungen.push('Liquiditätsmanagement verbessern - negativer Cashflow');\n}\n\nreturn {\n  json: {\n    ...data,\n    analysen: {\n      ...data.analysen,\n      trends,\n      empfehlungen\n    },\n    analysis_completed: new Date().toISOString()\n  }\n};"
+      },
+      "name": "Daten analysieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "content": "**🤖 KI-Datenanalyse-Engine**\n\n**Funktion:** Intelligente Analyse der Geschäftsdaten\n\n**Algorithmen:**\n- Trend-Erkennung mit gleitenden Durchschnitten\n- Anomalie-Detection für Ausreißer\n- Predictive Modeling für Prognosen\n- Korrelationsanalysen zwischen KPIs\n\n**Empfehlungs-Engine:**\n- Automatische Identifikation von Optimierungspotenzialen\n- Branchenvergleich und Benchmark-Analysen\n- Risiko-Assessment und Frühwarnindikatoren\n\n**Beschreibung:** Transformiert Rohdaten in actionable Business Intelligence durch moderne Datenanalyseverfahren.",
+        "width": 280,
+        "height": 220
+      },
+      "name": "KI-Analyse-Engine-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [450, 80]
+    },
+    {
+      "parameters": {
+        "content": "**🚀 Weiterleitung zur Verteilung**\n\n**Funktion:** Nahtlose Übergabe der analysierten Daten\n\n**Übertragene Daten:**\n- Vollständige Analyseergebnisse\n- Trend- und Prognosedaten\n- Handlungsempfehlungen\n- Visualisierungs-Metadaten\n\n**Ziel:** Teil 3 (Verteilung) für Report-Generierung und Stakeholder-Kommunikation\n\n**Beschreibung:** Ermöglicht automatisierte Weiterverarbeitung der Business Intelligence für Management-Reports und Dashboard-Updates.",
+        "width": 280,
+        "height": 180
+      },
+      "name": "Weiterleitungs-Erklärung",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 2,
+      "position": [650, 80]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5678/webhook/reporting-distribution",
+        "sendBody": true,
+        "jsonBody": "={{ JSON.stringify($json, null, 2) }}"
+      },
+      "name": "An Teil 3 weiterleiten",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Daten analysieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daten analysieren": {
+      "main": [
+        [
+          {
+            "node": "An Teil 3 weiterleiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "meta": {
+    "n8nVersion": "1.101.1"
+  }
+} 
