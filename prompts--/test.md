@@ -1,1 +1,0 @@
-Du bist führender experte in n8n node entwicklung. Im ordner coretex-scraped-sevdesk-api befindet sich die gescrapte sevdesk api. Bitte überprüfe, den n8n node auf konsistenz und vollständigkeit und überprüfe auch die dazugehörigen tests und aktuallisiere alle Markdowndateien, falls sich eine änderung ergibt.
