@@ -1,297 +1,277 @@
 {
-  "name": "SevDesk - Rechnungsstellung - Teil 1: Erfassung (v2)",
-  "nodes": [
-    {
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "days",
-              "daysInterval": 1
-            }
-          ]
-        }
-      },
-      "name": "Schedule Trigger",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [
-        250,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "create-invoice",
-        "options": {}
-      },
-      "name": "Webhook Trigger",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        250,
-        500
-      ],
-      "webhookId": "invoice-creation-webhook"
-    },
-    {
-      "parameters": {
-        "chatId": "invoice-commands",
-        "options": {
-          "messagePattern": "/rechnung.*"
-        }
-      },
-      "name": "Signal Trigger",
-      "type": "n8n-nodes-base.signal",
-      "typeVersion": 2,
-      "position": [
-        250,
-        700
-      ],
-      "credentials": {
-        "signalApi": {
-          "id": "3",
-          "name": "Signal account"
-        }
-      }
-    },
-    {
-      "parameters": {},
-      "name": "Merge",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        450,
-        500
-      ]
-    },
-    {
-      "parameters": {
-        "code": "// Analysiere den Auslöser und extrahiere Rechnungsinformationen\nconst item = $input.item.json;\nlet invoiceData = {};\nconst config = $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config || {};\n\n// Wenn der Auslöser ein Webhook ist\nif (item.headers) {\n  // Daten aus dem Webhook-Body extrahieren\n  invoiceData = item.body || {};\n}\n\n// Wenn der Auslöser eine Signal-Nachricht ist\nelse if (item.message) {\n  // Nachrichtentext parsen\n  const message = item.message;\n  \n  // Einfaches Parsing für Befehle wie \"/rechnung kunde:123 betrag:500 text:Projektarbeit Juni\"\n  const customerMatch = message.match(/kunde:(\\w+)/);\n  const amountMatch = message.match(/betrag:(\\d+(\\.\\d+)?)/);\n  const textMatch = message.match(/text:([^\\s]+.*)/);\n  \n  if (customerMatch) invoiceData.customerId = customerMatch[1];\n  if (amountMatch) invoiceData.amount = parseFloat(amountMatch[1]);\n  if (textMatch) invoiceData.text = textMatch[1];\n}\n\n// Wenn der Auslöser der Zeitplan ist, prüfe auf wiederkehrende Rechnungen\nelse {\n  // Hier würde man normalerweise eine Datenbankabfrage machen\n  // Für dieses Beispiel verwenden wir die Konfiguration\n  const recurringInvoices = config.recurringInvoices || [];\n  const today = new Date();\n  const dayOfMonth = today.getDate();\n  \n  // Filtere Rechnungen, die heute fällig sind\n  const dueInvoices = recurringInvoices.filter(inv => inv.dayOfMonth === dayOfMonth);\n  \n  if (dueInvoices.length > 0) {\n    // Verwende die erste fällige Rechnung\n    invoiceData = dueInvoices[0];\n    invoiceData.isRecurring = true;\n  }\n}\n\n// Validiere die Daten\nif (!invoiceData.customerId) {\n  throw new Error('Keine Kunden-ID angegeben');\n}\n\nreturn {\n  json: {\n    ...invoiceData,\n    timestamp: new Date().toISOString(),\n    processed: false,\n    webhookUrl: config.webhookUrls?.erstellung || 'http://localhost:5678/webhook/invoice-creation'\n  }\n};"
-      },
-      "name": "Rechnungsdaten extrahieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        850,
-        500
-      ]
-    },
-    {
-      "parameters": {
-        "resource": "contact",
-        "operation": "get",
-        "contactId": "={{ $json.customerId }}"
-      },
-      "name": "Kundendaten abrufen",
-      "type": "n8n-nodes-sevdesk-v2.sevDesk",
-      "typeVersion": 1,
-      "position": [
-        1050,
-        500
-      ],
-      "credentials": {
-        "sevDeskApi": {
-          "id": "6",
-          "name": "SevDesk API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "url": "={{ $json.webhookUrl }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "X-Webhook-Key",
-              "value": "secret-key"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "webhook_key",
-              "value": "secret-key"
-            },
-            {
-              "name": "data",
-              "value": "={{ { customerId: $json.customerId, customerData: $node[\"Kundendaten abrufen\"].json, amount: $json.amount, text: $json.text, isRecurring: $json.isRecurring, timestamp: $json.timestamp } }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "name": "An Teil 2 weiterleiten",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1250,
-        500
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $node[\"Kundendaten abrufen\"].error !== undefined || $node[\"An Teil 2 weiterleiten\"].error !== undefined }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "Fehler aufgetreten?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        1450,
-        500
-      ]
-    },
-    {
-      "parameters": {
-        "fromEmail": "error-reporting@example.com",
-        "toEmail": "support@example.com",
-        "subject": "Fehler im Rechnungsstellung-Workflow (Erfassung)",
-        "text": "=Es ist ein Fehler im Rechnungsstellung-Workflow (Teil 1: Erfassung) aufgetreten:\n\nFehler: {{ $node[\"Kundendaten abrufen\"].error ? $node[\"Kundendaten abrufen\"].error.message : $node[\"An Teil 2 weiterleiten\"].error.message }}\n\nDetails: {{ JSON.stringify($node[\"Kundendaten abrufen\"].error || $node[\"An Teil 2 weiterleiten\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
-        "options": {}
-      },
-      "name": "Support benachrichtigen",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [
-        1850,
-        400
-      ],
-      "credentials": {
-        "smtp": {
-          "id": "10",
-          "name": "SMTP"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "chatId": "support-alerts",
-        "text": "=⚠️ FEHLER im Rechnungsstellung-Workflow (Erfassung):\n\n{{ $node[\"Kundendaten abrufen\"].error ? $node[\"Kundendaten abrufen\"].error.message : $node[\"An Teil 2 weiterleiten\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
-      },
-      "name": "Signal-Benachrichtigung",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [
-        1850,
-        600
-      ],
-      "credentials": {
-        "signalApi": {
-          "id": "11",
-          "name": "Signal API"
-        }
-      }
-    }
-  ],
-  "connections": {
-    "Schedule Trigger": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook Trigger": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Signal Trigger": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 2
-          }
-        ]
-      ]
-    },
-    "Merge": {
-      "main": [
-        [
-          {
-            "node": "Rechnungsdaten extrahieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Rechnungsdaten extrahieren": {
-      "main": [
-        [
-          {
-            "node": "Kundendaten abrufen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Kundendaten abrufen": {
-      "main": [
-        [
-          {
-            "node": "An Teil 2 weiterleiten",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "An Teil 2 weiterleiten": {
-      "main": [
-        [
-          {
-            "node": "Fehler aufgetreten?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fehler aufgetreten?": {
-      "main": [
-        [
-          {
-            "node": "Support benachrichtigen",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Signal-Benachrichtigung",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
-    }
-  }
+	"name": "SevDesk - Rechnungsstellung - Teil 1: Erfassung (v2)",
+	"nodes": [
+		{
+			"parameters": {
+				"rule": {
+					"interval": [
+						{
+							"field": "days",
+							"daysInterval": 1
+						}
+					]
+				}
+			},
+			"id": "021_TRG_01",
+			"name": "Schedule Trigger",
+			"type": "n8n-nodes-base.scheduleTrigger",
+			"typeVersion": 1.2,
+			"position": [250, 300]
+		},
+		{
+			"parameters": {
+				"httpMethod": "POST",
+				"path": "create-invoice",
+				"options": {}
+			},
+			"id": "021_TRG_02",
+			"name": "Webhook Trigger",
+			"type": "n8n-nodes-base.webhook",
+			"typeVersion": 2,
+			"position": [250, 500],
+			"webhookId": "invoice-creation-webhook"
+		},
+		{
+			"parameters": {
+				"chatId": "invoice-commands",
+				"options": {
+					"messagePattern": "/rechnung.*"
+				}
+			},
+			"id": "021_TRG_03",
+			"name": "Signal Trigger",
+			"type": "n8n-nodes-base.signal",
+			"typeVersion": 2,
+			"position": [250, 700],
+			"credentials": {
+				"signalApi": {
+					"id": "3",
+					"name": "Signal account"
+				}
+			}
+		},
+		{
+			"parameters": {},
+			"id": "021_MRG_01",
+			"name": "Merge",
+			"type": "n8n-nodes-base.merge",
+			"typeVersion": 3.2,
+			"position": [450, 500]
+		},
+		{
+			"parameters": {
+				"code": "// Analysiere den Auslöser und extrahiere Rechnungsinformationen\nconst item = $input.item.json;\nlet invoiceData = {};\nconst config = {}; // Config loading removed for now\n\n// Wenn der Auslöser ein Webhook ist\nif (item.headers) {\n  // Daten aus dem Webhook-Body extrahieren\n  invoiceData = item.body || {};\n}\n\n// Wenn der Auslöser eine Signal-Nachricht ist\nelse if (item.message) {\n  // Nachrichtentext parsen\n  const message = item.message;\n  \n  // Einfaches Parsing für Befehle wie \"/rechnung kunde:123 betrag:500 text:Projektarbeit Juni\"\n  const customerMatch = message.match(/kunde:(\\w+)/);\n  const amountMatch = message.match(/betrag:(\\d+(\\.\\d+)?)/);\n  const textMatch = message.match(/text:([^\\s]+.*)/);\n  \n  if (customerMatch) invoiceData.customerId = customerMatch[1];\n  if (amountMatch) invoiceData.amount = parseFloat(amountMatch[1]);\n  if (textMatch) invoiceData.text = textMatch[1];\n}\n\n// Wenn der Auslöser der Zeitplan ist, prüfe auf wiederkehrende Rechnungen\nelse {\n  // Hier würde man normalerweise eine Datenbankabfrage machen\n  // Für dieses Beispiel verwenden wir die Konfiguration\n  const recurringInvoices = config.recurringInvoices || [];\n  const today = new Date();\n  const dayOfMonth = today.getDate();\n  \n  // Filtere Rechnungen, die heute fällig sind\n  const dueInvoices = recurringInvoices.filter(inv => inv.dayOfMonth === dayOfMonth);\n  \n  if (dueInvoices.length > 0) {\n    // Verwende die erste fällige Rechnung\n    invoiceData = dueInvoices[0];\n    invoiceData.isRecurring = true;\n  }\n}\n\n// Validiere die Daten\nif (!invoiceData.customerId) {\n  throw new Error('Keine Kunden-ID angegeben');\n}\n\nreturn {\n  json: {\n    ...invoiceData,\n    timestamp: new Date().toISOString(),\n    processed: false,\n    webhookUrl: (config.webhookUrls && config.webhookUrls.erstellung) || 'http://localhost:5678/webhook/invoice-creation'\n  }\n};"
+			},
+			"id": "021_EXT_01",
+			"name": "Rechnungsdaten extrahieren",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [850, 500]
+		},
+		{
+			"parameters": {
+				"resource": "contact",
+				"operation": "get",
+				"contactId": "={{ $json.customerId }}"
+			},
+			"id": "021_SVC_01",
+			"name": "Kundendaten abrufen",
+			"type": "n8n-nodes-sevdesk-v2.sevDesk",
+			"typeVersion": 1,
+			"position": [1050, 500],
+			"credentials": {
+				"sevDeskApi": {
+					"id": "6",
+					"name": "SevDesk API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"url": "={{ $json.webhookUrl }}",
+				"sendHeaders": true,
+				"headerParameters": {
+					"parameters": [
+						{
+							"name": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"name": "X-Webhook-Key",
+							"value": "secret-key"
+						}
+					]
+				},
+				"sendBody": true,
+				"bodyParameters": {
+					"parameters": [
+						{
+							"name": "webhook_key",
+							"value": "secret-key"
+						},
+						{
+							"name": "data",
+							"value": "={{ { customerId: $json.customerId, customerData: $node[\"021_SVC_01\"].json, amount: $json.amount, text: $json.text, isRecurring: $json.isRecurring, timestamp: $json.timestamp } }}"
+						}
+					]
+				},
+				"options": {}
+			},
+			"id": "021_FWD_01",
+			"name": "An Teil 2 weiterleiten",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4.2,
+			"position": [1250, 500]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $node[\"021_SVC_01\"].error !== undefined || $node[\"021_FWD_01\"].error !== undefined }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"id": "021_ERR_01",
+			"name": "Fehler aufgetreten?",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [1450, 500]
+		},
+		{
+			"parameters": {
+				"fromEmail": "error-reporting@example.com",
+				"toEmail": "support@example.com",
+				"subject": "Fehler im Rechnungsstellung-Workflow (Erfassung)",
+				"text": "=Es ist ein Fehler im Rechnungsstellung-Workflow (Teil 1: Erfassung) aufgetreten:\n\nFehler: {{ $node[\"021_SVC_01\"].error ? $node[\"021_SVC_01\"].error.message : $node[\"021_FWD_01\"].error.message }}\n\nDetails: {{ JSON.stringify($node[\"021_SVC_01\"].error || $node[\"021_FWD_01\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
+				"options": {}
+			},
+			"id": "021_NOT_01",
+			"name": "Support benachrichtigen",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2.1,
+			"position": [1850, 400],
+			"credentials": {
+				"smtp": {
+					"id": "10",
+					"name": "SMTP"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"chatId": "support-alerts",
+				"text": "=⚠️ FEHLER im Rechnungsstellung-Workflow (Erfassung):\n\n{{ $node[\"021_SVC_01\"].error ? $node[\"021_SVC_01\"].error.message : $node[\"021_FWD_01\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
+			},
+			"id": "021_NOT_02",
+			"name": "Signal-Benachrichtigung",
+			"type": "n8n-nodes-base.scheduleTrigger",
+			"typeVersion": 1.2,
+			"position": [1850, 600],
+			"credentials": {
+				"signalApi": {
+					"id": "11",
+					"name": "Signal API"
+				}
+			}
+		}
+	],
+	"connections": {
+		"021_TRG_01": {
+			"main": [
+				[
+					{
+						"node": "021_MRG_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"021_TRG_02": {
+			"main": [
+				[
+					{
+						"node": "021_MRG_01",
+						"type": "main",
+						"index": 1
+					}
+				]
+			]
+		},
+		"021_TRG_03": {
+			"main": [
+				[
+					{
+						"node": "021_MRG_01",
+						"type": "main",
+						"index": 2
+					}
+				]
+			]
+		},
+		"021_MRG_01": {
+			"main": [
+				[
+					{
+						"node": "021_EXT_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"021_EXT_01": {
+			"main": [
+				[
+					{
+						"node": "021_SVC_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"021_SVC_01": {
+			"main": [
+				[
+					{
+						"node": "021_FWD_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"021_FWD_01": {
+			"main": [
+				[
+					{
+						"node": "021_ERR_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"021_ERR_01": {
+			"main": [
+				[
+					{
+						"node": "021_NOT_01",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "021_NOT_02",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[]
+			]
+		}
+	}
 }

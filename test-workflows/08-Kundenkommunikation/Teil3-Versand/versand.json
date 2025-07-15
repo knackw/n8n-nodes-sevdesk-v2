@@ -1,302 +1,302 @@
 {
-  "name": "SevDesk - Kundenkommunikation - Teil 3: Versand (v2)",
-  "nodes": [
-    {
-      "parameters": {
-        "content": "## 📧 SevDesk - Kundenkommunikation - Teil 3: Versand (v2)\n\n**🎯 Zweck:**\nProfessioneller Multi-Channel-Versand mit umfassendem Tracking und Performance-Analytics.\n\n**📡 Versandkanäle:**\n• E-Mail (Primary Channel)\n• SMS (Urgent Communications)\n• WhatsApp Business (Modern Channel)\n• Postal Mail (Legal Requirements)\n• Portal-Benachrichtigung (In-App)\n\n**📊 Tracking & Analytics:**\n• Zustellungsbestätigung\n• Öffnungsraten-Tracking\n• Click-Through-Analytics\n• Response-Time-Messung\n• A/B-Test-Auswertung\n\n**🔒 Compliance & Security:**\n• DSGVO-konforme Protokollierung\n• Opt-out-Management\n• Delivery-Audit-Trail\n• Fehler-Eskalation",
-        "height": 400,
-        "width": 480,
-        "color": 6
-      },
-      "name": "📧 Multi-Channel-Versand Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [0, 0]
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "communication-sending",
-        "options": {
-          "responseMode": "responseNode"
-        }
-      },
-      "name": "🌐 Nachrichten-Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [250, 400],
-      "webhookId": "communication-sending"
-    },
-    {
-      "parameters": {
-        "content": "**📡 Intelligente Kanalwahl:**\n\n**📧 E-Mail (Primary):**\n• Standard für alle Kommunikationen\n• HTML + Plain-Text Format\n• Tracking-Pixel Integration\n• Attachment-Support\n\n**📱 SMS (Urgent):**\n• Kritische Mahnungen\n• Zahlungserinnerungen\n• Zweifaktor-Authentifizierung\n• Character-Limit-Optimierung\n\n**💬 WhatsApp Business:**\n• Moderne Kundensegmente\n• Rich-Media-Support\n• Template-basiert\n• Interaktive Buttons\n\n**📮 Postal Mail:**\n• Rechtlich erforderlich\n• Einschreiben-Option\n• Zustellnachweis\n• Compliance-dokumentiert",
-        "width": 350,
-        "height": 250,
-        "color": 4
-      },
-      "name": "📡 Kanal-Details",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [250, 100]
-    },
-    {
-      "parameters": {
-        "code": "// Analysiere eingehende Nachrichten und bereite Multi-Channel-Versand vor\nconst data = $input.item.json;\nconst messages = data.generated_messages || [];\n\nif (messages.length === 0) {\n  return {\n    json: {\n      session_id: data.session_id,\n      error: 'Keine Nachrichten zum Versenden erhalten',\n      timestamp: new Date().toISOString()\n    }\n  };\n}\n\n// Bereite Versand-Batches vor mit Kanal-Optimierung\nconst sendingBatches = messages.map(message => {\n  // Intelligente Kanalwahl basierend auf Kontext\n  let preferredChannels = ['email']; // Standard\n  let urgencyLevel = message.communication?.urgency || 'low';\n  \n  // Erweitere Kanäle basierend auf Dringlichkeit und Typ\n  if (urgencyLevel === 'high' || message.trigger_type === 'overdue_invoice') {\n    preferredChannels = ['email', 'sms'];\n  }\n  \n  if (message.trigger_type === 'birthday' || message.trigger_type === 'follow_up') {\n    preferredChannels = ['email', 'whatsapp'];\n  }\n  \n  // Rechtliche Anforderungen prüfen\n  if (message.trigger_type === 'overdue_invoice' && message.original_trigger?.escalation_level >= 3) {\n    preferredChannels.push('postal_mail');\n  }\n  \n  return {\n    ...message,\n    sending_config: {\n      preferred_channels: preferredChannels,\n      primary_channel: preferredChannels[0],\n      backup_channels: preferredChannels.slice(1),\n      send_immediately: urgencyLevel === 'high',\n      scheduled_send_time: urgencyLevel === 'high' ? \n        new Date().toISOString() : \n        new Date(Date.now() + 10 * 60 * 1000).toISOString(), // +10 Min für normale Prio\n      tracking_enabled: true,\n      requires_delivery_confirmation: message.trigger_type === 'overdue_invoice'\n    },\n    processing_status: 'ready_for_sending'\n  };\n});\n\n// Versand-Statistiken\nconst sendingStats = {\n  total_messages: sendingBatches.length,\n  channels_used: {\n    email: sendingBatches.filter(b => b.sending_config.preferred_channels.includes('email')).length,\n    sms: sendingBatches.filter(b => b.sending_config.preferred_channels.includes('sms')).length,\n    whatsapp: sendingBatches.filter(b => b.sending_config.preferred_channels.includes('whatsapp')).length,\n    postal_mail: sendingBatches.filter(b => b.sending_config.preferred_channels.includes('postal_mail')).length\n  },\n  urgency_distribution: {\n    high: sendingBatches.filter(b => b.communication?.urgency === 'high').length,\n    medium: sendingBatches.filter(b => b.communication?.urgency === 'medium').length,\n    low: sendingBatches.filter(b => b.communication?.urgency === 'low').length\n  },\n  immediate_sends: sendingBatches.filter(b => b.sending_config.send_immediately).length\n};\n\nreturn {\n  json: {\n    session_id: data.session_id,\n    sending_preparation_completed: new Date().toISOString(),\n    sending_batches: sendingBatches,\n    sending_statistics: sendingStats,\n    ready_for_delivery: true,\n    batch_id: `SEND_${new Date().toISOString().replace(/[:.]/g, '_')}`\n  }\n};"
-      },
-      "name": "📋 Versand vorbereiten",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [550, 400]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $json.ready_for_delivery }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "📤 Bereit zum Versand?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [750, 400]
-    },
-    {
-      "parameters": {},
-      "name": "📨 Nachrichten aufteilen",
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [950, 300]
-    },
-    {
-      "parameters": {
-        "code": "// Multi-Channel-Versand mit Fallback-Logik\nconst batchData = $node[\"📨 Nachrichten aufteilen\"].json;\nconst currentMessage = batchData.sending_batches[$node[\"📨 Nachrichten aufteilen\"].context.currentIndex];\nconst sendingResults = [];\nlet primaryDeliverySuccess = false;\n\n// === E-MAIL-VERSAND ===\nif (currentMessage.sending_config.preferred_channels.includes('email') && currentMessage.customer_email) {\n  try {\n    // Simuliere E-Mail-Versand (würde normalerweise SendEmail-Node verwenden)\n    const emailResult = {\n      channel: 'email',\n      status: 'sent',\n      recipient: currentMessage.customer_email,\n      subject: currentMessage.communication.subject,\n      sent_at: new Date().toISOString(),\n      delivery_id: `EMAIL_${Date.now()}`,\n      tracking_id: `TRK_${Math.random().toString(36).substr(2, 9)}`,\n      estimated_delivery: new Date(Date.now() + 30000).toISOString() // +30 Sekunden\n    };\n    \n    sendingResults.push(emailResult);\n    primaryDeliverySuccess = true;\n  } catch (error) {\n    sendingResults.push({\n      channel: 'email',\n      status: 'failed',\n      error: error.message,\n      failed_at: new Date().toISOString()\n    });\n  }\n}\n\n// === SMS-VERSAND (bei Bedarf) ===\nif (currentMessage.sending_config.preferred_channels.includes('sms') && \n    (currentMessage.communication.urgency === 'high' || !primaryDeliverySuccess)) {\n  \n  // Simuliere SMS-Versand\n  const smsText = `${currentMessage.communication.subject}\\n\\n${currentMessage.communication.message.substring(0, 140)}...`;\n  \n  const smsResult = {\n    channel: 'sms',\n    status: 'sent',\n    recipient: '+49123456789', // Würde aus Kundendaten kommen\n    message: smsText,\n    sent_at: new Date().toISOString(),\n    delivery_id: `SMS_${Date.now()}`,\n    cost_eur: 0.08 // SMS-Kosten\n  };\n  \n  sendingResults.push(smsResult);\n}\n\n// === WHATSAPP-VERSAND (bei geeigneten Kunden) ===\nif (currentMessage.sending_config.preferred_channels.includes('whatsapp') &&\n    currentMessage.trigger_type !== 'overdue_invoice') {\n  \n  const whatsappResult = {\n    channel: 'whatsapp',\n    status: 'sent',\n    recipient: '+49123456789',\n    template_used: 'customer_communication_v2',\n    sent_at: new Date().toISOString(),\n    delivery_id: `WA_${Date.now()}`\n  };\n  \n  sendingResults.push(whatsappResult);\n}\n\n// === POSTAL-MAIL (für rechtliche Anforderungen) ===\nif (currentMessage.sending_config.preferred_channels.includes('postal_mail')) {\n  const postalResult = {\n    channel: 'postal_mail',\n    status: 'queued',\n    service_provider: 'deutsche_post',\n    service_type: currentMessage.sending_config.requires_delivery_confirmation ? 'einschreiben' : 'standard',\n    queued_at: new Date().toISOString(),\n    estimated_delivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // +2 Tage\n    delivery_id: `POST_${Date.now()}`,\n    cost_eur: currentMessage.sending_config.requires_delivery_confirmation ? 4.65 : 0.85\n  };\n  \n  sendingResults.push(postalResult);\n}\n\n// Delivery-Status bewerten\nconst deliverySuccess = sendingResults.some(r => r.status === 'sent' || r.status === 'queued');\nconst totalCost = sendingResults.reduce((sum, r) => sum + (r.cost_eur || 0), 0);\n\nreturn {\n  json: {\n    ...batchData,\n    current_message: {\n      ...currentMessage,\n      delivery_results: sendingResults,\n      delivery_success: deliverySuccess,\n      total_delivery_cost: totalCost,\n      delivery_completed_at: new Date().toISOString(),\n      tracking_urls: sendingResults\n        .filter(r => r.tracking_id)\n        .map(r => `https://tracking.company.com/${r.tracking_id}`)\n    },\n    batch_progress: {\n      current: $node[\"📨 Nachrichten aufteilen\"].context.currentIndex + 1,\n      total: batchData.sending_batches.length,\n      percentage: Math.round((($node[\"📨 Nachrichten aufteilen\"].context.currentIndex + 1) / batchData.sending_batches.length) * 100)\n    }\n  }\n};"
-      },
-      "name": "📡 Multi-Channel-Delivery",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1150, 300]
-    },
-    {
-      "parameters": {
-        "content": "**📡 Multi-Channel-Delivery-Engine:**\n\n**📧 E-Mail (Primary):**\n• HTML-Templates mit Tracking-Pixel\n• Bounce-Management\n• Unsubscribe-Links\n• Delivery-Confirmation\n\n**📱 SMS-Fallback:**\n• Bei hoher Dringlichkeit\n• Character-Optimiert (140 Zeichen)\n• Sofortige Zustellung\n• Kosten-Tracking\n\n**💬 WhatsApp Business:**\n• Template-basierte Nachrichten\n• Rich-Media-Support\n• Read-Receipts\n• Interactive Buttons\n\n**📮 Postal Mail:**\n• Rechtlich erforderliche Zustellung\n• Einschreiben-Option\n• Zustellnachweis\n• Print-Service-Integration",
-        "width": 350,
-        "height": 250,
-        "color": 3
-      },
-      "name": "📡 Delivery-Details",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [1150, 50]
-    },
-    {
-      "parameters": {
-        "code": "// Sammle alle Versand-Ergebnisse und erstelle finale Statistiken\nconst allBatches = $node[\"📨 Nachrichten aufteilen\"].json.sending_batches || [];\nconst currentIndex = $node[\"📨 Nachrichten aufteilen\"].context.currentIndex;\nconst processedMessage = $input.item.json.current_message;\n\n// Aktualisiere das Batch im Array\nallBatches[currentIndex] = processedMessage;\n\n// Prüfe ob das der letzte Batch ist\nif (currentIndex === allBatches.length - 1) {\n  // Erstelle finale Versand-Statistiken\n  const finalStats = {\n    total_messages: allBatches.length,\n    successful_deliveries: allBatches.filter(m => m.delivery_success).length,\n    failed_deliveries: allBatches.filter(m => !m.delivery_success).length,\n    channels_used: {\n      email: allBatches.reduce((sum, m) => sum + (m.delivery_results?.filter(r => r.channel === 'email' && r.status === 'sent').length || 0), 0),\n      sms: allBatches.reduce((sum, m) => sum + (m.delivery_results?.filter(r => r.channel === 'sms' && r.status === 'sent').length || 0), 0),\n      whatsapp: allBatches.reduce((sum, m) => sum + (m.delivery_results?.filter(r => r.channel === 'whatsapp' && r.status === 'sent').length || 0), 0),\n      postal_mail: allBatches.reduce((sum, m) => sum + (m.delivery_results?.filter(r => r.channel === 'postal_mail').length || 0), 0)\n    },\n    total_cost: allBatches.reduce((sum, m) => sum + (m.total_delivery_cost || 0), 0),\n    tracking_available: allBatches.filter(m => m.tracking_urls?.length > 0).length\n  };\n  \n  // Erfolgsrate berechnen\n  const successRate = (finalStats.successful_deliveries / finalStats.total_messages * 100).toFixed(2);\n  \n  // Performance-Metriken\n  const performanceMetrics = {\n    success_rate_percent: parseFloat(successRate),\n    average_cost_per_message: finalStats.total_cost / finalStats.total_messages,\n    email_success_rate: finalStats.channels_used.email / allBatches.length * 100,\n    multi_channel_usage_rate: allBatches.filter(m => m.delivery_results?.length > 1).length / allBatches.length * 100\n  };\n  \n  return {\n    json: {\n      session_id: $input.item.json.session_id,\n      batch_id: $input.item.json.batch_id,\n      delivery_completed: new Date().toISOString(),\n      delivered_messages: allBatches,\n      delivery_statistics: finalStats,\n      performance_metrics: performanceMetrics,\n      success_rate: successRate,\n      all_deliveries_completed: true,\n      requires_follow_up: finalStats.failed_deliveries > 0\n    }\n  };\n} else {\n  // Noch nicht fertig, gib aktuellen Zustand zurück\n  return {\n    json: {\n      ...allBatches,\n      current_index: currentIndex,\n      processing_step: 'delivery_in_progress'\n    }\n  };\n}"
-      },
-      "name": "📊 Versand-Statistiken",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1350, 300]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $json.all_deliveries_completed }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "🏁 Alle versendet?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1550, 300]
-    },
-    {
-      "parameters": {
-        "chatId": "customer-communication-alerts",
-        "content": "=📧 **Kundenkommunikation - Versand abgeschlossen**\n\n🔍 **Session:** {{ $json.session_id }}\n📦 **Batch:** {{ $json.batch_id }}\n📅 **Abgeschlossen:** {{ $json.delivery_completed }}\n\n📊 **Versand-Statistiken:**\n• Nachrichten gesamt: {{ $json.delivery_statistics.total_messages }}\n• Erfolgreich zugestellt: {{ $json.delivery_statistics.successful_deliveries }}\n• Fehlgeschlagen: {{ $json.delivery_statistics.failed_deliveries }}\n• Erfolgsrate: {{ $json.success_rate }}%\n\n📡 **Verwendete Kanäle:**\n• E-Mail: {{ $json.delivery_statistics.channels_used.email }}\n• SMS: {{ $json.delivery_statistics.channels_used.sms }}\n• WhatsApp: {{ $json.delivery_statistics.channels_used.whatsapp }}\n• Post: {{ $json.delivery_statistics.channels_used.postal_mail }}\n\n💰 **Kosten:** {{ $json.delivery_statistics.total_cost.toFixed(2) }} €\n📈 **Performance:** {{ $json.performance_metrics.success_rate_percent }}% Erfolg\n\n{% if $json.requires_follow_up %}⚠️ **Follow-up erforderlich:** {{ $json.delivery_statistics.failed_deliveries }} fehlgeschlagene Zustellungen{% endif %}\n\n✅ **Workflow-Zyklus komplett abgeschlossen!**"
-      },
-      "name": "📱 Abschluss-Benachrichtigung",
-      "type": "n8n-nodes-base.signal",
-      "typeVersion": 2,
-      "position": [1850, 200],
-      "credentials": {
-        "signalApi": {
-          "id": "3",
-          "name": "Signal account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "fromEmail": "workflow@company.com",
-        "toEmail": "customer-communication@company.com",
-        "subject": "Keine Nachrichten zu versenden - {{ $json.session_id }}",
-        "content": "Der Versand-Workflow wurde ausgelöst, aber keine Nachrichten zum Versenden erhalten.\n\n**Session-Details:**\n- Session-ID: {{ $json.session_id }}\n- Zeitpunkt: {{ $json.timestamp }}\n\n**Mögliche Ursachen:**\n- Keine gültigen Nachrichten von Teil 2 empfangen\n- Template-Engine hat keine Inhalte generiert\n- Webhook-Aufruf ohne Nutzdaten\n\n**Status:**\n- Versand-System läuft ordnungsgemäß\n- Bereit für neue Nachrichten von Teil 2\n- Keine weiteren Maßnahmen erforderlich\n\nDies ist eine normale Routine-Information.",
-        "options": {}
-      },
-      "name": "📧 Leerlauf-Benachrichtigung",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [1850, 500],
-      "credentials": {
-        "smtp": {
-          "id": "10",
-          "name": "SMTP"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "code": "// Protokolliere erfolgreichen Workflow-Abschluss mit umfassendem Audit-Trail\nconst data = $input.item.json;\n\nconst finalSuccessLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil3-Versand',\n  status: data.all_deliveries_completed ? 'deliveries_completed' : 'no_deliveries',\n  session_id: data.session_id,\n  batch_id: data.batch_id,\n  delivery_statistics: data.delivery_statistics || {},\n  performance_metrics: data.performance_metrics || {},\n  compliance_info: {\n    gdpr_compliant: true,\n    audit_trail_complete: true,\n    delivery_tracking: data.delivery_statistics?.tracking_available || 0,\n    retention_period_years: 7\n  },\n  cost_analysis: {\n    total_cost_eur: data.delivery_statistics?.total_cost || 0,\n    cost_per_message: data.performance_metrics?.average_cost_per_message || 0,\n    cost_effective: (data.performance_metrics?.average_cost_per_message || 0) < 0.50 // Target: <0.50€ pro Nachricht\n  },\n  workflow_chain_complete: true // Gesamter 3-teiliger Workflow-Zyklus abgeschlossen\n};\n\nconsole.log('🎉 KUNDENKOMMUNIKATION WORKFLOW-KETTE VOLLSTÄNDIG ABGESCHLOSSEN 🎉');\nconsole.log('Kundenkommunikation Teil 3 (Final) erfolgreich abgeschlossen:', JSON.stringify(finalSuccessLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    final_execution_log: finalSuccessLog,\n    workflow_completed: true,\n    workflow_chain_completed: true,\n    status: 'Komplett-Workflow-Erfolgreich-Abgeschlossen'\n  }\n};"
-      },
-      "name": "🎉 Finale Erfolgs-Protokollierung",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2150, 350]
-    },
-    {
-      "parameters": {
-        "content": "**🎉 Workflow-Kette Komplett-Abschluss:**\n\n**✅ Erfolgreicher Versand:**\n• Multi-Channel-Delivery abgeschlossen\n• Umfassende Performance-Metriken\n• Team-Benachrichtigung gesendet\n• Finale Audit-Trail-Dokumentation\n\n**❌ Keine Nachrichten:**\n• Information an Kommunikations-Team\n• System-Status bestätigt\n• Bereit für neue Workflow-Zyklen\n\n**📊 Finale Analytics:**\n• Erfolgsraten und KPIs\n• Kosten-Nutzen-Analyse\n• Channel-Performance-Bewertung\n• Compliance-Dokumentation\n\n**🔄 Workflow-Zyklus:**\nTeil 1 (Auslöser) → Teil 2 (Erstellung) → Teil 3 (Versand) ✅\n\n**Gesamte 3-teilige Kundenkommunikations-Kette abgeschlossen!**",
-        "width": 350,
-        "height": 250,
-        "color": 5
-      },
-      "name": "🎉 Komplett-Abschluss Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [1850, 50]
-    }
-  ],
-  "connections": {
-    "🌐 Nachrichten-Webhook": {
-      "main": [
-        [
-          {
-            "node": "📋 Versand vorbereiten",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📋 Versand vorbereiten": {
-      "main": [
-        [
-          {
-            "node": "📤 Bereit zum Versand?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📤 Bereit zum Versand?": {
-      "main": [
-        [
-          {
-            "node": "📨 Nachrichten aufteilen",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "📧 Leerlauf-Benachrichtigung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📨 Nachrichten aufteilen": {
-      "main": [
-        [
-          {
-            "node": "📡 Multi-Channel-Delivery",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📡 Multi-Channel-Delivery": {
-      "main": [
-        [
-          {
-            "node": "📊 Versand-Statistiken",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📊 Versand-Statistiken": {
-      "main": [
-        [
-          {
-            "node": "🏁 Alle versendet?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🏁 Alle versendet?": {
-      "main": [
-        [
-          {
-            "node": "📱 Abschluss-Benachrichtigung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📱 Abschluss-Benachrichtigung": {
-      "main": [
-        [
-          {
-            "node": "🎉 Finale Erfolgs-Protokollierung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📧 Leerlauf-Benachrichtigung": {
-      "main": [
-        [
-          {
-            "node": "🎉 Finale Erfolgs-Protokollierung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "pinData": {},
-  "settings": {},
-  "staticData": {},
-  "tags": [
-    {
-      "createdAt": "2024-12-19T10:00:00.000Z",
-      "updatedAt": "2024-12-19T10:00:00.000Z",
-      "id": "8",
-      "name": "Kundenkommunikation"
-    }
-  ],
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "n8nVersion": "1.101.1"
-  },
-  "id": "8003",
-  "versionId": "v2.0.0"
-} 
+	"name": "SevDesk - Kundenkommunikation - Teil 3: Versand (v2)",
+	"nodes": [
+		{
+			"parameters": {
+				"content": "## 📧 SevDesk - Kundenkommunikation - Teil 3: Versand (v2)\n\n**🎯 Zweck:**\nProfessioneller Multi-Channel-Versand mit umfassendem Tracking und Performance-Analytics.\n\n**📡 Versandkanäle:**\n• E-Mail (Primary Channel)\n• SMS (Urgent Communications)\n• WhatsApp Business (Modern Channel)\n• Postal Mail (Legal Requirements)\n• Portal-Benachrichtigung (In-App)\n\n**📊 Tracking & Analytics:**\n• Zustellungsbestätigung\n• Öffnungsraten-Tracking\n• Click-Through-Analytics\n• Response-Time-Messung\n• A/B-Test-Auswertung\n\n**🔒 Compliance & Security:**\n• DSGVO-konforme Protokollierung\n• Opt-out-Management\n• Delivery-Audit-Trail\n• Fehler-Eskalation",
+				"height": 400,
+				"width": 480,
+				"color": 6
+			},
+			"name": "Multi_Channel_Send_Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [0, 0]
+		},
+		{
+			"parameters": {
+				"httpMethod": "POST",
+				"path": "communication-sending",
+				"options": {
+					"responseMode": "responseNode"
+				}
+			},
+			"name": "Message_Webhook",
+			"type": "n8n-nodes-base.webhook",
+			"typeVersion": 2,
+			"position": [250, 400],
+			"webhookId": "communication-sending"
+		},
+		{
+			"parameters": {
+				"content": "**📡 Intelligente Kanalwahl:**\n\n**📧 E-Mail (Primary):**\n• Standard für alle Kommunikationen\n• HTML + Plain-Text Format\n• Tracking-Pixel Integration\n• Attachment-Support\n\n**📱 SMS (Urgent):**\n• Kritische Mahnungen\n• Zahlungserinnerungen\n• Zweifaktor-Authentifizierung\n• Character-Limit-Optimierung\n\n**💬 WhatsApp Business:**\n• Moderne Kundensegmente\n• Rich-Media-Support\n• Template-basiert\n• Interaktive Buttons\n\n**📮 Postal Mail:**\n• Rechtlich erforderlich\n• Einschreiben-Option\n• Zustellnachweis\n• Compliance-dokumentiert",
+				"width": 350,
+				"height": 250,
+				"color": 4
+			},
+			"name": "📡 Kanal-Details",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [250, 100]
+		},
+		{
+			"parameters": {
+				"code": "// Analysiere eingehende Nachrichten und bereite Multi-Channel-Versand vor\nconst data = $input.item.json;\nconst messages = data.generated_messages || [];\n\nif (messages.length === 0) {\n  return {\n    json: {\n      session_id: data.session_id,\n      error: 'Keine Nachrichten zum Versenden erhalten',\n      timestamp: new Date().toISOString()\n    }\n  };\n}\n\n// Bereite Versand-Batches vor mit Kanal-Optimierung\nconst sendingBatches = messages.map(message => {\n  // Intelligente Kanalwahl basierend auf Kontext\n  let preferredChannels = ['email']; // Standard\n  let urgencyLevel = (message.communication && message.communication.urgency) || 'low';\n  \n  // Erweitere Kanäle basierend auf Dringlichkeit und Typ\n  if (urgencyLevel === 'high' || message.trigger_type === 'overdue_invoice') {\n    preferredChannels = ['email', 'sms'];\n  }\n  \n  if (message.trigger_type === 'birthday' || message.trigger_type === 'follow_up') {\n    preferredChannels = ['email', 'whatsapp'];\n  }\n  \n  // Rechtliche Anforderungen prüfen\n  if (message.trigger_type === 'overdue_invoice' && (message.original_trigger && message.original_trigger.escalation_level) >= 3) {\n    preferredChannels.push('postal_mail');\n  }\n  \n  return {\n    ...message,\n    sending_config: {\n      preferred_channels: preferredChannels,\n      primary_channel: preferredChannels[0],\n      backup_channels: preferredChannels.slice(1),\n      send_immediately: urgencyLevel === 'high',\n      scheduled_send_time: urgencyLevel === 'high' ? \n        new Date().toISOString() : \n        new Date(Date.now() + 10 * 60 * 1000).toISOString(), // +10 Min für normale Prio\n      tracking_enabled: true,\n      requires_delivery_confirmation: message.trigger_type === 'overdue_invoice'\n    },\n    processing_status: 'ready_for_sending'\n  };\n});\n\n// Versand-Statistiken\nconst sendingStats = {\n  total_messages: sendingBatches.length,\n  channels_used: {\n    email: sendingBatches.filter(b => b.sending_config.preferred_channels.includes('email')).length,\n    sms: sendingBatches.filter(b => b.sending_config.preferred_channels.includes('sms')).length,\n    whatsapp: sendingBatches.filter(b => b.sending_config.preferred_channels.includes('whatsapp')).length,\n    postal_mail: sendingBatches.filter(b => b.sending_config.preferred_channels.includes('postal_mail')).length\n  },\n  urgency_distribution: {\n    high: sendingBatches.filter(b => (b.communication && b.communication.urgency) === 'high').length,\n    medium: sendingBatches.filter(b => (b.communication && b.communication.urgency) === 'medium').length,\n    low: sendingBatches.filter(b => (b.communication && b.communication.urgency) === 'low').length\n  },\n  immediate_sends: sendingBatches.filter(b => b.sending_config.send_immediately).length\n};\n\nreturn {\n  json: {\n    session_id: data.session_id,\n    sending_preparation_completed: new Date().toISOString(),\n    sending_batches: sendingBatches,\n    sending_statistics: sendingStats,\n    ready_for_delivery: true,\n    batch_id: `SEND_${new Date().toISOString().replace(/[:.]/g, '_')}`\n  }\n};"
+			},
+			"name": "Prepare_Send",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [550, 400]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $json.ready_for_delivery }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"name": "Ready_To_Send",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [750, 400]
+		},
+		{
+			"parameters": {},
+			"name": "📨 Nachrichten aufteilen",
+			"type": "n8n-nodes-base.splitInBatches",
+			"typeVersion": 3,
+			"position": [950, 300]
+		},
+		{
+			"parameters": {
+				"code": "// Multi-Channel-Versand mit Fallback-Logik\nconst batchData = $node[\"📨 Nachrichten aufteilen\"].json;\nconst currentMessage = batchData.sending_batches[$node[\"📨 Nachrichten aufteilen\"].context.currentIndex];\nconst sendingResults = [];\nlet primaryDeliverySuccess = false;\n\n// === E-MAIL-VERSAND ===\nif (currentMessage.sending_config.preferred_channels.includes('email') && currentMessage.customer_email) {\n  try {\n    // Simuliere E-Mail-Versand (würde normalerweise SendEmail-Node verwenden)\n    const emailResult = {\n      channel: 'email',\n      status: 'sent',\n      recipient: currentMessage.customer_email,\n      subject: currentMessage.communication.subject,\n      sent_at: new Date().toISOString(),\n      delivery_id: `EMAIL_${Date.now()}`,\n      tracking_id: `TRK_${Math.random().toString(36).substr(2, 9)}`,\n      estimated_delivery: new Date(Date.now() + 30000).toISOString() // +30 Sekunden\n    };\n    \n    sendingResults.push(emailResult);\n    primaryDeliverySuccess = true;\n  } catch (error) {\n    sendingResults.push({\n      channel: 'email',\n      status: 'failed',\n      error: error.message,\n      failed_at: new Date().toISOString()\n    });\n  }\n}\n\n// === SMS-VERSAND (bei Bedarf) ===\nif (currentMessage.sending_config.preferred_channels.includes('sms') && \n    (currentMessage.communication.urgency === 'high' || !primaryDeliverySuccess)) {\n  \n  // Simuliere SMS-Versand\n  const smsText = `${currentMessage.communication.subject}\\n\\n${currentMessage.communication.message.substring(0, 140)}...`;\n  \n  const smsResult = {\n    channel: 'sms',\n    status: 'sent',\n    recipient: '+49123456789', // Würde aus Kundendaten kommen\n    message: smsText,\n    sent_at: new Date().toISOString(),\n    delivery_id: `SMS_${Date.now()}`,\n    cost_eur: 0.08 // SMS-Kosten\n  };\n  \n  sendingResults.push(smsResult);\n}\n\n// === WHATSAPP-VERSAND (bei geeigneten Kunden) ===\nif (currentMessage.sending_config.preferred_channels.includes('whatsapp') &&\n    currentMessage.trigger_type !== 'overdue_invoice') {\n  \n  const whatsappResult = {\n    channel: 'whatsapp',\n    status: 'sent',\n    recipient: '+49123456789',\n    template_used: 'customer_communication_v2',\n    sent_at: new Date().toISOString(),\n    delivery_id: `WA_${Date.now()}`\n  };\n  \n  sendingResults.push(whatsappResult);\n}\n\n// === POSTAL-MAIL (für rechtliche Anforderungen) ===\nif (currentMessage.sending_config.preferred_channels.includes('postal_mail')) {\n  const postalResult = {\n    channel: 'postal_mail',\n    status: 'queued',\n    service_provider: 'deutsche_post',\n    service_type: currentMessage.sending_config.requires_delivery_confirmation ? 'einschreiben' : 'standard',\n    queued_at: new Date().toISOString(),\n    estimated_delivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // +2 Tage\n    delivery_id: `POST_${Date.now()}`,\n    cost_eur: currentMessage.sending_config.requires_delivery_confirmation ? 4.65 : 0.85\n  };\n  \n  sendingResults.push(postalResult);\n}\n\n// Delivery-Status bewerten\nconst deliverySuccess = sendingResults.some(r => r.status === 'sent' || r.status === 'queued');\nconst totalCost = sendingResults.reduce((sum, r) => sum + (r.cost_eur || 0), 0);\n\nreturn {\n  json: {\n    ...batchData,\n    current_message: {\n      ...currentMessage,\n      delivery_results: sendingResults,\n      delivery_success: deliverySuccess,\n      total_delivery_cost: totalCost,\n      delivery_completed_at: new Date().toISOString(),\n      tracking_urls: sendingResults\n        .filter(r => r.tracking_id)\n        .map(r => `https://tracking.company.com/${r.tracking_id}`)\n    },\n    batch_progress: {\n      current: $node[\"📨 Nachrichten aufteilen\"].context.currentIndex + 1,\n      total: batchData.sending_batches.length,\n      percentage: Math.round((($node[\"📨 Nachrichten aufteilen\"].context.currentIndex + 1) / batchData.sending_batches.length) * 100)\n    }\n  }\n};"
+			},
+			"name": "📡 Multi-Channel-Delivery",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [1150, 300]
+		},
+		{
+			"parameters": {
+				"content": "**📡 Multi-Channel-Delivery-Engine:**\n\n**📧 E-Mail (Primary):**\n• HTML-Templates mit Tracking-Pixel\n• Bounce-Management\n• Unsubscribe-Links\n• Delivery-Confirmation\n\n**📱 SMS-Fallback:**\n• Bei hoher Dringlichkeit\n• Character-Optimiert (140 Zeichen)\n• Sofortige Zustellung\n• Kosten-Tracking\n\n**💬 WhatsApp Business:**\n• Template-basierte Nachrichten\n• Rich-Media-Support\n• Read-Receipts\n• Interactive Buttons\n\n**📮 Postal Mail:**\n• Rechtlich erforderliche Zustellung\n• Einschreiben-Option\n• Zustellnachweis\n• Print-Service-Integration",
+				"width": 350,
+				"height": 250,
+				"color": 3
+			},
+			"name": "📡 Delivery-Details",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1150, 50]
+		},
+		{
+			"parameters": {
+				"code": "// Sammle alle Versand-Ergebnisse und erstelle finale Statistiken\nconst allBatches = $node[\"📨 Nachrichten aufteilen\"].json.sending_batches || [];\nconst currentIndex = $node[\"📨 Nachrichten aufteilen\"].context.currentIndex;\nconst processedMessage = $input.item.json.current_message;\n\n// Aktualisiere das Batch im Array\nallBatches[currentIndex] = processedMessage;\n\n// Prüfe ob das der letzte Batch ist\nif (currentIndex === allBatches.length - 1) {\n  // Erstelle finale Versand-Statistiken\n  const finalStats = {\n    total_messages: allBatches.length,\n    successful_deliveries: allBatches.filter(m => m.delivery_success).length,\n    failed_deliveries: allBatches.filter(m => !m.delivery_success).length,\n    channels_used: {\n      email: allBatches.reduce((sum, m) => sum + ((m.delivery_results && m.delivery_results.filter)(r => r.channel === 'email' && r.status === 'sent').length || 0), 0),\n      sms: allBatches.reduce((sum, m) => sum + ((m.delivery_results && m.delivery_results.filter)(r => r.channel === 'sms' && r.status === 'sent').length || 0), 0),\n      whatsapp: allBatches.reduce((sum, m) => sum + ((m.delivery_results && m.delivery_results.filter)(r => r.channel === 'whatsapp' && r.status === 'sent').length || 0), 0),\n      postal_mail: allBatches.reduce((sum, m) => sum + ((m.delivery_results && m.delivery_results.filter)(r => r.channel === 'postal_mail').length || 0), 0)\n    },\n    total_cost: allBatches.reduce((sum, m) => sum + (m.total_delivery_cost || 0), 0),\n    tracking_available: allBatches.filter(m => (m.tracking_urls && m.tracking_urls.length) > 0).length\n  };\n  \n  // Erfolgsrate berechnen\n  const successRate = (finalStats.successful_deliveries / finalStats.total_messages * 100).toFixed(2);\n  \n  // Performance-Metriken\n  const performanceMetrics = {\n    success_rate_percent: parseFloat(successRate),\n    average_cost_per_message: finalStats.total_cost / finalStats.total_messages,\n    email_success_rate: finalStats.channels_used.email / allBatches.length * 100,\n    multi_channel_usage_rate: allBatches.filter(m => (m.delivery_results && m.delivery_results.length) > 1).length / allBatches.length * 100\n  };\n  \n  return {\n    json: {\n      session_id: $input.item.json.session_id,\n      batch_id: $input.item.json.batch_id,\n      delivery_completed: new Date().toISOString(),\n      delivered_messages: allBatches,\n      delivery_statistics: finalStats,\n      performance_metrics: performanceMetrics,\n      success_rate: successRate,\n      all_deliveries_completed: true,\n      requires_follow_up: finalStats.failed_deliveries > 0\n    }\n  };\n} else {\n  // Noch nicht fertig, gib aktuellen Zustand zurück\n  return {\n    json: {\n      ...allBatches,\n      current_index: currentIndex,\n      processing_step: 'delivery_in_progress'\n    }\n  };\n}"
+			},
+			"name": "Send_Statistics",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [1350, 300]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $json.all_deliveries_completed }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"name": "🏁 Alle versendet?",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [1550, 300]
+		},
+		{
+			"parameters": {
+				"chatId": "customer-communication-alerts",
+				"content": "=📧 **Kundenkommunikation - Versand abgeschlossen**\n\n🔍 **Session:** {{ $json.session_id }}\n📦 **Batch:** {{ $json.batch_id }}\n📅 **Abgeschlossen:** {{ $json.delivery_completed }}\n\n📊 **Versand-Statistiken:**\n• Nachrichten gesamt: {{ $json.delivery_statistics.total_messages }}\n• Erfolgreich zugestellt: {{ $json.delivery_statistics.successful_deliveries }}\n• Fehlgeschlagen: {{ $json.delivery_statistics.failed_deliveries }}\n• Erfolgsrate: {{ $json.success_rate }}%\n\n📡 **Verwendete Kanäle:**\n• E-Mail: {{ $json.delivery_statistics.channels_used.email }}\n• SMS: {{ $json.delivery_statistics.channels_used.sms }}\n• WhatsApp: {{ $json.delivery_statistics.channels_used.whatsapp }}\n• Post: {{ $json.delivery_statistics.channels_used.postal_mail }}\n\n💰 **Kosten:** {{ $json.delivery_statistics.total_cost.toFixed(2) }} €\n📈 **Performance:** {{ $json.performance_metrics.success_rate_percent }}% Erfolg\n\n{% if $json.requires_follow_up %}⚠️ **Follow-up erforderlich:** {{ $json.delivery_statistics.failed_deliveries }} fehlgeschlagene Zustellungen{% endif %}\n\n✅ **Workflow-Zyklus komplett abgeschlossen!**"
+			},
+			"name": "📱 Abschluss-Benachrichtigung",
+			"type": "n8n-nodes-base.signal",
+			"typeVersion": 2,
+			"position": [1850, 200],
+			"credentials": {
+				"signalApi": {
+					"id": "3",
+					"name": "Signal account"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"fromEmail": "workflow@company.com",
+				"toEmail": "customer-communication@company.com",
+				"subject": "Keine Nachrichten zu versenden - {{ $json.session_id }}",
+				"content": "Der Versand-Workflow wurde ausgelöst, aber keine Nachrichten zum Versenden erhalten.\n\n**Session-Details:**\n- Session-ID: {{ $json.session_id }}\n- Zeitpunkt: {{ $json.timestamp }}\n\n**Mögliche Ursachen:**\n- Keine gültigen Nachrichten von Teil 2 empfangen\n- Template-Engine hat keine Inhalte generiert\n- Webhook-Aufruf ohne Nutzdaten\n\n**Status:**\n- Versand-System läuft ordnungsgemäß\n- Bereit für neue Nachrichten von Teil 2\n- Keine weiteren Maßnahmen erforderlich\n\nDies ist eine normale Routine-Information.",
+				"options": {}
+			},
+			"name": "Idle_Notification",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2.1,
+			"position": [1850, 500],
+			"credentials": {
+				"smtp": {
+					"id": "10",
+					"name": "SMTP"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"code": "// Protokolliere erfolgreichen Workflow-Abschluss mit umfassendem Audit-Trail\nconst data = $input.item.json;\n\nconst finalSuccessLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil3-Versand',\n  status: data.all_deliveries_completed ? 'deliveries_completed' : 'no_deliveries',\n  session_id: data.session_id,\n  batch_id: data.batch_id,\n  delivery_statistics: data.delivery_statistics || {},\n  performance_metrics: data.performance_metrics || {},\n  compliance_info: {\n    gdpr_compliant: true,\n    audit_trail_complete: true,\n    delivery_tracking: (data.delivery_statistics && data.delivery_statistics.tracking_available) || 0,\n    retention_period_years: 7\n  },\n  cost_analysis: {\n    total_cost_eur: (data.delivery_statistics && data.delivery_statistics.total_cost) || 0,\n    cost_per_message: (data.performance_metrics && data.performance_metrics.average_cost_per_message) || 0,\n    cost_effective: ((data.performance_metrics && data.performance_metrics.average_cost_per_message) || 0) < 0.50 // Target: <0.50€ pro Nachricht\n  },\n  workflow_chain_complete: true // Gesamter 3-teiliger Workflow-Zyklus abgeschlossen\n};\n\nconsole.log('🎉 KUNDENKOMMUNIKATION WORKFLOW-KETTE VOLLSTÄNDIG ABGESCHLOSSEN 🎉');\nconsole.log('Kundenkommunikation Teil 3 (Final) erfolgreich abgeschlossen:', JSON.stringify(finalSuccessLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    final_execution_log: finalSuccessLog,\n    workflow_completed: true,\n    workflow_chain_completed: true,\n    status: 'Komplett-Workflow-Erfolgreich-Abgeschlossen'\n  }\n};"
+			},
+			"name": "🎉 Finale Erfolgs-Protokollierung",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [2150, 350]
+		},
+		{
+			"parameters": {
+				"content": "**🎉 Workflow-Kette Komplett-Abschluss:**\n\n**✅ Erfolgreicher Versand:**\n• Multi-Channel-Delivery abgeschlossen\n• Umfassende Performance-Metriken\n• Team-Benachrichtigung gesendet\n• Finale Audit-Trail-Dokumentation\n\n**❌ Keine Nachrichten:**\n• Information an Kommunikations-Team\n• System-Status bestätigt\n• Bereit für neue Workflow-Zyklen\n\n**📊 Finale Analytics:**\n• Erfolgsraten und KPIs\n• Kosten-Nutzen-Analyse\n• Channel-Performance-Bewertung\n• Compliance-Dokumentation\n\n**🔄 Workflow-Zyklus:**\nTeil 1 (Auslöser) → Teil 2 (Erstellung) → Teil 3 (Versand) ✅\n\n**Gesamte 3-teilige Kundenkommunikations-Kette abgeschlossen!**",
+				"width": 350,
+				"height": 250,
+				"color": 5
+			},
+			"name": "🎉 Komplett-Abschluss Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1850, 50]
+		}
+	],
+	"connections": {
+		"Message_Webhook": {
+			"main": [
+				[
+					{
+						"node": "Prepare_Send",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Prepare_Send": {
+			"main": [
+				[
+					{
+						"node": "Ready_To_Send",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Ready_To_Send": {
+			"main": [
+				[
+					{
+						"node": "📨 Nachrichten aufteilen",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[
+					{
+						"node": "Idle_Notification",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"📨 Nachrichten aufteilen": {
+			"main": [
+				[
+					{
+						"node": "📡 Multi-Channel-Delivery",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"📡 Multi-Channel-Delivery": {
+			"main": [
+				[
+					{
+						"node": "Send_Statistics",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Send_Statistics": {
+			"main": [
+				[
+					{
+						"node": "🏁 Alle versendet?",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"🏁 Alle versendet?": {
+			"main": [
+				[
+					{
+						"node": "📱 Abschluss-Benachrichtigung",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"📱 Abschluss-Benachrichtigung": {
+			"main": [
+				[
+					{
+						"node": "🎉 Finale Erfolgs-Protokollierung",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Idle_Notification": {
+			"main": [
+				[
+					{
+						"node": "🎉 Finale Erfolgs-Protokollierung",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {},
+	"settings": {},
+	"staticData": {},
+	"tags": [
+		{
+			"createdAt": "2024-12-19T10:00:00.000Z",
+			"updatedAt": "2024-12-19T10:00:00.000Z",
+			"id": "8",
+			"name": "Kundenkommunikation"
+		}
+	],
+	"meta": {
+		"templateCredsSetupCompleted": true,
+		"n8nVersion": "1.101.1"
+	},
+	"id": "8003",
+	"versionId": "v2.0.0"
+}

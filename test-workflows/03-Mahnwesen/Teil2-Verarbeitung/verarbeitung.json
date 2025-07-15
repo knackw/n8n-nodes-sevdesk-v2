@@ -1,446 +1,386 @@
 {
-  "name": "SevDesk - Mahnwesen - Teil 2: Verarbeitung (v2)",
-  "nodes": [
-    {
-      "parameters": {
-        "content": "## 📋 SevDesk - Dunning Process - Part 2: Processing\n\n**Purpose:** Creates and processes dunning notices for overdue invoices\n\n**Key Functions:**\n⚠️ **Dunning Creation:** Generates formal dunning notices in SevDesk\n💰 **Fee Calculation:** Applies dunning fees according to business rules\n📄 **PDF Generation:** Creates professional dunning documents\n☁️ **Cloud Archive:** Stores dunning documents for compliance\n🚀 **Workflow Chain:** Forwards to Part 3 for delivery processing\n\n**Technology Stack:** SevDesk API, AI Text Generation, Cloud Storage",
-        "height": 300,
-        "width": 450,
-        "color": 2
-      },
-      "name": "📋 Workflow Overview",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        0,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "mahnwesen-verarbeitung",
-        "options": {}
-      },
-      "name": "Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        250,
-        300
-      ],
-      "webhookId": "mahnwesen-verarbeitung"
-    },
-    {
-      "parameters": {
-        "content": "**🔐 Security & Data Validation**\n\nReceives dunning data and validates:\n• Webhook authentication key\n• Customer & invoice data integrity\n• Dunning level authorization\n• Business rule compliance",
-        "width": 280,
-        "height": 130
-      },
-      "name": "🔐 Security Validation",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        250,
-        130
-      ]
-    },
-    {
-      "parameters": {
-        "code": "// Validiere den Webhook-Key\nconst payload = $input.item.json;\nconst webhookKey = payload.webhook_key;\nconst data = payload.data;\n\n// Konfiguration wird später geladen, hier nur Validierung\nif (!webhookKey || webhookKey !== 'secret-key') {\n  throw new Error('Ungültiger Webhook-Key');\n}\n\nreturn {\n  json: data\n};"
-      },
-      "name": "Daten validieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        450,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**🤖 AI-Powered Dunning Text Generation**\n\nCreates personalized dunning messages:\n• Customer-specific tone adaptation\n• Legal compliance checks\n• Escalation level appropriate language\n• Professional business communication",
-        "width": 280,
-        "height": 130
-      },
-      "name": "🤖 AI Text Generation",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        650,
-        130
-      ]
-    },
-    {
-      "parameters": {
-        "code": "// Generate AI-powered dunning text based on reminder level\nconst data = $input.item.json;\nconst reminderLevel = data.reminderLevel || 1;\nconst customerName = data.customer?.name || 'Valued Customer';\nconst invoiceAmount = data.invoice?.totalAmount || 0;\nconst dueDate = data.invoice?.dueDate || 'unknown';\n\n// AI-generated dunning texts based on escalation level\nconst dunningTexts = {\n  1: `Sehr geehrte Damen und Herren,\\n\\nwir möchten Sie freundlich daran erinnern, dass die Rechnung ${data.invoice?.invoiceNumber || ''} vom ${dueDate} über ${invoiceAmount}€ noch offen ist.\\n\\nBitte begleichen Sie den ausstehenden Betrag bis zum ${new Date(Date.now() + 14*24*60*60*1000).toLocaleDateString('de-DE')}.\\n\\nVielen Dank für Ihr Verständnis.`,\n  \n  2: `Sehr geehrte Damen und Herren,\\n\\ntrotz unserer ersten Mahnung ist die Rechnung ${data.invoice?.invoiceNumber || ''} über ${invoiceAmount}€ noch immer unbeglichen.\\n\\nWir bitten Sie dringend, den Betrag innerhalb der nächsten 7 Tage zu überweisen, um weitere Maßnahmen zu vermeiden.\\n\\nZusätzlich berechnen wir Mahngebühren in Höhe von ${data.reminderFee || 5}€.`,\n  \n  3: `Sehr geehrte Damen und Herren,\\n\\nDies ist unsere letzte Mahnung vor Einleitung rechtlicher Schritte.\\n\\nDer offene Betrag von ${invoiceAmount}€ zzgl. Mahngebühren von ${data.reminderFee || 15}€ ist SOFORT zu begleichen.\\n\\nAndernfalls werden wir ohne weitere Ankündigung ein Inkassoverfahren einleiten.`\n};\n\nconst generatedText = dunningTexts[reminderLevel] || dunningTexts[1];\n\nreturn {\n  json: {\n    ...data,\n    generatedDunningText: generatedText,\n    processingTimestamp: new Date().toISOString()\n  }\n};"
-      },
-      "name": "KI-Mahntext generieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        650,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "resource": "dunning",
-        "operation": "create",
-        "invoiceId": "={{ $json.invoice.id }}",
-        "contactId": "={{ $json.customer.id }}",
-        "additionalFields": {
-          "content": "={{ $json.generatedDunningText }}",
-          "dunningLevel": "={{ $json.reminderLevel }}",
-          "dunningDate": "={{ $now.format('YYYY-MM-DD') }}",
-          "price": "={{ $json.reminderFee }}"
-        }
-      },
-      "name": "SevDesk - Mahnung erstellen",
-      "type": "n8n-nodes-sevdesk-v2.sevDesk",
-      "typeVersion": 1,
-      "position": [
-        850,
-        300
-      ],
-      "credentials": {
-        "sevDeskApi": {
-          "id": "6",
-          "name": "SevDesk API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "content": "**🏢 SevDesk Dunning Integration**\n\nCore dunning document creation:\n• Official dunning record in SevDesk\n• Proper accounting integration\n• Legal compliance features\n• Audit trail generation",
-        "width": 260,
-        "height": 130
-      },
-      "name": "🏢 SevDesk Integration",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        850,
-        150
-      ]
-    },
-    {
-      "parameters": {
-        "resource": "dunning",
-        "operation": "getPdf",
-        "dunningId": "={{ $node[\"SevDesk - Mahnung erstellen\"].json.id }}"
-      },
-      "name": "SevDesk - Mahnungs-PDF",
-      "type": "n8n-nodes-sevdesk-v2.sevDesk",
-      "typeVersion": 1,
-      "position": [
-        1050,
-        300
-      ],
-      "credentials": {
-        "sevDeskApi": {
-          "id": "6",
-          "name": "SevDesk API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "content": "**📄 PDF Document Generation**\n\nProfessional document creation:\n• Corporate branding & layout\n• Legal compliance formatting\n• Print-ready quality\n• Digital signature support",
-        "width": 260,
-        "height": 130
-      },
-      "name": "📄 PDF Generation Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1050,
-        150
-      ]
-    },
-    {
-      "parameters": {
-        "bucketName": "sevdesk-dunning-archive",
-        "fileName": "=mahnungen/{{ $json.customer.customerNumber }}/{{ $now.format('YYYY-MM-DD') }}_Mahnung_{{ $json.reminderLevel }}_{{ $json.invoice.invoiceNumber }}.pdf",
-        "binaryPropertyName": "data"
-      },
-      "name": "In Cloud speichern",
-      "type": "n8n-nodes-base.googleCloudStorage",
-      "typeVersion": 1.2,
-      "position": [
-        1250,
-        300
-      ],
-      "credentials": {
-        "googleCloudStorageOAuth2Api": {
-          "id": "12",
-          "name": "Google Cloud Storage"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "content": "**☁️ Secure Document Archive**\n\nCompliance & backup storage:\n• Organized by customer & date\n• Long-term retention\n• Legal document preservation\n• Easy retrieval access",
-        "width": 260,
-        "height": 130
-      },
-      "name": "☁️ Cloud Storage Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1250,
-        150
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "http://localhost:5678/webhook/mahnwesen-versand",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "jsonBody": "={{ JSON.stringify({webhook_key: 'secret-key', data: {...$json, dunningId: $node[\"SevDesk - Mahnung erstellen\"].json.id, pdfUrl: $node[\"In Cloud speichern\"].json.url, pdfData: $node[\"SevDesk - Mahnungs-PDF\"].binary?.data}}) }}",
-        "options": {}
-      },
-      "name": "Webhook zu Teil 3",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1450,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**🚀 Workflow Orchestration**\n\nDelivery process initiation:\n• Complete dunning package\n• Customer contact details\n• Delivery method selection\n• Tracking & confirmation",
-        "width": 260,
-        "height": 130
-      },
-      "name": "🚀 Orchestration Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1450,
-        150
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $node[\"Webhook zu Teil 3\"].error !== undefined }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "Fehler aufgetreten?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        1650,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**⚠️ Error Handling & Recovery**\n\nComprehensive error management:\n• Automatic retry mechanisms\n• Support team notifications\n• Process recovery options\n• Customer service alerts",
-        "width": 280,
-        "height": 130
-      },
-      "name": "⚠️ Error Handling Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1850,
-        50
-      ]
-    },
-    {
-      "parameters": {
-        "fromEmail": "error-reporting@example.com",
-        "toEmail": "support@example.com",
-        "subject": "Fehler im Mahnwesen-Workflow (Verarbeitung)",
-        "content": "=Es ist ein Fehler im Mahnwesen-Workflow (Teil 2: Verarbeitung) aufgetreten:\n\nFehler: {{ $node[\"Webhook zu Teil 3\"].error.message }}\n\nDetails: {{ JSON.stringify($node[\"Webhook zu Teil 3\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
-        "options": {}
-      },
-      "name": "Support benachrichtigen",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [
-        1850,
-        200
-      ],
-      "credentials": {
-        "smtp": {
-          "id": "10",
-          "name": "SMTP"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "chatId": "support-alerts",
-        "content": "=⚠️ FEHLER im Mahnwesen-Workflow (Verarbeitung):\n\n{{ $node[\"Webhook zu Teil 3\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
-      },
-      "name": "Schedule-Notification",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [
-        1850,
-        350
-      ],
-      "credentials": {
-        "signalApi": {
-          "id": "11",
-          "name": "Signal API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "respond": "when",
-        "responseFor": "webhook",
-        "responseCode": 200,
-        "body": "{\n    \"success\": true,\n    \"message\": \"Mahnung erfolgreich erstellt und verarbeitet\",\n    \"dunningId\": \"{{ $node[\"SevDesk - Mahnung erstellen\"].json.id }}\",\n    \"cloudPath\": \"{{ $node[\"In Cloud speichern\"].json.url }}\"\n}"
-      },
-      "name": "Success Response",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 2,
-      "position": [
-        1650,
-        500
-      ]
-    },
-    {
-      "parameters": {
-        "respond": "when",
-        "responseFor": "webhook",
-        "responseCode": 500,
-        "body": "{\n    \"success\": false,\n    \"message\": \"Fehler bei der Mahnungsverarbeitung\",\n    \"error\": \"{{ $json.error.message }}\"\n}"
-      },
-      "name": "Error Response",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 2,
-      "position": [
-        2100,
-        300
-      ]
-    }
-  ],
-  "connections": {
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Daten validieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Daten validieren": {
-      "main": [
-        [
-          {
-            "node": "KI-Mahntext generieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "KI-Mahntext generieren": {
-      "main": [
-        [
-          {
-            "node": "SevDesk - Mahnung erstellen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SevDesk - Mahnung erstellen": {
-      "main": [
-        [
-          {
-            "node": "SevDesk - Mahnungs-PDF",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SevDesk - Mahnungs-PDF": {
-      "main": [
-        [
-          {
-            "node": "In Cloud speichern",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "In Cloud speichern": {
-      "main": [
-        [
-          {
-            "node": "Webhook zu Teil 3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook zu Teil 3": {
-      "main": [
-        [
-          {
-            "node": "Fehler aufgetreten?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fehler aufgetreten?": {
-      "main": [
-        [
-          {
-            "node": "Support benachrichtigen",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Schedule-Notification",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Success Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  }
+	"name": "SevDesk - Mahnwesen - Teil 2: Verarbeitung (v2)",
+	"nodes": [
+		{
+			"parameters": {
+				"content": "## 📋 SevDesk - Dunning Process - Part 2: Processing\n\n**Purpose:** Creates and processes dunning notices for overdue invoices\n\n**Key Functions:**\n⚠️ **Dunning Creation:** Generates formal dunning notices in SevDesk\n💰 **Fee Calculation:** Applies dunning fees according to business rules\n📄 **PDF Generation:** Creates professional dunning documents\n☁️ **Cloud Archive:** Stores dunning documents for compliance\n🚀 **Workflow Chain:** Forwards to Part 3 for delivery processing\n\n**Technology Stack:** SevDesk API, AI Text Generation, Cloud Storage",
+				"height": 300,
+				"width": 450,
+				"color": 2
+			},
+			"name": "Workflow_Overview",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [0, 0]
+		},
+		{
+			"parameters": {
+				"httpMethod": "POST",
+				"path": "mahnwesen-verarbeitung",
+				"options": {}
+			},
+			"name": "Webhook",
+			"type": "n8n-nodes-base.webhook",
+			"typeVersion": 2,
+			"position": [250, 300],
+			"webhookId": "mahnwesen-verarbeitung"
+		},
+		{
+			"parameters": {
+				"content": "**🔐 Security & Data Validation**\n\nReceives dunning data and validates:\n• Webhook authentication key\n• Customer & invoice data integrity\n• Dunning level authorization\n• Business rule compliance",
+				"width": 280,
+				"height": 130
+			},
+			"name": "Security_Validation",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [250, 130]
+		},
+		{
+			"parameters": {
+				"code": "// Validiere den Webhook-Key\nconst payload = $input.item.json;\nconst webhookKey = payload.webhook_key;\nconst data = payload.data;\n\n// Konfiguration wird später geladen, hier nur Validierung\nif (!webhookKey || webhookKey !== 'secret-key') {\n  throw new Error('Ungültiger Webhook-Key');\n}\n\nreturn {\n  json: data\n};"
+			},
+			"name": "Daten validieren",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [450, 300]
+		},
+		{
+			"parameters": {
+				"content": "**🤖 AI-Powered Dunning Text Generation**\n\nCreates personalized dunning messages:\n• Customer-specific tone adaptation\n• Legal compliance checks\n• Escalation level appropriate language\n• Professional business communication",
+				"width": 280,
+				"height": 130
+			},
+			"name": "🤖 AI Text Generation",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [650, 130]
+		},
+		{
+			"parameters": {
+				"code": "// Generate AI-powered dunning text based on reminder level\nconst data = $input.item.json;\nconst reminderLevel = data.reminderLevel || 1;\nconst customerName = (data.customer && data.customer.name) || 'Valued Customer';\nconst invoiceAmount = (data.invoice && data.invoice.totalAmount) || 0;\nconst dueDate = (data.invoice && data.invoice.dueDate) || 'unknown';\n\n// AI-generated dunning texts based on escalation level\nconst dunningTexts = {\n  1: `Sehr geehrte Damen und Herren,\\n\\nwir möchten Sie freundlich daran erinnern, dass die Rechnung ${(data.invoice && data.invoice.invoiceNumber) || ''} vom ${dueDate} über ${invoiceAmount}€ noch offen ist.\\n\\nBitte begleichen Sie den ausstehenden Betrag bis zum ${new Date(Date.now() + 14*24*60*60*1000).toLocaleDateString('de-DE')}.\\n\\nVielen Dank für Ihr Verständnis.`,\n  \n  2: `Sehr geehrte Damen und Herren,\\n\\ntrotz unserer ersten Mahnung ist die Rechnung ${(data.invoice && data.invoice.invoiceNumber) || ''} über ${invoiceAmount}€ noch immer unbeglichen.\\n\\nWir bitten Sie dringend, den Betrag innerhalb der nächsten 7 Tage zu überweisen, um weitere Maßnahmen zu vermeiden.\\n\\nZusätzlich berechnen wir Mahngebühren in Höhe von ${data.reminderFee || 5}€.`,\n  \n  3: `Sehr geehrte Damen und Herren,\\n\\nDies ist unsere letzte Mahnung vor Einleitung rechtlicher Schritte.\\n\\nDer offene Betrag von ${invoiceAmount}€ zzgl. Mahngebühren von ${data.reminderFee || 15}€ ist SOFORT zu begleichen.\\n\\nAndernfalls werden wir ohne weitere Ankündigung ein Inkassoverfahren einleiten.`\n};\n\nconst generatedText = dunningTexts[reminderLevel] || dunningTexts[1];\n\nreturn {\n  json: {\n    ...data,\n    generatedDunningText: generatedText,\n    processingTimestamp: new Date().toISOString()\n  }\n};"
+			},
+			"name": "KI-Mahntext generieren",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [650, 300]
+		},
+		{
+			"parameters": {
+				"resource": "dunning",
+				"operation": "create",
+				"invoiceId": "={{ $json.invoice.id }}",
+				"contactId": "={{ $json.customer.id }}",
+				"additionalFields": {
+					"content": "={{ $json.generatedDunningText }}",
+					"dunningLevel": "={{ $json.reminderLevel }}",
+					"dunningDate": "={{ $now.format('YYYY-MM-DD') }}",
+					"price": "={{ $json.reminderFee }}"
+				}
+			},
+			"name": "SevDesk - Mahnung erstellen",
+			"type": "n8n-nodes-sevdesk-v2.sevDesk",
+			"typeVersion": 1,
+			"position": [850, 300],
+			"credentials": {
+				"sevDeskApi": {
+					"id": "6",
+					"name": "SevDesk API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"content": "**🏢 SevDesk Dunning Integration**\n\nCore dunning document creation:\n• Official dunning record in SevDesk\n• Proper accounting integration\n• Legal compliance features\n• Audit trail generation",
+				"width": 260,
+				"height": 130
+			},
+			"name": "🏢 SevDesk Integration",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [850, 150]
+		},
+		{
+			"parameters": {
+				"resource": "dunning",
+				"operation": "getPdf",
+				"dunningId": "={{ $node[\"SevDesk - Mahnung erstellen\"].json.id }}"
+			},
+			"name": "SevDesk - Mahnungs-PDF",
+			"type": "n8n-nodes-sevdesk-v2.sevDesk",
+			"typeVersion": 1,
+			"position": [1050, 300],
+			"credentials": {
+				"sevDeskApi": {
+					"id": "6",
+					"name": "SevDesk API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"content": "**📄 PDF Document Generation**\n\nProfessional document creation:\n• Corporate branding & layout\n• Legal compliance formatting\n• Print-ready quality\n• Digital signature support",
+				"width": 260,
+				"height": 130
+			},
+			"name": "PDF_Generation_Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1050, 150]
+		},
+		{
+			"parameters": {
+				"bucketName": "sevdesk-dunning-archive",
+				"fileName": "=mahnungen/{{ $json.customer.customerNumber }}/{{ $now.format('YYYY-MM-DD') }}_Mahnung_{{ $json.reminderLevel }}_{{ $json.invoice.invoiceNumber }}.pdf",
+				"binaryPropertyName": "data"
+			},
+			"name": "In Cloud speichern",
+			"type": "n8n-nodes-base.googleCloudStorage",
+			"typeVersion": 1.2,
+			"position": [1250, 300],
+			"credentials": {
+				"googleCloudStorageOAuth2Api": {
+					"id": "12",
+					"name": "Google Cloud Storage"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"content": "**☁️ Secure Document Archive**\n\nCompliance & backup storage:\n• Organized by customer & date\n• Long-term retention\n• Legal document preservation\n• Easy retrieval access",
+				"width": 260,
+				"height": 130
+			},
+			"name": "Cloud_Storage_Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1250, 150]
+		},
+		{
+			"parameters": {
+				"method": "POST",
+				"url": "http://localhost:5678/webhook/mahnwesen-versand",
+				"sendHeaders": true,
+				"headerParameters": {
+					"parameters": [
+						{
+							"name": "Content-Type",
+							"value": "application/json"
+						}
+					]
+				},
+				"sendBody": true,
+				"jsonBody": "={{ JSON.stringify({webhook_key: 'secret-key', data: {...$json, dunningId: $node[\"SevDesk - Mahnung erstellen\"].json.id, pdfUrl: $node[\"In Cloud speichern\"].json.url, pdfData: $node[\"SevDesk - Mahnungs-PDF\"].(binary && binary.data)}}) }}",
+				"options": {}
+			},
+			"name": "Webhook zu Teil 3",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4.2,
+			"position": [1450, 300]
+		},
+		{
+			"parameters": {
+				"content": "**🚀 Workflow Orchestration**\n\nDelivery process initiation:\n• Complete dunning package\n• Customer contact details\n• Delivery method selection\n• Tracking & confirmation",
+				"width": 260,
+				"height": 130
+			},
+			"name": "🚀 Orchestration Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1450, 150]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $node[\"Webhook zu Teil 3\"].error !== undefined }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"name": "Fehler aufgetreten?",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [1650, 300]
+		},
+		{
+			"parameters": {
+				"content": "**⚠️ Error Handling & Recovery**\n\nComprehensive error management:\n• Automatic retry mechanisms\n• Support team notifications\n• Process recovery options\n• Customer service alerts",
+				"width": 280,
+				"height": 130
+			},
+			"name": "Error_Handling_Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1850, 50]
+		},
+		{
+			"parameters": {
+				"fromEmail": "error-reporting@example.com",
+				"toEmail": "support@example.com",
+				"subject": "Fehler im Mahnwesen-Workflow (Verarbeitung)",
+				"content": "=Es ist ein Fehler im Mahnwesen-Workflow (Teil 2: Verarbeitung) aufgetreten:\n\nFehler: {{ $node[\"Webhook zu Teil 3\"].error.message }}\n\nDetails: {{ JSON.stringify($node[\"Webhook zu Teil 3\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
+				"options": {}
+			},
+			"name": "Support benachrichtigen",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2.1,
+			"position": [1850, 200],
+			"credentials": {
+				"smtp": {
+					"id": "10",
+					"name": "SMTP"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"chatId": "support-alerts",
+				"content": "=⚠️ FEHLER im Mahnwesen-Workflow (Verarbeitung):\n\n{{ $node[\"Webhook zu Teil 3\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
+			},
+			"name": "Schedule-Notification",
+			"type": "n8n-nodes-base.scheduleTrigger",
+			"typeVersion": 1.2,
+			"position": [1850, 350],
+			"credentials": {
+				"signalApi": {
+					"id": "11",
+					"name": "Signal API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"respond": "when",
+				"responseFor": "webhook",
+				"responseCode": 200,
+				"body": "{\n    \"success\": true,\n    \"message\": \"Mahnung erfolgreich erstellt und verarbeitet\",\n    \"dunningId\": \"{{ $node[\"SevDesk - Mahnung erstellen\"].json.id }}\",\n    \"cloudPath\": \"{{ $node[\"In Cloud speichern\"].json.url }}\"\n}"
+			},
+			"name": "Success Response",
+			"type": "n8n-nodes-base.respondToWebhook",
+			"typeVersion": 2,
+			"position": [1650, 500]
+		},
+		{
+			"parameters": {
+				"respond": "when",
+				"responseFor": "webhook",
+				"responseCode": 500,
+				"body": "{\n    \"success\": false,\n    \"message\": \"Fehler bei der Mahnungsverarbeitung\",\n    \"error\": \"{{ $json.error.message }}\"\n}"
+			},
+			"name": "Error Response",
+			"type": "n8n-nodes-base.respondToWebhook",
+			"typeVersion": 2,
+			"position": [2100, 300]
+		}
+	],
+	"connections": {
+		"Webhook": {
+			"main": [
+				[
+					{
+						"node": "Daten validieren",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Daten validieren": {
+			"main": [
+				[
+					{
+						"node": "KI-Mahntext generieren",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"KI-Mahntext generieren": {
+			"main": [
+				[
+					{
+						"node": "SevDesk - Mahnung erstellen",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"SevDesk - Mahnung erstellen": {
+			"main": [
+				[
+					{
+						"node": "SevDesk - Mahnungs-PDF",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"SevDesk - Mahnungs-PDF": {
+			"main": [
+				[
+					{
+						"node": "In Cloud speichern",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"In Cloud speichern": {
+			"main": [
+				[
+					{
+						"node": "Webhook zu Teil 3",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Webhook zu Teil 3": {
+			"main": [
+				[
+					{
+						"node": "Fehler aufgetreten?",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Fehler aufgetreten?": {
+			"main": [
+				[
+					{
+						"node": "Support benachrichtigen",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "Schedule-Notification",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "Error Response",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[
+					{
+						"node": "Success Response",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	}
 }

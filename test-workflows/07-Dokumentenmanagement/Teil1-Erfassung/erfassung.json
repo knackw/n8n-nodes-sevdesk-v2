@@ -1,481 +1,481 @@
 {
-  "name": "SevDesk - Dokumentenmanagement - Teil 1: Erfassung (v2)",
-  "nodes": [
-    {
-      "parameters": {
-        "content": "## 📄 SevDesk - Dokumentenmanagement - Teil 1: Erfassung (v2)\n\n**🎯 Zweck:**\nIntelligente Erfassung und Digitalisierung von Geschäftsdokumenten mit OCR-Erkennung und automatischer Klassifizierung.\n\n**📂 Unterstützte Quellen:**\n• E-Mail-Anhänge (PDF, JPG, PNG)\n• Scan-Ordner Überwachung\n• Webhook-Upload (API-Integration)\n• Mobile App Uploads\n• Fax-to-Email Konvertierung\n\n**🤖 OCR & AI-Features:**\n• Tesseract OCR für Texterkennung\n• Intelligente Dokumentenklassifizierung\n• Automatische Metadaten-Extraktion\n• Duplikat-Erkennung\n• Qualitätsbewertung\n\n**🔄 Workflow-Architektur:**\nTeil 1 → Teil 2 → Teil 3\nErfassung → Verarbeitung → Archivierung",
-        "height": 380,
-        "width": 480,
-        "color": 6
-      },
-      "name": "📄 Workflow-Dokumentation",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [0, 0]
-    },
-    {
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "minutes",
-              "minutesInterval": 15
-            }
-          ]
-        },
-        "triggerOnStartup": false
-      },
-      "name": "⏰ Ordner-Überwachung",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [250, 300]
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "document-capture",
-        "options": {
-          "allowFileUploads": true,
-          "responseMode": "responseNode"
-        }
-      },
-      "name": "📤 Upload Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [250, 500],
-      "webhookId": "document-capture-webhook"
-    },
-    {
-      "parameters": {
-        "path": "/data/document-inbox"
-      },
-      "name": "📁 Scan-Ordner prüfen",
-      "type": "n8n-nodes-base.localFileTrigger",
-      "typeVersion": 1,
-      "position": [250, 700]
-    },
-    {
-      "parameters": {},
-      "name": "🔀 Quellen vereinen",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [450, 500]
-    },
-    {
-      "parameters": {
-        "content": "**📂 Multi-Source Dokumentenerfassung:**\n\n**⏰ Schedule (15min-Intervall):**\n• Überwachung konfigurierter Ordner\n• Automatische Erkennung neuer Dateien\n• Batch-Verarbeitung für Effizienz\n\n**📤 Webhook (Upload-API):**\n• Direkter Datei-Upload über API\n• Mobile App Integration\n• Echtzeit-Verarbeitung\n• Multi-File-Support\n\n**📁 Directory Listing:**\n• Scan-to-Folder Integration\n• Network-Drive Überwachung\n• Legacy-System-Integration\n\n**🔀 Intelligente Vereinigung:**\n• Duplikat-Vermeidung\n• Format-Validierung\n• Größen-Limits prüfen",
-        "width": 350,
-        "height": 250,
-        "color": 7
-      },
-      "name": "📂 Quellen-Erklärung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [250, 50]
-    },
-    {
-      "parameters": {
-        "code": "// Analysiere Eingabequelle und bereite Dokumente für Verarbeitung vor\nconst item = $input.item.json;\nlet documentBatch = [];\n\n// === WEBHOOK-UPLOAD (API/Mobile App) ===\nif (item.files || item.body?.files) {\n  const files = item.files || item.body?.files || [];\n  \n  documentBatch = files.map((file, index) => {\n    const fileExtension = file.filename ? file.filename.split('.').pop().toLowerCase() : 'unknown';\n    const supportedFormats = ['pdf', 'jpg', 'jpeg', 'png', 'tiff', 'bmp'];\n    \n    return {\n      source: 'webhook_upload',\n      document_id: `DOC_${new Date().toISOString().replace(/[:.]/g, '_')}_${index}`,\n      filename: file.filename || `document_${index}.${fileExtension}`,\n      filedata: file.data || file.content,\n      mimetype: file.mimetype || `image/${fileExtension}`,\n      filesize: file.size || (file.data ? file.data.length : 0),\n      upload_timestamp: new Date().toISOString(),\n      is_supported_format: supportedFormats.includes(fileExtension),\n      upload_source: item.body?.upload_source || 'api',\n      metadata: {\n        user_agent: item.headers?.['user-agent'] || 'unknown',\n        ip_address: item.headers?.['x-forwarded-for'] || 'unknown',\n        upload_method: 'webhook'\n      }\n    };\n  });\n}\n\n// === DIRECTORY LISTING (Scan-Ordner) ===\nelse if (item.name && item.path) {\n  const fileExtension = item.name.split('.').pop().toLowerCase();\n  const supportedFormats = ['pdf', 'jpg', 'jpeg', 'png', 'tiff', 'bmp'];\n  \n  documentBatch = [{\n    source: 'directory_scan',\n    document_id: `DOC_${new Date().toISOString().replace(/[:.]/g, '_')}_DIR`,\n    filename: item.name,\n    filepath: item.path,\n    filesize: item.size || 0,\n    last_modified: item.modifiedTime,\n    upload_timestamp: new Date().toISOString(),\n    is_supported_format: supportedFormats.includes(fileExtension),\n    mimetype: fileExtension === 'pdf' ? 'application/pdf' : `image/${fileExtension}`,\n    metadata: {\n      scan_source: 'directory_monitoring',\n      file_stats: {\n        created: item.createdTime,\n        modified: item.modifiedTime,\n        size_bytes: item.size\n      }\n    }\n  }];\n}\n\n// === SCHEDULE TRIGGER (Batch-Verarbeitung) ===\nelse {\n  // Simuliere Batch-Scan-Ergebnisse (normalerweise würde hier ein Ordner gescannt)\n  documentBatch = [\n    {\n      source: 'scheduled_scan',\n      document_id: `DOC_${new Date().toISOString().replace(/[:.]/g, '_')}_BATCH`,\n      filename: 'batch_scan_placeholder.pdf',\n      upload_timestamp: new Date().toISOString(),\n      is_supported_format: true,\n      mimetype: 'application/pdf',\n      scan_session: `SCAN_${new Date().toISOString().replace(/[:.]/g, '_')}`,\n      metadata: {\n        scan_source: 'scheduled_monitoring',\n        batch_processing: true\n      }\n    }\n  ];\n}\n\n// Validierung und Filterung\nconst validDocuments = documentBatch.filter(doc => {\n  // Größenlimits prüfen (max 50MB)\n  const maxSize = 50 * 1024 * 1024;\n  if (doc.filesize > maxSize) {\n    doc.validation_error = `File too large: ${doc.filesize} bytes (max: ${maxSize})`;\n    return false;\n  }\n  \n  // Format-Support prüfen\n  if (!doc.is_supported_format) {\n    doc.validation_error = `Unsupported format: ${doc.filename}`;\n    return false;\n  }\n  \n  return true;\n});\n\nconst rejectedDocuments = documentBatch.filter(doc => doc.validation_error);\n\nreturn {\n  json: {\n    capture_session_id: `CAPTURE_${new Date().toISOString().replace(/[:.]/g, '_')}`,\n    capture_timestamp: new Date().toISOString(),\n    source_summary: {\n      webhook_uploads: documentBatch.filter(d => d.source === 'webhook_upload').length,\n      directory_scans: documentBatch.filter(d => d.source === 'directory_scan').length,\n      scheduled_batches: documentBatch.filter(d => d.source === 'scheduled_scan').length\n    },\n    valid_documents: validDocuments,\n    rejected_documents: rejectedDocuments,\n    total_valid: validDocuments.length,\n    total_rejected: rejectedDocuments.length,\n    processing_required: validDocuments.length > 0,\n    next_step: validDocuments.length > 0 ? 'ocr_processing' : 'no_documents'\n  }\n};"
-      },
-      "name": "📋 Dokumente erfassen",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [650, 500]
-    },
-    {
-      "parameters": {
-        "content": "**📋 Intelligente Dokumentenerfassung:**\n\n**🔍 Format-Validierung:**\n• PDF, JPG, PNG, TIFF, BMP Support\n• Größenlimits (max 50MB)\n• MIME-Type Validierung\n• Datei-Integrität prüfen\n\n**📊 Metadaten-Extraktion:**\n• Upload-Quelle und -Zeitpunkt\n• Datei-Eigenschaften (Größe, Format)\n• Benutzer-Context (IP, User-Agent)\n• Batch-Session-Tracking\n\n**✅ Qualitätskontrolle:**\n• Duplikat-Erkennung\n• Format-Kompatibilität\n• Größen-Compliance\n• Error-Handling für ungültige Dateien\n\n**📈 Batch-Optimierung:**\n• Multi-File-Processing\n• Parallele Validierung\n• Session-basiertes Tracking",
-        "width": 350,
-        "height": 280,
-        "color": 4
-      },
-      "name": "📋 Erfassung-Details",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [650, 150]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $json.processing_required }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "✅ Dokumente gefunden?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [950, 500]
-    },
-    {
-      "parameters": {},
-      "name": "🔄 Dokumente aufteilen",
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [1150, 400]
-    },
-    {
-      "parameters": {
-        "code": "// Führe OCR-Texterkennung und initiale Klassifizierung durch\nconst batchData = $node[\"🔄 Dokumente aufteilen\"].json;\nconst currentDoc = batchData.valid_documents[$node[\"🔄 Dokumente aufteilen\"].context.currentIndex];\n\n// === OCR-SIMULATION (würde normalerweise Tesseract/Cloud OCR verwenden) ===\nfunction simulateOCR(document) {\n  // Simuliere OCR-Ergebnis basierend auf Dateiname\n  let ocrText = '';\n  let confidence = 0;\n  let documentType = 'unknown';\n  \n  const filename = document.filename.toLowerCase();\n  \n  if (filename.includes('rechnung') || filename.includes('invoice')) {\n    ocrText = `Rechnung\\nRechnungsnummer: INV-2024-001\\nDatum: ${new Date().toISOString().split('T')[0]}\\nBetrag: 1.234,56 EUR\\nMwSt: 19%\\nZahlungsziel: 14 Tage`;\n    confidence = 0.95;\n    documentType = 'invoice';\n  } else if (filename.includes('beleg') || filename.includes('receipt')) {\n    ocrText = `Kassenbon\\nMarkt: Supermarkt XY\\nDatum: ${new Date().toISOString().split('T')[0]}\\nSumme: 45,67 EUR\\nMwSt: 7% / 19%`;\n    confidence = 0.88;\n    documentType = 'receipt';\n  } else if (filename.includes('vertrag') || filename.includes('contract')) {\n    ocrText = `Vertrag\\nVertragspartner: Firma ABC\\nVertragsnummer: V-2024-001\\nLaufzeit: 12 Monate\\nWert: 15.000,00 EUR`;\n    confidence = 0.92;\n    documentType = 'contract';\n  } else {\n    ocrText = `Dokument\\nDatum: ${new Date().toISOString().split('T')[0]}\\nInhalt: Allgemeines Geschäftsdokument`;\n    confidence = 0.75;\n    documentType = 'general';\n  }\n  \n  return { ocrText, confidence, documentType };\n}\n\n// === DOKUMENTEN-KLASSIFIZIERUNG ===\nfunction classifyDocument(ocrText, filename) {\n  const text = (ocrText + ' ' + filename).toLowerCase();\n  \n  const classifications = {\n    invoice: {\n      keywords: ['rechnung', 'invoice', 'rechnungsnummer', 'betrag', 'mwst', 'zahlungsziel'],\n      priority: 'high',\n      category: 'Eingangsrechnungen',\n      requires_approval: true\n    },\n    receipt: {\n      keywords: ['kassenbon', 'receipt', 'beleg', 'bon', 'quittung'],\n      priority: 'medium', \n      category: 'Belege',\n      requires_approval: false\n    },\n    contract: {\n      keywords: ['vertrag', 'contract', 'vereinbarung', 'kontrakt'],\n      priority: 'high',\n      category: 'Verträge',\n      requires_approval: true\n    },\n    correspondence: {\n      keywords: ['brief', 'mail', 'schreiben', 'korrespondenz'],\n      priority: 'low',\n      category: 'Korrespondenz',\n      requires_approval: false\n    }\n  };\n  \n  let bestMatch = { type: 'general', score: 0 };\n  \n  Object.entries(classifications).forEach(([type, config]) => {\n    const matches = config.keywords.filter(keyword => text.includes(keyword)).length;\n    const score = matches / config.keywords.length;\n    \n    if (score > bestMatch.score) {\n      bestMatch = { type, score, ...config };\n    }\n  });\n  \n  return bestMatch;\n}\n\n// === METADATEN-EXTRAKTION ===\nfunction extractMetadata(ocrText, documentType) {\n  const metadata = {\n    extracted_fields: {},\n    confidence_scores: {},\n    validation_status: 'pending'\n  };\n  \n  if (documentType === 'invoice') {\n    // Vereinfachte Regex-Extraktion (würde normalerweise NLP verwenden)\n    const invoiceNumber = ocrText.match(/rechnungsnummer[:\\s]*(\\S+)/i)?.[1];\n    const amount = ocrText.match(/(\\d+[.,]\\d+)\\s*eur/i)?.[1];\n    const date = ocrText.match(/datum[:\\s]*(\\d{4}-\\d{2}-\\d{2})/i)?.[1];\n    \n    metadata.extracted_fields = {\n      invoice_number: invoiceNumber || null,\n      amount: amount ? parseFloat(amount.replace(',', '.')) : null,\n      invoice_date: date || null,\n      currency: 'EUR'\n    };\n    \n    metadata.confidence_scores = {\n      invoice_number: invoiceNumber ? 0.9 : 0.0,\n      amount: amount ? 0.85 : 0.0,\n      date: date ? 0.95 : 0.0\n    };\n  }\n  \n  return metadata;\n}\n\n// Verarbeitung durchführen\nconst ocrResult = simulateOCR(currentDoc);\nconst classification = classifyDocument(ocrResult.ocrText, currentDoc.filename);\nconst metadata = extractMetadata(ocrResult.ocrText, classification.type);\n\n// Erweiterte Dokumenteninformationen\nconst processedDocument = {\n  ...currentDoc,\n  ocr_processing: {\n    text_content: ocrResult.ocrText,\n    confidence: ocrResult.confidence,\n    processing_timestamp: new Date().toISOString(),\n    ocr_engine: 'tesseract_simulation',\n    language_detected: 'de'\n  },\n  classification: {\n    document_type: classification.type,\n    category: classification.category,\n    priority: classification.priority,\n    confidence_score: classification.score,\n    requires_approval: classification.requires_approval,\n    classification_timestamp: new Date().toISOString()\n  },\n  extracted_metadata: metadata,\n  processing_status: 'ocr_completed',\n  ready_for_part2: true\n};\n\nreturn {\n  json: {\n    ...batchData,\n    current_document: processedDocument,\n    processing_step: 'ocr_and_classification',\n    batch_progress: {\n      current: $node[\"🔄 Dokumente aufteilen\"].context.currentIndex + 1,\n      total: batchData.valid_documents.length,\n      percentage: Math.round((($node[\"🔄 Dokumente aufteilen\"].context.currentIndex + 1) / batchData.valid_documents.length) * 100)\n    }\n  }\n};"
-      },
-      "name": "🤖 OCR & Klassifizierung",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1350, 400]
-    },
-    {
-      "parameters": {
-        "content": "**🤖 OCR & AI-Verarbeitung:**\n\n**👁️ OCR-Texterkennung:**\n• Tesseract Engine Integration\n• Multi-Language Support (DE/EN)\n• Confidence-Scoring\n• Layout-Analyse\n\n**🧠 Intelligente Klassifizierung:**\n• ML-basierte Dokumentenerkennung\n• Keyword-Pattern-Matching\n• Confidence-basierte Kategorisierung\n• Automatische Prioritätszuweisung\n\n**📊 Metadaten-Extraktion:**\n• Strukturierte Datenextraktion\n• Rechnungsnummern, Beträge, Daten\n• Validation & Confidence-Scoring\n• Format-Normalisierung\n\n**⚡ Performance-Optimierung:**\n• Batch-Processing für Effizienz\n• Parallele OCR-Verarbeitung\n• Caching für wiederkehrende Muster",
-        "width": 350,
-        "height": 250,
-        "color": 3
-      },
-      "name": "🤖 OCR-Details",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [1350, 100]
-    },
-    {
-      "parameters": {
-        "code": "// Sammle alle verarbeiteten Dokumente und erstelle finale Batch-Ergebnisse\nconst allDocuments = $node[\"🔄 Dokumente aufteilen\"].json.valid_documents || [];\nconst currentIndex = $node[\"🔄 Dokumente aufteilen\"].context.currentIndex;\nconst processedDoc = $input.item.json.current_document;\n\n// Aktualisiere das Dokument im Array\nallDocuments[currentIndex] = processedDoc;\n\n// Prüfe ob das der letzte Batch ist\nif (currentIndex === allDocuments.length - 1) {\n  // Erstelle finale Statistiken\n  const processingStats = {\n    total_documents: allDocuments.length,\n    successful_ocr: allDocuments.filter(d => d.ocr_processing?.confidence > 0.7).length,\n    high_confidence: allDocuments.filter(d => d.ocr_processing?.confidence > 0.9).length,\n    classification_breakdown: {\n      invoices: allDocuments.filter(d => d.classification?.document_type === 'invoice').length,\n      receipts: allDocuments.filter(d => d.classification?.document_type === 'receipt').length,\n      contracts: allDocuments.filter(d => d.classification?.document_type === 'contract').length,\n      general: allDocuments.filter(d => d.classification?.document_type === 'general').length\n    },\n    priority_breakdown: {\n      high: allDocuments.filter(d => d.classification?.priority === 'high').length,\n      medium: allDocuments.filter(d => d.classification?.priority === 'medium').length,\n      low: allDocuments.filter(d => d.classification?.priority === 'low').length\n    },\n    requires_approval: allDocuments.filter(d => d.classification?.requires_approval).length\n  };\n  \n  // Qualitätsbewertung\n  const qualityMetrics = {\n    average_ocr_confidence: allDocuments.reduce((sum, d) => sum + (d.ocr_processing?.confidence || 0), 0) / allDocuments.length,\n    average_classification_confidence: allDocuments.reduce((sum, d) => sum + (d.classification?.confidence_score || 0), 0) / allDocuments.length,\n    metadata_extraction_rate: allDocuments.filter(d => Object.keys(d.extracted_metadata?.extracted_fields || {}).length > 0).length / allDocuments.length\n  };\n  \n  return {\n    json: {\n      capture_session_id: $input.item.json.capture_session_id,\n      processing_completed: new Date().toISOString(),\n      processed_documents: allDocuments,\n      processing_statistics: processingStats,\n      quality_metrics: qualityMetrics,\n      batch_completed: true,\n      ready_for_part2: true,\n      webhook_url: 'http://localhost:5678/webhook/document-processing'\n    }\n  };\n} else {\n  // Noch nicht fertig, gib aktuellen Zustand zurück\n  return {\n    json: {\n      ...allDocuments,\n      current_index: currentIndex,\n      processing_step: 'batch_processing'\n    }\n  };\n}"
-      },
-      "name": "📊 Ergebnisse sammeln",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1550, 400]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $json.batch_completed }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "🏁 Batch abgeschlossen?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1750, 400]
-    },
-    {
-      "parameters": {
-        "url": "={{ $json.webhook_url }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "X-Capture-Session-ID",
-              "value": "={{ $json.capture_session_id }}"
-            },
-            {
-              "name": "X-Workflow-Source",
-              "value": "Teil1-Erfassung"
-            }
-          ]
-        },
-        "sendBody": true,
-        "jsonBody": "={{ JSON.stringify($json, null, 2) }}",
-        "options": {
-          "timeout": 60000
-        }
-      },
-      "name": "🚀 An Teil 2 weiterleiten",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2050, 300]
-    },
-    {
-      "parameters": {
-        "chatId": "document-management-alerts",
-        "content": "=📄 **Dokumentenmanagement - Erfassung abgeschlossen**\n\n🔍 **Session:** {{ $json.capture_session_id }}\n📅 **Zeitpunkt:** {{ $json.processing_completed }}\n\n📊 **Verarbeitungsstatistiken:**\n• Dokumente gesamt: {{ $json.processing_statistics.total_documents }}\n• OCR erfolgreich: {{ $json.processing_statistics.successful_ocr }}\n• Hohe Confidence: {{ $json.processing_statistics.high_confidence }}\n\n📋 **Dokumententypen:**\n• Rechnungen: {{ $json.processing_statistics.classification_breakdown.invoices }}\n• Belege: {{ $json.processing_statistics.classification_breakdown.receipts }}\n• Verträge: {{ $json.processing_statistics.classification_breakdown.contracts }}\n• Sonstige: {{ $json.processing_statistics.classification_breakdown.general }}\n\n⚠️ **Genehmigung erforderlich:** {{ $json.processing_statistics.requires_approval }}\n\n📈 **Qualitätsmetriken:**\n• Ø OCR-Confidence: {{ Math.round($json.quality_metrics.average_ocr_confidence * 100) }}%\n• Ø Klassifizierung: {{ Math.round($json.quality_metrics.average_classification_confidence * 100) }}%\n• Metadaten-Rate: {{ Math.round($json.quality_metrics.metadata_extraction_rate * 100) }}%\n\n▶️ **Nächster Schritt:** Teil 2 - Verarbeitung & Validierung"
-      },
-      "name": "📱 Team-Benachrichtigung",
-      "type": "n8n-nodes-base.signal",
-      "typeVersion": 2,
-      "position": [2050, 500],
-      "credentials": {
-        "signalApi": {
-          "id": "3",
-          "name": "Signal account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "fromEmail": "workflow@company.com",
-        "toEmail": "document-management@company.com",
-        "subject": "Keine neuen Dokumente erfasst - {{ $json.capture_session_id }}",
-        "content": "Die automatische Dokumentenerfassung hat keine neuen Dokumente zur Verarbeitung gefunden.\n\n**Session-Details:**\n- Session-ID: {{ $json.capture_session_id }}\n- Erfassung-Zeitpunkt: {{ $json.capture_timestamp }}\n- Überprüfte Quellen: {{ Object.keys($json.source_summary).length }}\n\n**Überprüfte Bereiche:**\n- Webhook-Uploads: {{ $json.source_summary.webhook_uploads || 0 }}\n- Directory-Scans: {{ $json.source_summary.directory_scans || 0 }}\n- Scheduled-Batches: {{ $json.source_summary.scheduled_batches || 0 }}\n\n**Abgelehnte Dokumente:** {{ $json.total_rejected || 0 }}\n{% if $json.total_rejected > 0 %}\n**Ablehnungsgründe:**\n{% for doc in $json.rejected_documents %}\n- {{ doc.filename }}: {{ doc.validation_error }}\n{% endfor %}\n{% endif %}\n\n**Status:**\n- Alle konfigurierten Quellen erfolgreich überprüft\n- Keine verarbeitungsrelevanten Dokumente gefunden\n- System läuft ordnungsgemäß\n\n**Nächste Überprüfung:**\n- Schedule: Automatisch in 15 Minuten\n- Webhook: Jederzeit bei Upload verfügbar\n- Manual: Über API-Trigger möglich\n\nDies ist eine Routine-Information und erfordert keine weiteren Maßnahmen.",
-        "options": {}
-      },
-      "name": "📧 Leerlauf-Info",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [2050, 700],
-      "credentials": {
-        "smtp": {
-          "id": "10",
-          "name": "SMTP"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $node[\"🚀 An Teil 2 weiterleiten\"].json.error !== undefined }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "❌ Fehler aufgetreten?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [2350, 300]
-    },
-    {
-      "parameters": {
-        "fromEmail": "workflow@company.com",
-        "toEmail": "support@company.com,document-management@company.com",
-        "subject": "🚨 FEHLER: Dokumentenmanagement Teil 1 - {{ $json.capture_session_id }}",
-        "content": "Ein kritischer Fehler ist im Dokumentenmanagement-Workflow (Teil 1: Erfassung) aufgetreten.\n\n**🚨 Fehlerdetails:**\n- Fehler: {{ $node[\"🚀 An Teil 2 weiterleiten\"].json.error?.message || 'Unbekannter Fehler' }}\n- Session-ID: {{ $json.capture_session_id }}\n- Zeitstempel: {{ $now.toISOString() }}\n\n**📄 Betroffene Dokumente:**\n- Anzahl verarbeitet: {{ $json.processing_statistics?.total_documents || 'N/A' }}\n- OCR-Erfolgsrate: {{ $json.processing_statistics?.successful_ocr || 0 }}\n- Hohe Confidence: {{ $json.processing_statistics?.high_confidence || 0 }}\n\n**📊 Qualitätsmetriken:**\n- Ø OCR-Confidence: {{ Math.round(($json.quality_metrics?.average_ocr_confidence || 0) * 100) }}%\n- Metadaten-Extraktion: {{ Math.round(($json.quality_metrics?.metadata_extraction_rate || 0) * 100) }}%\n\n**⚠️ Auswirkungen:**\n- Dokumentenverarbeitung unterbrochen\n- Möglicherweise unverarbeitete Geschäftsdokumente\n- Compliance-Risiko bei zeitkritischen Dokumenten\n\n**🔧 Sofortmaßnahmen:**\n1. Webhook-Verbindung zu Teil 2 prüfen\n2. OCR-Engine-Status validieren\n3. Dateisystem-Zugriff überprüfen\n4. n8n-Logs analysieren\n5. Bei kritischen Dokumenten: Manuelle Verarbeitung\n\n**📋 Nächste Schritte:**\n1. Fehlerursache identifizieren und beheben\n2. OCR/Klassifizierung-Pipeline testen\n3. Verpasste Dokumente nacharbeiten\n4. Monitoring-Alerts optimieren\n\n⏰ **Zeitkritisch:** Rechnungen und Verträge umgehend manuell prüfen!",
-        "options": {}
-      },
-      "name": "🚨 Kritischer Fehler",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [2650, 200],
-      "credentials": {
-        "smtp": {
-          "id": "10",
-          "name": "SMTP"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "code": "// Protokolliere erfolgreiche Workflow-Ausführung mit umfassendem Audit-Trail\nconst data = $input.item.json;\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil1-Erfassung',\n  status: data.batch_completed ? 'documents_processed' : 'no_documents',\n  capture_session_id: data.capture_session_id,\n  processing_statistics: data.processing_statistics || {},\n  quality_metrics: data.quality_metrics || {},\n  performance_metrics: {\n    total_processing_time_ms: data.processing_completed ? \n      Date.now() - new Date(data.capture_timestamp).getTime() : null,\n    documents_per_minute: data.processing_statistics?.total_documents ? \n      (data.processing_statistics.total_documents / ((Date.now() - new Date(data.capture_timestamp).getTime()) / 60000)) : 0,\n    ocr_success_rate: data.processing_statistics?.successful_ocr && data.processing_statistics?.total_documents ?\n      (data.processing_statistics.successful_ocr / data.processing_statistics.total_documents) : 0\n  },\n  compliance_info: {\n    gobd_compliant: true,\n    audit_trail_complete: true,\n    retention_period_years: 10,\n    data_classification: 'business_documents'\n  },\n  next_execution: {\n    scheduled: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // +15 Minuten\n    webhook_available: true,\n    manual_trigger_available: true\n  }\n};\n\nconsole.log('Dokumentenmanagement Teil 1 erfolgreich abgeschlossen:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    execution_log: successLog,\n    workflow_completed: true,\n    status: 'Teil1-Erfolgreich-Abgeschlossen'\n  }\n};"
-      },
-      "name": "✅ Erfolg & Audit-Trail",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2650, 400]
-    },
-    {
-      "parameters": {
-        "content": "**🏁 Workflow-Abschluss & Qualitätssicherung:**\n\n**✅ Erfolgreiche Verarbeitung:**\n• Weiterleitung an Teil 2 (Verarbeitung)\n• Umfassende Statistiken und Metriken\n• Team-Benachrichtigung über Slack/Teams\n• Audit-Trail für Compliance\n\n**❌ Keine Dokumente:**\n• Information an Document Management Team\n• Routine-Überwachung bestätigt\n• Nächste Prüfung geplant\n\n**🚨 Fehlerbehandlung:**\n• Sofortige Alert-Benachrichtigung\n• Detaillierte Fehleranalyse\n• Compliance-kritische Eskalation\n• Recovery-Handlungsempfehlungen\n\n**📊 Performance-Monitoring:**\n• OCR-Erfolgsraten\n• Verarbeitungsgeschwindigkeit\n• Qualitätsmetriken\n• Trend-Analyse für Optimierung",
-        "width": 350,
-        "height": 250,
-        "color": 5
-      },
-      "name": "🏁 Abschluss-Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [2050, 50]
-    }
-  ],
-  "connections": {
-    "⏰ Ordner-Überwachung": {
-      "main": [
-        [
-          {
-            "node": "📁 Scan-Ordner prüfen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📤 Upload Webhook": {
-      "main": [
-        [
-          {
-            "node": "🔀 Quellen vereinen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📁 Scan-Ordner prüfen": {
-      "main": [
-        [
-          {
-            "node": "🔀 Quellen vereinen",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "🔀 Quellen vereinen": {
-      "main": [
-        [
-          {
-            "node": "📋 Dokumente erfassen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📋 Dokumente erfassen": {
-      "main": [
-        [
-          {
-            "node": "✅ Dokumente gefunden?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "✅ Dokumente gefunden?": {
-      "main": [
-        [
-          {
-            "node": "🔄 Dokumente aufteilen",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "📧 Leerlauf-Info",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🔄 Dokumente aufteilen": {
-      "main": [
-        [
-          {
-            "node": "🤖 OCR & Klassifizierung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🤖 OCR & Klassifizierung": {
-      "main": [
-        [
-          {
-            "node": "📊 Ergebnisse sammeln",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📊 Ergebnisse sammeln": {
-      "main": [
-        [
-          {
-            "node": "🏁 Batch abgeschlossen?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🏁 Batch abgeschlossen?": {
-      "main": [
-        [
-          {
-            "node": "🚀 An Teil 2 weiterleiten",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "📱 Team-Benachrichtigung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🚀 An Teil 2 weiterleiten": {
-      "main": [
-        [
-          {
-            "node": "❌ Fehler aufgetreten?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📱 Team-Benachrichtigung": {
-      "main": [
-        [
-          {
-            "node": "✅ Erfolg & Audit-Trail",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📧 Leerlauf-Info": {
-      "main": [
-        [
-          {
-            "node": "✅ Erfolg & Audit-Trail",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "❌ Fehler aufgetreten?": {
-      "main": [
-        [
-          {
-            "node": "🚨 Kritischer Fehler",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "✅ Erfolg & Audit-Trail",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "pinData": {},
-  "settings": {},
-  "staticData": {},
-  "tags": [
-    {
-      "createdAt": "2024-12-19T10:00:00.000Z",
-      "updatedAt": "2024-12-19T10:00:00.000Z",
-      "id": "7",
-      "name": "Dokumentenmanagement"
-    }
-  ],
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "n8nVersion": "1.101.1"
-  },
-  "id": "7001",
-  "versionId": "v2.0.0"
-} 
+	"name": "SevDesk - Dokumentenmanagement - Teil 1: Erfassung (v2)",
+	"nodes": [
+		{
+			"parameters": {
+				"content": "## 📄 SevDesk - Dokumentenmanagement - Teil 1: Erfassung (v2)\n\n**🎯 Zweck:**\nIntelligente Erfassung und Digitalisierung von Geschäftsdokumenten mit OCR-Erkennung und automatischer Klassifizierung.\n\n**📂 Unterstützte Quellen:**\n• E-Mail-Anhänge (PDF, JPG, PNG)\n• Scan-Ordner Überwachung\n• Webhook-Upload (API-Integration)\n• Mobile App Uploads\n• Fax-to-Email Konvertierung\n\n**🤖 OCR & AI-Features:**\n• Tesseract OCR für Texterkennung\n• Intelligente Dokumentenklassifizierung\n• Automatische Metadaten-Extraktion\n• Duplikat-Erkennung\n• Qualitätsbewertung\n\n**🔄 Workflow-Architektur:**\nTeil 1 → Teil 2 → Teil 3\nErfassung → Verarbeitung → Archivierung",
+				"height": 380,
+				"width": 480,
+				"color": 6
+			},
+			"name": "Workflow_Documentation",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [0, 0]
+		},
+		{
+			"parameters": {
+				"rule": {
+					"interval": [
+						{
+							"field": "minutes",
+							"minutesInterval": 15
+						}
+					]
+				},
+				"triggerOnStartup": false
+			},
+			"name": "⏰ Ordner-Überwachung",
+			"type": "n8n-nodes-base.scheduleTrigger",
+			"typeVersion": 1.2,
+			"position": [250, 300]
+		},
+		{
+			"parameters": {
+				"httpMethod": "POST",
+				"path": "document-capture",
+				"options": {
+					"allowFileUploads": true,
+					"responseMode": "responseNode"
+				}
+			},
+			"name": "Upload_Webhook",
+			"type": "n8n-nodes-base.webhook",
+			"typeVersion": 2,
+			"position": [250, 500],
+			"webhookId": "document-capture-webhook"
+		},
+		{
+			"parameters": {
+				"path": "/data/document-inbox"
+			},
+			"name": "📁 Scan-Ordner prüfen",
+			"type": "n8n-nodes-base.localFileTrigger",
+			"typeVersion": 1,
+			"position": [250, 700]
+		},
+		{
+			"parameters": {},
+			"name": "🔀 Quellen vereinen",
+			"type": "n8n-nodes-base.merge",
+			"typeVersion": 3.2,
+			"position": [450, 500]
+		},
+		{
+			"parameters": {
+				"content": "**📂 Multi-Source Dokumentenerfassung:**\n\n**⏰ Schedule (15min-Intervall):**\n• Überwachung konfigurierter Ordner\n• Automatische Erkennung neuer Dateien\n• Batch-Verarbeitung für Effizienz\n\n**📤 Webhook (Upload-API):**\n• Direkter Datei-Upload über API\n• Mobile App Integration\n• Echtzeit-Verarbeitung\n• Multi-File-Support\n\n**📁 Directory Listing:**\n• Scan-to-Folder Integration\n• Network-Drive Überwachung\n• Legacy-System-Integration\n\n**🔀 Intelligente Vereinigung:**\n• Duplikat-Vermeidung\n• Format-Validierung\n• Größen-Limits prüfen",
+				"width": 350,
+				"height": 250,
+				"color": 7
+			},
+			"name": "📂 Quellen-Erklärung",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [250, 50]
+		},
+		{
+			"parameters": {
+				"code": "// Analysiere Eingabequelle und bereite Dokumente für Verarbeitung vor\nconst item = $input.item.json;\nlet documentBatch = [];\n\n// === WEBHOOK-UPLOAD (API/Mobile App) ===\nif (item.files || (item.body && item.body.files)) {\n  const files = item.files || (item.body && item.body.files) || [];\n  \n  documentBatch = files.map((file, index) => {\n    const fileExtension = file.filename ? file.filename.split('.').pop().toLowerCase() : 'unknown';\n    const supportedFormats = ['pdf', 'jpg', 'jpeg', 'png', 'tiff', 'bmp'];\n    \n    return {\n      source: 'webhook_upload',\n      document_id: `DOC_${new Date().toISOString().replace(/[:.]/g, '_')}_${index}`,\n      filename: file.filename || `document_${index}.${fileExtension}`,\n      filedata: file.data || file.content,\n      mimetype: file.mimetype || `image/${fileExtension}`,\n      filesize: file.size || (file.data ? file.data.length : 0),\n      upload_timestamp: new Date().toISOString(),\n      is_supported_format: supportedFormats.includes(fileExtension),\n      upload_source: (item.body && item.body.upload_source) || 'api',\n      metadata: {\n        user_agent: item.headers?.['user-agent'] || 'unknown',\n        ip_address: item.headers?.['x-forwarded-for'] || 'unknown',\n        upload_method: 'webhook'\n      }\n    };\n  });\n}\n\n// === DIRECTORY LISTING (Scan-Ordner) ===\nelse if (item.name && item.path) {\n  const fileExtension = item.name.split('.').pop().toLowerCase();\n  const supportedFormats = ['pdf', 'jpg', 'jpeg', 'png', 'tiff', 'bmp'];\n  \n  documentBatch = [{\n    source: 'directory_scan',\n    document_id: `DOC_${new Date().toISOString().replace(/[:.]/g, '_')}_DIR`,\n    filename: item.name,\n    filepath: item.path,\n    filesize: item.size || 0,\n    last_modified: item.modifiedTime,\n    upload_timestamp: new Date().toISOString(),\n    is_supported_format: supportedFormats.includes(fileExtension),\n    mimetype: fileExtension === 'pdf' ? 'application/pdf' : `image/${fileExtension}`,\n    metadata: {\n      scan_source: 'directory_monitoring',\n      file_stats: {\n        created: item.createdTime,\n        modified: item.modifiedTime,\n        size_bytes: item.size\n      }\n    }\n  }];\n}\n\n// === SCHEDULE TRIGGER (Batch-Verarbeitung) ===\nelse {\n  // Simuliere Batch-Scan-Ergebnisse (normalerweise würde hier ein Ordner gescannt)\n  documentBatch = [\n    {\n      source: 'scheduled_scan',\n      document_id: `DOC_${new Date().toISOString().replace(/[:.]/g, '_')}_BATCH`,\n      filename: 'batch_scan_placeholder.pdf',\n      upload_timestamp: new Date().toISOString(),\n      is_supported_format: true,\n      mimetype: 'application/pdf',\n      scan_session: `SCAN_${new Date().toISOString().replace(/[:.]/g, '_')}`,\n      metadata: {\n        scan_source: 'scheduled_monitoring',\n        batch_processing: true\n      }\n    }\n  ];\n}\n\n// Validierung und Filterung\nconst validDocuments = documentBatch.filter(doc => {\n  // Größenlimits prüfen (max 50MB)\n  const maxSize = 50 * 1024 * 1024;\n  if (doc.filesize > maxSize) {\n    doc.validation_error = `File too large: ${doc.filesize} bytes (max: ${maxSize})`;\n    return false;\n  }\n  \n  // Format-Support prüfen\n  if (!doc.is_supported_format) {\n    doc.validation_error = `Unsupported format: ${doc.filename}`;\n    return false;\n  }\n  \n  return true;\n});\n\nconst rejectedDocuments = documentBatch.filter(doc => doc.validation_error);\n\nreturn {\n  json: {\n    capture_session_id: `CAPTURE_${new Date().toISOString().replace(/[:.]/g, '_')}`,\n    capture_timestamp: new Date().toISOString(),\n    source_summary: {\n      webhook_uploads: documentBatch.filter(d => d.source === 'webhook_upload').length,\n      directory_scans: documentBatch.filter(d => d.source === 'directory_scan').length,\n      scheduled_batches: documentBatch.filter(d => d.source === 'scheduled_scan').length\n    },\n    valid_documents: validDocuments,\n    rejected_documents: rejectedDocuments,\n    total_valid: validDocuments.length,\n    total_rejected: rejectedDocuments.length,\n    processing_required: validDocuments.length > 0,\n    next_step: validDocuments.length > 0 ? 'ocr_processing' : 'no_documents'\n  }\n};"
+			},
+			"name": "Capture_Documents",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [650, 500]
+		},
+		{
+			"parameters": {
+				"content": "**📋 Intelligente Dokumentenerfassung:**\n\n**🔍 Format-Validierung:**\n• PDF, JPG, PNG, TIFF, BMP Support\n• Größenlimits (max 50MB)\n• MIME-Type Validierung\n• Datei-Integrität prüfen\n\n**📊 Metadaten-Extraktion:**\n• Upload-Quelle und -Zeitpunkt\n• Datei-Eigenschaften (Größe, Format)\n• Benutzer-Context (IP, User-Agent)\n• Batch-Session-Tracking\n\n**✅ Qualitätskontrolle:**\n• Duplikat-Erkennung\n• Format-Kompatibilität\n• Größen-Compliance\n• Error-Handling für ungültige Dateien\n\n**📈 Batch-Optimierung:**\n• Multi-File-Processing\n• Parallele Validierung\n• Session-basiertes Tracking",
+				"width": 350,
+				"height": 280,
+				"color": 4
+			},
+			"name": "Capture_Details",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [650, 150]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $json.processing_required }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"name": "Documents_Found",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [950, 500]
+		},
+		{
+			"parameters": {},
+			"name": "Split_Documents",
+			"type": "n8n-nodes-base.splitInBatches",
+			"typeVersion": 3,
+			"position": [1150, 400]
+		},
+		{
+			"parameters": {
+				"code": "// Führe OCR-Texterkennung und initiale Klassifizierung durch\nconst batchData = $node[\"🔄 Dokumente aufteilen\"].json;\nconst currentDoc = batchData.valid_documents[$node[\"🔄 Dokumente aufteilen\"].context.currentIndex];\n\n// === OCR-SIMULATION (würde normalerweise Tesseract/Cloud OCR verwenden) ===\nfunction simulateOCR(document) {\n  // Simuliere OCR-Ergebnis basierend auf Dateiname\n  let ocrText = '';\n  let confidence = 0;\n  let documentType = 'unknown';\n  \n  const filename = document.filename.toLowerCase();\n  \n  if (filename.includes('rechnung') || filename.includes('invoice')) {\n    ocrText = `Rechnung\\nRechnungsnummer: INV-2024-001\\nDatum: ${new Date().toISOString().split('T')[0]}\\nBetrag: 1.234,56 EUR\\nMwSt: 19%\\nZahlungsziel: 14 Tage`;\n    confidence = 0.95;\n    documentType = 'invoice';\n  } else if (filename.includes('beleg') || filename.includes('receipt')) {\n    ocrText = `Kassenbon\\nMarkt: Supermarkt XY\\nDatum: ${new Date().toISOString().split('T')[0]}\\nSumme: 45,67 EUR\\nMwSt: 7% / 19%`;\n    confidence = 0.88;\n    documentType = 'receipt';\n  } else if (filename.includes('vertrag') || filename.includes('contract')) {\n    ocrText = `Vertrag\\nVertragspartner: Firma ABC\\nVertragsnummer: V-2024-001\\nLaufzeit: 12 Monate\\nWert: 15.000,00 EUR`;\n    confidence = 0.92;\n    documentType = 'contract';\n  } else {\n    ocrText = `Dokument\\nDatum: ${new Date().toISOString().split('T')[0]}\\nInhalt: Allgemeines Geschäftsdokument`;\n    confidence = 0.75;\n    documentType = 'general';\n  }\n  \n  return { ocrText, confidence, documentType };\n}\n\n// === DOKUMENTEN-KLASSIFIZIERUNG ===\nfunction classifyDocument(ocrText, filename) {\n  const text = (ocrText + ' ' + filename).toLowerCase();\n  \n  const classifications = {\n    invoice: {\n      keywords: ['rechnung', 'invoice', 'rechnungsnummer', 'betrag', 'mwst', 'zahlungsziel'],\n      priority: 'high',\n      category: 'Eingangsrechnungen',\n      requires_approval: true\n    },\n    receipt: {\n      keywords: ['kassenbon', 'receipt', 'beleg', 'bon', 'quittung'],\n      priority: 'medium', \n      category: 'Belege',\n      requires_approval: false\n    },\n    contract: {\n      keywords: ['vertrag', 'contract', 'vereinbarung', 'kontrakt'],\n      priority: 'high',\n      category: 'Verträge',\n      requires_approval: true\n    },\n    correspondence: {\n      keywords: ['brief', 'mail', 'schreiben', 'korrespondenz'],\n      priority: 'low',\n      category: 'Korrespondenz',\n      requires_approval: false\n    }\n  };\n  \n  let bestMatch = { type: 'general', score: 0 };\n  \n  Object.entries(classifications).forEach(([type, config]) => {\n    const matches = config.keywords.filter(keyword => text.includes(keyword)).length;\n    const score = matches / config.keywords.length;\n    \n    if (score > bestMatch.score) {\n      bestMatch = { type, score, ...config };\n    }\n  });\n  \n  return bestMatch;\n}\n\n// === METADATEN-EXTRAKTION ===\nfunction extractMetadata(ocrText, documentType) {\n  const metadata = {\n    extracted_fields: {},\n    confidence_scores: {},\n    validation_status: 'pending'\n  };\n  \n  if (documentType === 'invoice') {\n    // Vereinfachte Regex-Extraktion (würde normalerweise NLP verwenden)\n    const invoiceNumber = ocrText.match(/rechnungsnummer[:\\s]*(\\S+)/i)?.[1];\n    const amount = ocrText.match(/(\\d+[.,]\\d+)\\s*eur/i)?.[1];\n    const date = ocrText.match(/datum[:\\s]*(\\d{4}-\\d{2}-\\d{2})/i)?.[1];\n    \n    metadata.extracted_fields = {\n      invoice_number: invoiceNumber || null,\n      amount: amount ? parseFloat(amount.replace(',', '.')) : null,\n      invoice_date: date || null,\n      currency: 'EUR'\n    };\n    \n    metadata.confidence_scores = {\n      invoice_number: invoiceNumber ? 0.9 : 0.0,\n      amount: amount ? 0.85 : 0.0,\n      date: date ? 0.95 : 0.0\n    };\n  }\n  \n  return metadata;\n}\n\n// Verarbeitung durchführen\nconst ocrResult = simulateOCR(currentDoc);\nconst classification = classifyDocument(ocrResult.ocrText, currentDoc.filename);\nconst metadata = extractMetadata(ocrResult.ocrText, classification.type);\n\n// Erweiterte Dokumenteninformationen\nconst processedDocument = {\n  ...currentDoc,\n  ocr_processing: {\n    text_content: ocrResult.ocrText,\n    confidence: ocrResult.confidence,\n    processing_timestamp: new Date().toISOString(),\n    ocr_engine: 'tesseract_simulation',\n    language_detected: 'de'\n  },\n  classification: {\n    document_type: classification.type,\n    category: classification.category,\n    priority: classification.priority,\n    confidence_score: classification.score,\n    requires_approval: classification.requires_approval,\n    classification_timestamp: new Date().toISOString()\n  },\n  extracted_metadata: metadata,\n  processing_status: 'ocr_completed',\n  ready_for_part2: true\n};\n\nreturn {\n  json: {\n    ...batchData,\n    current_document: processedDocument,\n    processing_step: 'ocr_and_classification',\n    batch_progress: {\n      current: $node[\"🔄 Dokumente aufteilen\"].context.currentIndex + 1,\n      total: batchData.valid_documents.length,\n      percentage: Math.round((($node[\"🔄 Dokumente aufteilen\"].context.currentIndex + 1) / batchData.valid_documents.length) * 100)\n    }\n  }\n};"
+			},
+			"name": "🤖 OCR & Klassifizierung",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [1350, 400]
+		},
+		{
+			"parameters": {
+				"content": "**🤖 OCR & AI-Verarbeitung:**\n\n**👁️ OCR-Texterkennung:**\n• Tesseract Engine Integration\n• Multi-Language Support (DE/EN)\n• Confidence-Scoring\n• Layout-Analyse\n\n**🧠 Intelligente Klassifizierung:**\n• ML-basierte Dokumentenerkennung\n• Keyword-Pattern-Matching\n• Confidence-basierte Kategorisierung\n• Automatische Prioritätszuweisung\n\n**📊 Metadaten-Extraktion:**\n• Strukturierte Datenextraktion\n• Rechnungsnummern, Beträge, Daten\n• Validation & Confidence-Scoring\n• Format-Normalisierung\n\n**⚡ Performance-Optimierung:**\n• Batch-Processing für Effizienz\n• Parallele OCR-Verarbeitung\n• Caching für wiederkehrende Muster",
+				"width": 350,
+				"height": 250,
+				"color": 3
+			},
+			"name": "🤖 OCR-Details",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1350, 100]
+		},
+		{
+			"parameters": {
+				"code": "// Sammle alle verarbeiteten Dokumente und erstelle finale Batch-Ergebnisse\nconst allDocuments = $node[\"🔄 Dokumente aufteilen\"].json.valid_documents || [];\nconst currentIndex = $node[\"🔄 Dokumente aufteilen\"].context.currentIndex;\nconst processedDoc = $input.item.json.current_document;\n\n// Aktualisiere das Dokument im Array\nallDocuments[currentIndex] = processedDoc;\n\n// Prüfe ob das der letzte Batch ist\nif (currentIndex === allDocuments.length - 1) {\n  // Erstelle finale Statistiken\n  const processingStats = {\n    total_documents: allDocuments.length,\n    successful_ocr: allDocuments.filter(d => (d.ocr_processing && d.ocr_processing.confidence) > 0.7).length,\n    high_confidence: allDocuments.filter(d => (d.ocr_processing && d.ocr_processing.confidence) > 0.9).length,\n    classification_breakdown: {\n      invoices: allDocuments.filter(d => (d.classification && d.classification.document_type) === 'invoice').length,\n      receipts: allDocuments.filter(d => (d.classification && d.classification.document_type) === 'receipt').length,\n      contracts: allDocuments.filter(d => (d.classification && d.classification.document_type) === 'contract').length,\n      general: allDocuments.filter(d => (d.classification && d.classification.document_type) === 'general').length\n    },\n    priority_breakdown: {\n      high: allDocuments.filter(d => (d.classification && d.classification.priority) === 'high').length,\n      medium: allDocuments.filter(d => (d.classification && d.classification.priority) === 'medium').length,\n      low: allDocuments.filter(d => (d.classification && d.classification.priority) === 'low').length\n    },\n    requires_approval: allDocuments.filter(d => (d.classification && d.classification.requires_approval)).length\n  };\n  \n  // Qualitätsbewertung\n  const qualityMetrics = {\n    average_ocr_confidence: allDocuments.reduce((sum, d) => sum + ((d.ocr_processing && d.ocr_processing.confidence) || 0), 0) / allDocuments.length,\n    average_classification_confidence: allDocuments.reduce((sum, d) => sum + ((d.classification && d.classification.confidence_score) || 0), 0) / allDocuments.length,\n    metadata_extraction_rate: allDocuments.filter(d => Object.keys((d.extracted_metadata && d.extracted_metadata.extracted_fields) || {}).length > 0).length / allDocuments.length\n  };\n  \n  return {\n    json: {\n      capture_session_id: $input.item.json.capture_session_id,\n      processing_completed: new Date().toISOString(),\n      processed_documents: allDocuments,\n      processing_statistics: processingStats,\n      quality_metrics: qualityMetrics,\n      batch_completed: true,\n      ready_for_part2: true,\n      webhook_url: 'http://localhost:5678/webhook/document-processing'\n    }\n  };\n} else {\n  // Noch nicht fertig, gib aktuellen Zustand zurück\n  return {\n    json: {\n      ...allDocuments,\n      current_index: currentIndex,\n      processing_step: 'batch_processing'\n    }\n  };\n}"
+			},
+			"name": "Collect_Results",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [1550, 400]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $json.batch_completed }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"name": "🏁 Batch abgeschlossen?",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [1750, 400]
+		},
+		{
+			"parameters": {
+				"url": "={{ $json.webhook_url }}",
+				"sendHeaders": true,
+				"headerParameters": {
+					"parameters": [
+						{
+							"name": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"name": "X-Capture-Session-ID",
+							"value": "={{ $json.capture_session_id }}"
+						},
+						{
+							"name": "X-Workflow-Source",
+							"value": "Teil1-Erfassung"
+						}
+					]
+				},
+				"sendBody": true,
+				"jsonBody": "={{ JSON.stringify($json, null, 2) }}",
+				"options": {
+					"timeout": 60000
+				}
+			},
+			"name": "Forward_To_Part2",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4.2,
+			"position": [2050, 300]
+		},
+		{
+			"parameters": {
+				"chatId": "document-management-alerts",
+				"content": "=📄 **Dokumentenmanagement - Erfassung abgeschlossen**\n\n🔍 **Session:** {{ $json.capture_session_id }}\n📅 **Zeitpunkt:** {{ $json.processing_completed }}\n\n📊 **Verarbeitungsstatistiken:**\n• Dokumente gesamt: {{ $json.processing_statistics.total_documents }}\n• OCR erfolgreich: {{ $json.processing_statistics.successful_ocr }}\n• Hohe Confidence: {{ $json.processing_statistics.high_confidence }}\n\n📋 **Dokumententypen:**\n• Rechnungen: {{ $json.processing_statistics.classification_breakdown.invoices }}\n• Belege: {{ $json.processing_statistics.classification_breakdown.receipts }}\n• Verträge: {{ $json.processing_statistics.classification_breakdown.contracts }}\n• Sonstige: {{ $json.processing_statistics.classification_breakdown.general }}\n\n⚠️ **Genehmigung erforderlich:** {{ $json.processing_statistics.requires_approval }}\n\n📈 **Qualitätsmetriken:**\n• Ø OCR-Confidence: {{ Math.round($json.quality_metrics.average_ocr_confidence * 100) }}%\n• Ø Klassifizierung: {{ Math.round($json.quality_metrics.average_classification_confidence * 100) }}%\n• Metadaten-Rate: {{ Math.round($json.quality_metrics.metadata_extraction_rate * 100) }}%\n\n▶️ **Nächster Schritt:** Teil 2 - Verarbeitung & Validierung"
+			},
+			"name": "📱 Team-Benachrichtigung",
+			"type": "n8n-nodes-base.signal",
+			"typeVersion": 2,
+			"position": [2050, 500],
+			"credentials": {
+				"signalApi": {
+					"id": "3",
+					"name": "Signal account"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"fromEmail": "workflow@company.com",
+				"toEmail": "document-management@company.com",
+				"subject": "Keine neuen Dokumente erfasst - {{ $json.capture_session_id }}",
+				"content": "Die automatische Dokumentenerfassung hat keine neuen Dokumente zur Verarbeitung gefunden.\n\n**Session-Details:**\n- Session-ID: {{ $json.capture_session_id }}\n- Erfassung-Zeitpunkt: {{ $json.capture_timestamp }}\n- Überprüfte Quellen: {{ Object.keys($json.source_summary).length }}\n\n**Überprüfte Bereiche:**\n- Webhook-Uploads: {{ $json.source_summary.webhook_uploads || 0 }}\n- Directory-Scans: {{ $json.source_summary.directory_scans || 0 }}\n- Scheduled-Batches: {{ $json.source_summary.scheduled_batches || 0 }}\n\n**Abgelehnte Dokumente:** {{ $json.total_rejected || 0 }}\n{% if $json.total_rejected > 0 %}\n**Ablehnungsgründe:**\n{% for doc in $json.rejected_documents %}\n- {{ doc.filename }}: {{ doc.validation_error }}\n{% endfor %}\n{% endif %}\n\n**Status:**\n- Alle konfigurierten Quellen erfolgreich überprüft\n- Keine verarbeitungsrelevanten Dokumente gefunden\n- System läuft ordnungsgemäß\n\n**Nächste Überprüfung:**\n- Schedule: Automatisch in 15 Minuten\n- Webhook: Jederzeit bei Upload verfügbar\n- Manual: Über API-Trigger möglich\n\nDies ist eine Routine-Information und erfordert keine weiteren Maßnahmen.",
+				"options": {}
+			},
+			"name": "Idle_Info",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2.1,
+			"position": [2050, 700],
+			"credentials": {
+				"smtp": {
+					"id": "10",
+					"name": "SMTP"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $node[\"Forward_To_Part2\"].json.error !== undefined }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"name": "Error_Occurred",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [2350, 300]
+		},
+		{
+			"parameters": {
+				"fromEmail": "workflow@company.com",
+				"toEmail": "support@company.com,document-management@company.com",
+				"subject": "🚨 FEHLER: Dokumentenmanagement Teil 1 - {{ $json.capture_session_id }}",
+				"content": "Ein kritischer Fehler ist im Dokumentenmanagement-Workflow (Teil 1: Erfassung) aufgetreten.\n\n**🚨 Fehlerdetails:**\n- Fehler: {{ $node[\"Forward_To_Part2\"].(json.error && json.error.message) || 'Unbekannter Fehler' }}\n- Session-ID: {{ $json.capture_session_id }}\n- Zeitstempel: {{ $now.toISOString() }}\n\n**📄 Betroffene Dokumente:**\n- Anzahl verarbeitet: {{ $(json.processing_statistics && json.processing_statistics.total_documents) || 'N/A' }}\n- OCR-Erfolgsrate: {{ $(json.processing_statistics && json.processing_statistics.successful_ocr) || 0 }}\n- Hohe Confidence: {{ $(json.processing_statistics && json.processing_statistics.high_confidence) || 0 }}\n\n**📊 Qualitätsmetriken:**\n- Ø OCR-Confidence: {{ Math.round(($(json.quality_metrics && json.quality_metrics.average_ocr_confidence) || 0) * 100) }}%\n- Metadaten-Extraktion: {{ Math.round(($(json.quality_metrics && json.quality_metrics.metadata_extraction_rate) || 0) * 100) }}%\n\n**⚠️ Auswirkungen:**\n- Dokumentenverarbeitung unterbrochen\n- Möglicherweise unverarbeitete Geschäftsdokumente\n- Compliance-Risiko bei zeitkritischen Dokumenten\n\n**🔧 Sofortmaßnahmen:**\n1. Webhook-Verbindung zu Teil 2 prüfen\n2. OCR-Engine-Status validieren\n3. Dateisystem-Zugriff überprüfen\n4. n8n-Logs analysieren\n5. Bei kritischen Dokumenten: Manuelle Verarbeitung\n\n**📋 Nächste Schritte:**\n1. Fehlerursache identifizieren und beheben\n2. OCR/Klassifizierung-Pipeline testen\n3. Verpasste Dokumente nacharbeiten\n4. Monitoring-Alerts optimieren\n\n⏰ **Zeitkritisch:** Rechnungen und Verträge umgehend manuell prüfen!",
+				"options": {}
+			},
+			"name": "🚨 Kritischer Fehler",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2.1,
+			"position": [2650, 200],
+			"credentials": {
+				"smtp": {
+					"id": "10",
+					"name": "SMTP"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"code": "// Protokolliere erfolgreiche Workflow-Ausführung mit umfassendem Audit-Trail\nconst data = $input.item.json;\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil1-Erfassung',\n  status: data.batch_completed ? 'documents_processed' : 'no_documents',\n  capture_session_id: data.capture_session_id,\n  processing_statistics: data.processing_statistics || {},\n  quality_metrics: data.quality_metrics || {},\n  performance_metrics: {\n    total_processing_time_ms: data.processing_completed ? \n      Date.now() - new Date(data.capture_timestamp).getTime() : null,\n    documents_per_minute: (data.processing_statistics && data.processing_statistics.total_documents) ? \n      (data.processing_statistics.total_documents / ((Date.now() - new Date(data.capture_timestamp).getTime()) / 60000)) : 0,\n    ocr_success_rate: (data.processing_statistics && data.processing_statistics.successful_ocr) && (data.processing_statistics && data.processing_statistics.total_documents) ?\n      (data.processing_statistics.successful_ocr / data.processing_statistics.total_documents) : 0\n  },\n  compliance_info: {\n    gobd_compliant: true,\n    audit_trail_complete: true,\n    retention_period_years: 10,\n    data_classification: 'business_documents'\n  },\n  next_execution: {\n    scheduled: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // +15 Minuten\n    webhook_available: true,\n    manual_trigger_available: true\n  }\n};\n\nconsole.log('Dokumentenmanagement Teil 1 erfolgreich abgeschlossen:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    execution_log: successLog,\n    workflow_completed: true,\n    status: 'Teil1-Erfolgreich-Abgeschlossen'\n  }\n};"
+			},
+			"name": "Success_And_Audit_Trail",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [2650, 400]
+		},
+		{
+			"parameters": {
+				"content": "**🏁 Workflow-Abschluss & Qualitätssicherung:**\n\n**✅ Erfolgreiche Verarbeitung:**\n• Weiterleitung an Teil 2 (Verarbeitung)\n• Umfassende Statistiken und Metriken\n• Team-Benachrichtigung über Slack/Teams\n• Audit-Trail für Compliance\n\n**❌ Keine Dokumente:**\n• Information an Document Management Team\n• Routine-Überwachung bestätigt\n• Nächste Prüfung geplant\n\n**🚨 Fehlerbehandlung:**\n• Sofortige Alert-Benachrichtigung\n• Detaillierte Fehleranalyse\n• Compliance-kritische Eskalation\n• Recovery-Handlungsempfehlungen\n\n**📊 Performance-Monitoring:**\n• OCR-Erfolgsraten\n• Verarbeitungsgeschwindigkeit\n• Qualitätsmetriken\n• Trend-Analyse für Optimierung",
+				"width": 350,
+				"height": 250,
+				"color": 5
+			},
+			"name": "🏁 Abschluss-Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [2050, 50]
+		}
+	],
+	"connections": {
+		"⏰ Ordner-Überwachung": {
+			"main": [
+				[
+					{
+						"node": "📁 Scan-Ordner prüfen",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Upload_Webhook": {
+			"main": [
+				[
+					{
+						"node": "🔀 Quellen vereinen",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"📁 Scan-Ordner prüfen": {
+			"main": [
+				[
+					{
+						"node": "🔀 Quellen vereinen",
+						"type": "main",
+						"index": 1
+					}
+				]
+			]
+		},
+		"🔀 Quellen vereinen": {
+			"main": [
+				[
+					{
+						"node": "Capture_Documents",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Capture_Documents": {
+			"main": [
+				[
+					{
+						"node": "Documents_Found",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Documents_Found": {
+			"main": [
+				[
+					{
+						"node": "Split_Documents",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[
+					{
+						"node": "Idle_Info",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Split_Documents": {
+			"main": [
+				[
+					{
+						"node": "🤖 OCR & Klassifizierung",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"🤖 OCR & Klassifizierung": {
+			"main": [
+				[
+					{
+						"node": "Collect_Results",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Collect_Results": {
+			"main": [
+				[
+					{
+						"node": "🏁 Batch abgeschlossen?",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"🏁 Batch abgeschlossen?": {
+			"main": [
+				[
+					{
+						"node": "Forward_To_Part2",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "📱 Team-Benachrichtigung",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Forward_To_Part2": {
+			"main": [
+				[
+					{
+						"node": "Error_Occurred",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"📱 Team-Benachrichtigung": {
+			"main": [
+				[
+					{
+						"node": "Success_And_Audit_Trail",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Idle_Info": {
+			"main": [
+				[
+					{
+						"node": "Success_And_Audit_Trail",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Error_Occurred": {
+			"main": [
+				[
+					{
+						"node": "🚨 Kritischer Fehler",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[
+					{
+						"node": "Success_And_Audit_Trail",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {},
+	"settings": {},
+	"staticData": {},
+	"tags": [
+		{
+			"createdAt": "2024-12-19T10:00:00.000Z",
+			"updatedAt": "2024-12-19T10:00:00.000Z",
+			"id": "7",
+			"name": "Dokumentenmanagement"
+		}
+	],
+	"meta": {
+		"templateCredsSetupCompleted": true,
+		"n8nVersion": "1.101.1"
+	},
+	"id": "7001",
+	"versionId": "v2.0.0"
+}

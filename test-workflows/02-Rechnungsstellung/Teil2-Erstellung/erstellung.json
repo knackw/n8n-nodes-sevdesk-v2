@@ -1,353 +1,322 @@
 {
-  "name": "SevDesk - Rechnungsstellung - Teil 2: Erstellung (v2)",
-  "nodes": [
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "invoice-creation",
-        "options": {}
-      },
-      "name": "Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        250,
-        300
-      ],
-      "webhookId": "invoice-creation"
-    },
-    {
-      "parameters": {
-        "code": "// Validiere den Webhook-Key\nconst payload = $input.item.json;\nconst webhookKey = payload.webhook_key;\nconst data = payload.data;\n\n// Konfiguration wird später geladen, hier nur Validierung\nif (!webhookKey || webhookKey !== 'secret-key') {\n  throw new Error('Ungültiger Webhook-Key');\n}\n\nreturn {\n  json: data\n};"
-      },
-      "name": "Daten validieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        450,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "code": "// Rechnungsdaten für SevDesk vorbereiten\nconst data = $input.item.json;\nconst config = $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config || {};\nconst aiText = $node[\"KI-Rechnungstext generieren\"].json.generated_text || '';\n\n// Standardwerte aus der Konfiguration\nconst defaults = {\n  vatRate: config.defaultVatRate || 19,\n  paymentTerms: config.defaultPaymentTerms || 14,\n  invoiceType: config.defaultInvoiceType || 'RE',\n  status: config.defaultStatus || 200,\n  contactPerson: config.defaultContactPerson || null\n};\n\n// Rechnungspositionen erstellen\nconst invoiceItems = [];\n\n// Hauptposition\ninvoiceItems.push({\n  name: data.text,\n  description: aiText.trim(),\n  quantity: 1,\n  price: data.amount,\n  vatRate: defaults.vatRate\n});\n\n// Zusätzliche Positionen aus Konfiguration\nif (config.additionalItems && Array.isArray(config.additionalItems)) {\n  config.additionalItems.forEach(item => {\n    if (item.condition) {\n      // Hier könnte eine Bedingungslogik implementiert werden\n      invoiceItems.push({\n        name: item.name,\n        description: item.description,\n        quantity: item.quantity || 1,\n        price: item.price,\n        vatRate: item.vatRate || defaults.vatRate\n      });\n    }\n  });\n}\n\nreturn {\n  json: {\n    ...data,\n    invoiceItems,\n    vatRate: defaults.vatRate,\n    paymentTerms: defaults.paymentTerms,\n    invoiceType: defaults.invoiceType,\n    status: defaults.status,\n    contactPerson: defaults.contactPerson,\n    aiGeneratedText: aiText.trim()\n  }\n};"
-      },
-      "name": "Rechnungsdaten vorbereiten",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1250,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "resource": "invoice",
-        "operation": "create",
-        "customerId": "={{ $json.customerId }}",
-        "invoiceDate": "={{ $now.format('YYYY-MM-DD') }}",
-        "discount": "0",
-        "address": "={{ $json.customerData.address }}",
-        "status": "={{ $json.status }}",
-        "contactPerson": "={{ $json.contactPerson }}",
-        "smallSettlement": "false",
-        "taxRate": "={{ $json.vatRate }}",
-        "taxRule": "={{ $json.taxRule || 1 }}",
-        "taxText": "Umsatzsteuer",
-        "taxType": "default",
-        "invoiceType": "={{ $json.invoiceType }}",
-        "additionalOptions": {
-          "invoiceNumber": "={{ $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config.invoiceNumberPrefix || 'RE' }}{{ $now.format('YYYYMM') }}{{ $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config.nextInvoiceNumber || '001' }}"
-        }
-      },
-      "name": "Rechnung erstellen",
-      "type": "n8n-nodes-sevdesk-v2.sevDesk",
-      "typeVersion": 1,
-      "position": [
-        1450,
-        300
-      ],
-      "credentials": {
-        "sevDeskApi": {
-          "id": "6",
-          "name": "SevDesk API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "resource": "invoicePosition",
-        "operation": "create",
-        "invoiceId": "={{ $json.id }}",
-        "name": "={{ $json.invoiceItems[0].name }}",
-        "quantity": "={{ $json.invoiceItems[0].quantity }}",
-        "price": "={{ $json.invoiceItems[0].price }}",
-        "unity": "Stück",
-        "taxRate": "={{ $json.invoiceItems[0].vatRate }}",
-        "additionalOptions": {
-          "text": "={{ $json.invoiceItems[0].description }}"
-        }
-      },
-      "name": "Rechnungsposition hinzufügen",
-      "type": "n8n-nodes-sevdesk-v2.sevDesk",
-      "typeVersion": 1,
-      "position": [
-        1650,
-        300
-      ],
-      "credentials": {
-        "sevDeskApi": {
-          "id": "6",
-          "name": "SevDesk API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "resource": "invoice",
-        "operation": "render",
-        "invoiceId": "={{ $json.id }}",
-        "templateId": "={{ $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config.invoiceTemplateId }}"
-      },
-      "name": "PDF generieren",
-      "type": "n8n-nodes-sevdesk-v2.sevDesk",
-      "typeVersion": 1,
-      "position": [
-        1850,
-        300
-      ],
-      "credentials": {
-        "sevDeskApi": {
-          "id": "6",
-          "name": "SevDesk API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "bucketName": "={{ $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config.cloudStorageBucket || \"invoices-archive\" }}",
-        "fileName": "=invoices/{{ $now.format('YYYY-MM') }}/{{ $json.invoiceNumber }}.pdf",
-        "binaryPropertyName": "data"
-      },
-      "name": "In Cloud speichern",
-      "type": "n8n-nodes-base.googleCloudStorage",
-      "typeVersion": 1.2,
-      "position": [
-        2050,
-        300
-      ],
-      "credentials": {
-        "googleCloudStorageOAuth2Api": {
-          "id": "12",
-          "name": "Google Cloud Storage"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "url": "={{ $node[\"SevDesk - Workflow-Konfiguration laden\"].json.config.webhookUrls?.versand || 'http://localhost:5678/webhook/invoice-sending' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "X-Webhook-Key",
-              "value": "secret-key"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "webhook_key",
-              "value": "secret-key"
-            },
-            {
-              "name": "data",
-              "value": "={{ { invoiceId: $json.id, invoiceNumber: $json.invoiceNumber, customerId: $json.customerId, customerData: $json.customerData, amount: $json.invoiceItems[0].price, cloudStorageUrl: $node[\"In Cloud speichern\"].json.fileUrl, timestamp: $now.toISOString() } }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "name": "An Teil 3 weiterleiten",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        2450,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $node[\"Rechnung erstellen\"].error !== undefined || $node[\"Rechnungsposition hinzufügen\"].error !== undefined || $node[\"PDF generieren\"].error !== undefined || $node[\"In Cloud speichern\"].error !== undefined || $node[\"Datenbank aktualisieren\"].error !== undefined || $node[\"An Teil 3 weiterleiten\"].error !== undefined }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "Fehler aufgetreten?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        2650,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "fromEmail": "error-reporting@example.com",
-        "toEmail": "support@example.com",
-        "subject": "Fehler im Rechnungsstellung-Workflow (Erstellung)",
-        "text": "=Es ist ein Fehler im Rechnungsstellung-Workflow (Teil 2: Erstellung) aufgetreten:\n\nFehler: {{ $node[\"Rechnung erstellen\"].error ? $node[\"Rechnung erstellen\"].error.message : ($node[\"Rechnungsposition hinzufügen\"].error ? $node[\"Rechnungsposition hinzufügen\"].error.message : ($node[\"PDF generieren\"].error ? $node[\"PDF generieren\"].error.message : ($node[\"In Cloud speichern\"].error ? $node[\"In Cloud speichern\"].error.message : ($node[\"Datenbank aktualisieren\"].error ? $node[\"Datenbank aktualisieren\"].error.message : $node[\"An Teil 3 weiterleiten\"].error.message)))) }}\n\nDetails: {{ JSON.stringify($node[\"Rechnung erstellen\"].error || $node[\"Rechnungsposition hinzufügen\"].error || $node[\"PDF generieren\"].error || $node[\"In Cloud speichern\"].error || $node[\"Datenbank aktualisieren\"].error || $node[\"An Teil 3 weiterleiten\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
-        "options": {}
-      },
-      "name": "Support benachrichtigen",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [
-        3050,
-        200
-      ],
-      "credentials": {
-        "smtp": {
-          "id": "10",
-          "name": "SMTP"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "chatId": "support-alerts",
-        "text": "=⚠️ FEHLER im Rechnungsstellung-Workflow (Erstellung):\n\n{{ $node[\"Rechnung erstellen\"].error ? $node[\"Rechnung erstellen\"].error.message : ($node[\"Rechnungsposition hinzufügen\"].error ? $node[\"Rechnungsposition hinzufügen\"].error.message : ($node[\"PDF generieren\"].error ? $node[\"PDF generieren\"].error.message : ($node[\"In Cloud speichern\"].error ? $node[\"In Cloud speichern\"].error.message : ($node[\"Datenbank aktualisieren\"].error ? $node[\"Datenbank aktualisieren\"].error.message : $node[\"An Teil 3 weiterleiten\"].error.message)))) }}\n\nZeitstempel: {{ $now.toISOString() }}"
-      },
-      "name": "Schedule-Notification",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [
-        3050,
-        400
-      ],
-      "credentials": {
-        "signalApi": {
-          "id": "11",
-          "name": "Signal API"
-        }
-      }
-    }
-  ],
-  "connections": {
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Daten validieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Daten validieren": {
-      "main": [
-        [
-          {
-            "node": "Rechnungsdaten vorbereiten",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Rechnungsdaten vorbereiten": {
-      "main": [
-        [
-          {
-            "node": "Rechnung erstellen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Rechnung erstellen": {
-      "main": [
-        [
-          {
-            "node": "Rechnungsposition hinzufügen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Rechnungsposition hinzufügen": {
-      "main": [
-        [
-          {
-            "node": "PDF generieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "PDF generieren": {
-      "main": [
-        [
-          {
-            "node": "In Cloud speichern",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "In Cloud speichern": {
-      "main": [
-        [
-          {
-            "node": "An Teil 3 weiterleiten",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "An Teil 3 weiterleiten": {
-      "main": [
-        [
-          {
-            "node": "Fehler aufgetreten?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fehler aufgetreten?": {
-      "main": [
-        [
-          {
-            "node": "Support benachrichtigen",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Schedule-Notification",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
-    }
-  }
+	"name": "SevDesk - Rechnungsstellung - Teil 2: Erstellung (v2)",
+	"nodes": [
+		{
+			"parameters": {
+				"httpMethod": "POST",
+				"path": "invoice-creation",
+				"options": {}
+			},
+			"id": "022_TRG_01",
+			"name": "Webhook",
+			"type": "n8n-nodes-base.webhook",
+			"typeVersion": 2,
+			"position": [250, 300],
+			"webhookId": "invoice-creation"
+		},
+		{
+			"parameters": {
+				"code": "// Validiere den Webhook-Key\nconst payload = $input.item.json;\nconst webhookKey = payload.webhook_key;\nconst data = payload.data;\n\n// Konfiguration wird später geladen, hier nur Validierung\nif (!webhookKey || webhookKey !== 'secret-key') {\n  throw new Error('Ungültiger Webhook-Key');\n}\n\nreturn {\n  json: data\n};"
+			},
+			"id": "022_VAL_01",
+			"name": "Daten validieren",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [450, 300]
+		},
+		{
+			"parameters": {
+				"code": "// Rechnungsdaten für SevDesk vorbereiten\nconst data = $input.item.json;\nconst aiText = data.generatedText || data.text || '';\n\n// Standard-Konfiguration\nconst defaults = {\n  vatRate: 19,\n  paymentTerms: 14,\n  invoiceType: 'RE',\n  status: 200,\n  contactPerson: null\n};\n\n// Rechnungspositionen erstellen\nconst invoiceItems = [];\n\n// Hauptposition\ninvoiceItems.push({\n  name: data.text,\n  description: aiText.trim(),\n  quantity: 1,\n  price: data.amount,\n  vatRate: defaults.vatRate\n});\n\nreturn {\n  json: {\n    ...data,\n    invoiceItems,\n    vatRate: defaults.vatRate,\n    paymentTerms: defaults.paymentTerms,\n    invoiceType: defaults.invoiceType,\n    status: defaults.status,\n    contactPerson: defaults.contactPerson,\n    aiGeneratedText: aiText.trim()\n  }\n};"
+			},
+			"name": "Rechnungsdaten vorbereiten",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [1250, 300]
+		},
+		{
+			"parameters": {
+				"resource": "invoice",
+				"operation": "create",
+				"customerId": "={{ $json.customerId }}",
+				"invoiceDate": "={{ $now.format('YYYY-MM-DD') }}",
+				"discount": "0",
+				"address": "={{ $json.customerData.address }}",
+				"status": "={{ $json.status }}",
+				"contactPerson": "={{ $json.contactPerson }}",
+				"smallSettlement": "false",
+				"taxRate": "={{ $json.vatRate }}",
+				"taxRule": "={{ $json.taxRule || 1 }}",
+				"taxText": "Umsatzsteuer",
+				"taxType": "default",
+				"invoiceType": "={{ $json.invoiceType }}",
+				"additionalOptions": {
+					"invoiceNumber": "RE{{ $now.format('YYYYMM') }}001"
+				}
+			},
+			"name": "Rechnung erstellen",
+			"type": "n8n-nodes-sevdesk-v2.sevDesk",
+			"typeVersion": 1,
+			"position": [1450, 300],
+			"credentials": {
+				"sevDeskApi": {
+					"id": "6",
+					"name": "SevDesk API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"resource": "invoicePosition",
+				"operation": "create",
+				"invoiceId": "={{ $json.id }}",
+				"name": "={{ $json.invoiceItems[0].name }}",
+				"quantity": "={{ $json.invoiceItems[0].quantity }}",
+				"price": "={{ $json.invoiceItems[0].price }}",
+				"unity": "Stück",
+				"taxRate": "={{ $json.invoiceItems[0].vatRate }}",
+				"additionalOptions": {
+					"text": "={{ $json.invoiceItems[0].description }}"
+				}
+			},
+			"name": "Rechnungsposition hinzufügen",
+			"type": "n8n-nodes-sevdesk-v2.sevDesk",
+			"typeVersion": 1,
+			"position": [1650, 300],
+			"credentials": {
+				"sevDeskApi": {
+					"id": "6",
+					"name": "SevDesk API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"resource": "invoice",
+				"operation": "render",
+				"invoiceId": "={{ $json.id }}",
+				"templateId": "1"
+			},
+			"name": "PDF generieren",
+			"type": "n8n-nodes-sevdesk-v2.sevDesk",
+			"typeVersion": 1,
+			"position": [1850, 300],
+			"credentials": {
+				"sevDeskApi": {
+					"id": "6",
+					"name": "SevDesk API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"bucketName": "invoices-archive",
+				"fileName": "=invoices/{{ $now.format('YYYY-MM') }}/{{ $json.invoiceNumber }}.pdf",
+				"binaryPropertyName": "data"
+			},
+			"name": "In Cloud speichern",
+			"type": "n8n-nodes-base.googleCloudStorage",
+			"typeVersion": 1.2,
+			"position": [2050, 300],
+			"credentials": {
+				"googleCloudStorageOAuth2Api": {
+					"id": "12",
+					"name": "Google Cloud Storage"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"url": "http://localhost:5678/webhook/invoice-sending",
+				"sendHeaders": true,
+				"headerParameters": {
+					"parameters": [
+						{
+							"name": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"name": "X-Webhook-Key",
+							"value": "secret-key"
+						}
+					]
+				},
+				"sendBody": true,
+				"bodyParameters": {
+					"parameters": [
+						{
+							"name": "webhook_key",
+							"value": "secret-key"
+						},
+						{
+							"name": "data",
+							"value": "={{ { invoiceId: $json.id, invoiceNumber: $json.invoiceNumber, customerId: $json.customerId, customerData: $json.customerData, amount: $json.invoiceItems[0].price, cloudStorageUrl: $node[\"In Cloud speichern\"].json.fileUrl, timestamp: $now.toISOString() } }}"
+						}
+					]
+				},
+				"options": {}
+			},
+			"name": "An Teil 3 weiterleiten",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4.2,
+			"position": [2450, 300]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $node[\"Rechnung erstellen\"].error !== undefined || $node[\"Rechnungsposition hinzufügen\"].error !== undefined || $node[\"PDF generieren\"].error !== undefined || $node[\"In Cloud speichern\"].error !== undefined || $node[\"An Teil 3 weiterleiten\"].error !== undefined }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"name": "Fehler aufgetreten?",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [2650, 300]
+		},
+		{
+			"parameters": {
+				"fromEmail": "error-reporting@example.com",
+				"toEmail": "support@example.com",
+				"subject": "Fehler im Rechnungsstellung-Workflow (Erstellung)",
+				"text": "=Es ist ein Fehler im Rechnungsstellung-Workflow (Teil 2: Erstellung) aufgetreten:\n\nFehler: {{ $node[\"Rechnung erstellen\"].error ? $node[\"Rechnung erstellen\"].error.message : ($node[\"Rechnungsposition hinzufügen\"].error ? $node[\"Rechnungsposition hinzufügen\"].error.message : ($node[\"PDF generieren\"].error ? $node[\"PDF generieren\"].error.message : ($node[\"In Cloud speichern\"].error ? $node[\"In Cloud speichern\"].error.message : $node[\"An Teil 3 weiterleiten\"].error.message))) }}\n\nDetails: {{ JSON.stringify($node[\"Rechnung erstellen\"].error || $node[\"Rechnungsposition hinzufügen\"].error || $node[\"PDF generieren\"].error || $node[\"In Cloud speichern\"].error || $node[\"An Teil 3 weiterleiten\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
+				"options": {}
+			},
+			"name": "Support benachrichtigen",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2.1,
+			"position": [3050, 200],
+			"credentials": {
+				"smtp": {
+					"id": "10",
+					"name": "SMTP"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"chatId": "support-alerts",
+				"text": "=⚠️ FEHLER im Rechnungsstellung-Workflow (Erstellung):\n\n{{ $node[\"Rechnung erstellen\"].error ? $node[\"Rechnung erstellen\"].error.message : ($node[\"Rechnungsposition hinzufügen\"].error ? $node[\"Rechnungsposition hinzufügen\"].error.message : ($node[\"PDF generieren\"].error ? $node[\"PDF generieren\"].error.message : ($node[\"In Cloud speichern\"].error ? $node[\"In Cloud speichern\"].error.message : $node[\"An Teil 3 weiterleiten\"].error.message))) }}\n\nZeitstempel: {{ $now.toISOString() }}"
+			},
+			"name": "Schedule-Notification",
+			"type": "n8n-nodes-base.scheduleTrigger",
+			"typeVersion": 1.2,
+			"position": [3050, 400],
+			"credentials": {
+				"signalApi": {
+					"id": "11",
+					"name": "Signal API"
+				}
+			}
+		}
+	],
+	"connections": {
+		"Webhook": {
+			"main": [
+				[
+					{
+						"node": "Daten validieren",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Daten validieren": {
+			"main": [
+				[
+					{
+						"node": "Rechnungsdaten vorbereiten",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Rechnungsdaten vorbereiten": {
+			"main": [
+				[
+					{
+						"node": "Rechnung erstellen",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Rechnung erstellen": {
+			"main": [
+				[
+					{
+						"node": "Rechnungsposition hinzufügen",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Rechnungsposition hinzufügen": {
+			"main": [
+				[
+					{
+						"node": "PDF generieren",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"PDF generieren": {
+			"main": [
+				[
+					{
+						"node": "In Cloud speichern",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"In Cloud speichern": {
+			"main": [
+				[
+					{
+						"node": "An Teil 3 weiterleiten",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"An Teil 3 weiterleiten": {
+			"main": [
+				[
+					{
+						"node": "Fehler aufgetreten?",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Fehler aufgetreten?": {
+			"main": [
+				[
+					{
+						"node": "Support benachrichtigen",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "Schedule-Notification",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[]
+			]
+		}
+	}
 }

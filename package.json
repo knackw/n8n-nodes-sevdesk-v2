@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-sevdesk-v2",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "description": "n8n community node for SevDesk API v2 integration with 24 production-ready workflow templates. Direct API access without external dependencies - simplified, secure, and optimized for German accounting automation (n8n 1.101.1 compatible).",
   "keywords": [
     "n8n-community-node-package",
@@ -40,6 +40,7 @@
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials package.json",
     "lintfix": "eslint nodes credentials package.json --fix",
+    "lint-staged": "lint-staged",
     "prepublishOnly": "npm run clean && npm run lint && npx tsc --project tsconfig.prod.json && npx gulp --gulpfile tools/gulpfile.js build:icons && npm run build:validate",
     "test": "jest",
     "test:watch": "jest --watch",

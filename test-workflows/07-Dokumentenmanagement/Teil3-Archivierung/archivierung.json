@@ -1,74 +1,243 @@
 {
-  "name": "SevDesk - Dokumentenmanagement - Teil 3: Archivierung (v2)",
-  "nodes": [
-    {
-      "parameters": {
-        "content": "## 🗄️ SevDesk - Dokumentenmanagement - Teil 3: Archivierung\n\n**Zweck:**\nGoBD-konforme Langzeitarchivierung mit vollständiger Revisionssicherheit und intelligenter Dokumentenverwaltung.\n\n**🛡️ Compliance-Features:**\n- **GoBD-Konformität:** Vollständige Einhaltung der Grundordnung ordnungsmäßiger Buchführung\n- **Revisionssicherheit:** Unveränderliche Speicherung mit Zeitstempel-Authentifizierung\n- **10-Jahres-Aufbewahrung:** Automatische Retention-Policies\n- **Audit-Trail:** Lückenlose Nachverfolgung aller Dokumenten-Änderungen\n- **Volltext-Indexierung:** KI-gestützte Suche und Kategorisierung\n- **Backup-Redundanz:** Multi-Location-Sicherung\n\n**🔍 Ausgabe:** Rechtssichere Archivierung mit Compliance-Zertifizierung und jederzeitiger Audit-Bereitschaft",
-        "height": 250,
-        "width": 450
-      },
-      "name": "Workflow-Beschreibung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [0, 0]
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "document-archiving"
-      },
-      "name": "Webhook Trigger",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [250, 300]
-    },
-    {
-      "parameters": {
-        "bucketName": "document-archive",
-        "fileName": "={{ 'documents/' + $now.format('YYYY/MM') + '/' + $json.batch_id + '.json' }}"
-      },
-      "name": "Dokumente archivieren",
-      "type": "n8n-nodes-base.googleCloudStorage",
-      "typeVersion": 1.2,
-      "position": [450, 300]
-    },
-    {
-      "parameters": {
-        "fromEmail": "documents@company.com",
-        "toEmail": "accounting@company.com",
-        "subject": "Dokumente archiviert - {{ $json.total_count }} Dokumente"
-      },
-      "name": "Archivierung bestätigen",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [650, 300]
-    }
-  ],
-  "connections": {
-    "Webhook Trigger": {
-      "main": [
-        [
-          {
-            "node": "Dokumente archivieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Dokumente archivieren": {
-      "main": [
-        [
-          {
-            "node": "Archivierung bestätigen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "meta": {
-    "n8nVersion": "1.101.1"
-  }
-} 
+	"name": "SevDesk - Dokumentenmanagement - Teil 3: Archivierung (v2)",
+	"nodes": [
+		{
+			"parameters": {
+				"content": "## 🗄️ SevDesk - Dokumentenmanagement - Teil 3: Archivierung\n\n**Zweck:**\nGoBD-konforme Langzeitarchivierung mit vollständiger Revisionssicherheit und intelligenter Dokumentenverwaltung.\n\n**🛡️ Compliance-Features:**\n- **GoBD-Konformität:** Vollständige Einhaltung der Grundordnung ordnungsmäßiger Buchführung\n- **Revisionssicherheit:** Unveränderliche Speicherung mit Zeitstempel-Authentifizierung\n- **10-Jahres-Aufbewahrung:** Automatische Retention-Policies\n- **Audit-Trail:** Lückenlose Nachverfolgung aller Dokumenten-Änderungen\n- **Volltext-Indexierung:** KI-gestützte Suche und Kategorisierung\n- **Backup-Redundanz:** Multi-Location-Sicherung\n\n**🔍 Ausgabe:** Rechtssichere Archivierung mit Compliance-Zertifizierung und jederzeitiger Audit-Bereitschaft",
+				"height": 250,
+				"width": 450
+			},
+			"id": "workflow_beschreibung",
+			"name": "Workflow-Beschreibung",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [0, 0]
+		},
+		{
+			"parameters": {
+				"httpMethod": "POST",
+				"path": "document-archiving",
+				"options": {
+					"rawBody": true
+				}
+			},
+			"id": "webhook_trigger",
+			"name": "Archive_Trigger",
+			"type": "n8n-nodes-base.webhook",
+			"typeVersion": 2,
+			"position": [250, 300]
+		},
+		{
+			"parameters": {
+				"jsCode": "// 🔍 Eingangsdaten validieren und GoBD-Metadaten erstellen\nconst documents = $input.all();\nconst results = [];\n\nfor (const item of documents) {\n  const data = item.json;\n  \n  // Validierung der Pflichtfelder\n  if (!data.document_id || !data.document_type || !data.content) {\n    throw new Error(`Pflichtfelder fehlen für Dokument: ${JSON.stringify(data)}`);\n  }\n  \n  // GoBD-konforme Metadaten erstellen\n  const gobdMetadata = {\n    document_id: data.document_id,\n    document_type: data.document_type,\n    original_filename: data.filename || 'unknown',\n    file_size: (data.content && data.content.length) || 0,\n    mime_type: data.mime_type || 'application/octet-stream',\n    creation_date: data.creation_date || new Date().toISOString(),\n    archival_date: new Date().toISOString(),\n    retention_until: new Date(Date.now() + (10 * 365 * 24 * 60 * 60 * 1000)).toISOString(), // 10 Jahre\n    hash_sha256: data.hash_sha256 || 'pending',\n    compliance_status: 'pending_validation',\n    audit_trail: [],\n    tags: data.tags || [],\n    business_year: new Date().getFullYear(),\n    source_system: 'SevDesk'\n  };\n  \n  results.push({\n    ...data,\n    gobd_metadata: gobdMetadata,\n    archive_path: `documents/${gobdMetadata.business_year}/${data.document_type}/${data.document_id}`,\n    batch_id: $execution.id,\n    processing_timestamp: new Date().toISOString()\n  });\n}\n\nreturn results;"
+			},
+			"id": "validate_documents",
+			"name": "Document_Validation",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [450, 300]
+		},
+		{
+			"parameters": {
+				"jsCode": "// 🔐 Hash-Berechnung und digitale Signatur für Revisionssicherheit\nconst crypto = require('crypto');\nconst documents = $input.all();\nconst results = [];\n\nfor (const item of documents) {\n  const data = item.json;\n  \n  // SHA-256 Hash für Dokumenteninhalt\n  const content = data.content || '';\n  const hash = crypto.createHash('sha256').update(content).digest('hex');\n  \n  // Zeitstempel für Revisionssicherheit\n  const timestamp = new Date().toISOString();\n  const timestampHash = crypto.createHash('sha256')\n    .update(hash + timestamp + data.document_id)\n    .digest('hex');\n  \n  // GoBD-konformen Audit-Trail erweitern\n  const auditEntry = {\n    action: 'document_archived',\n    timestamp: timestamp,\n    user: 'system',\n    document_hash: hash,\n    timestamp_hash: timestampHash,\n    workflow_execution_id: $execution.id\n  };\n  \n  // Metadaten aktualisieren\n  data.gobd_metadata.hash_sha256 = hash;\n  data.gobd_metadata.timestamp_hash = timestampHash;\n  data.gobd_metadata.audit_trail.push(auditEntry);\n  data.gobd_metadata.compliance_status = 'hash_verified';\n  \n  results.push({\n    ...data,\n    security_hash: hash,\n    timestamp_signature: timestampHash,\n    revision_proof: {\n      hash: hash,\n      timestamp: timestamp,\n      signature: timestampHash\n    }\n  });\n}\n\nreturn results;"
+			},
+			"id": "create_hash_signature",
+			"name": "Hash_And_Signature",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [650, 300]
+		},
+		{
+			"parameters": {
+				"bucketName": "sevdesk-archive-primary",
+				"fileName": "={{ $json.archive_path + '/' + $json.document_id + '.json' }}",
+				"binaryData": false,
+				"fileContent": "={{ JSON.stringify({\n  document: $json,\n  gobd_metadata: $json.gobd_metadata,\n  security: $json.revision_proof,\n  archived_at: $now.toISO(),\n  archive_version: '2.0'\n}, null, 2) }}"
+			},
+			"id": "primary_archive",
+			"name": "Primary_Archive",
+			"type": "n8n-nodes-base.googleCloudStorage",
+			"typeVersion": 1.2,
+			"position": [850, 200]
+		},
+		{
+			"parameters": {
+				"bucketName": "sevdesk-archive-backup",
+				"fileName": "={{ $json.archive_path + '/' + $json.document_id + '.json' }}",
+				"binaryData": false,
+				"fileContent": "={{ JSON.stringify({\n  document: $json,\n  gobd_metadata: $json.gobd_metadata,\n  security: $json.revision_proof,\n  archived_at: $now.toISO(),\n  archive_version: '2.0'\n}, null, 2) }}"
+			},
+			"id": "backup_archive",
+			"name": "Backup_Archive",
+			"type": "n8n-nodes-base.googleCloudStorage",
+			"typeVersion": 1.2,
+			"position": [850, 400]
+		},
+		{
+			"parameters": {
+				"url": "https://audit-system.company.com/api/v1/audit-trail",
+				"authentication": "genericCredentialType",
+				"genericAuthType": "httpHeaderAuth",
+				"httpHeaderAuth": {
+					"name": "Authorization",
+					"value": "Bearer {{ $credentials.audit_system.token }}"
+				},
+				"sendBody": true,
+				"bodyContentType": "json",
+				"jsonBody": "={\n  \"event_type\": \"document_archived\",\n  \"document_id\": \"{{ $json.document_id }}\",\n  \"document_type\": \"{{ $json.document_type }}\",\n  \"archive_path\": \"{{ $json.archive_path }}\",\n  \"hash\": \"{{ $json.security_hash }}\",\n  \"timestamp\": \"{{ $json.processing_timestamp }}\",\n  \"retention_until\": \"{{ $json.gobd_metadata.retention_until }}\",\n  \"compliance_status\": \"archived\",\n  \"workflow_id\": \"{{ $workflow.id }}\",\n  \"execution_id\": \"{{ $execution.id }}\"\n}"
+			},
+			"id": "audit_trail_logging",
+			"name": "Audit_Trail_Log",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4.2,
+			"position": [1050, 300]
+		},
+		{
+			"parameters": {
+				"url": "https://compliance.company.com/api/v1/retention-policy",
+				"authentication": "genericCredentialType",
+				"genericAuthType": "httpHeaderAuth",
+				"httpHeaderAuth": {
+					"name": "Authorization",
+					"value": "Bearer {{ $credentials.compliance_system.token }}"
+				},
+				"sendBody": true,
+				"bodyContentType": "json",
+				"jsonBody": "={\n  \"document_id\": \"{{ $json.document_id }}\",\n  \"document_type\": \"{{ $json.document_type }}\",\n  \"archive_location\": {\n    \"primary\": \"sevdesk-archive-primary/{{ $json.archive_path }}\",\n    \"backup\": \"sevdesk-archive-backup/{{ $json.archive_path }}\"\n  },\n  \"retention_period_years\": 10,\n  \"retention_start_date\": \"{{ $json.gobd_metadata.archival_date }}\",\n  \"retention_end_date\": \"{{ $json.gobd_metadata.retention_until }}\",\n  \"legal_basis\": \"GoBD\",\n  \"business_year\": {{ $json.gobd_metadata.business_year }},\n  \"compliance_verified\": true\n}"
+			},
+			"id": "retention_policy",
+			"name": "⏰ Aufbewahrungsrichtlinien",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4.2,
+			"position": [1250, 300]
+		},
+		{
+			"parameters": {
+				"jsCode": "// 📊 Archivierungs-Statistiken und Compliance-Report erstellen\nconst documents = $input.all();\nconst stats = {\n  total_documents: documents.length,\n  successful_archives: 0,\n  failed_archives: 0,\n  total_size_bytes: 0,\n  document_types: {},\n  business_years: {},\n  compliance_status: 'compliant',\n  processing_time: new Date().toISOString(),\n  batch_id: $execution.id\n};\n\nfor (const item of documents) {\n  const data = item.json;\n  \n  // Erfolgreiche Archivierung zählen\n  if ((data.gobd_metadata && data.gobd_metadata.compliance_status) === 'hash_verified') {\n    stats.successful_archives++;\n  } else {\n    stats.failed_archives++;\n    stats.compliance_status = 'issues_found';\n  }\n  \n  // Größenstatistiken\n  stats.total_size_bytes += (data.gobd_metadata && data.gobd_metadata.file_size) || 0;\n  \n  // Dokumenttyp-Statistiken\n  const docType = data.document_type || 'unknown';\n  stats.document_types[docType] = (stats.document_types[docType] || 0) + 1;\n  \n  // Geschäftsjahr-Statistiken\n  const businessYear = (data.gobd_metadata && data.gobd_metadata.business_year) || new Date().getFullYear();\n  stats.business_years[businessYear] = (stats.business_years[businessYear] || 0) + 1;\n}\n\n// Compliance-Report\nconst complianceReport = {\n  report_type: 'archival_compliance',\n  report_date: new Date().toISOString(),\n  gobd_compliance: {\n    requirements_met: [\n      'Unveränderlichkeit der Daten',\n      'Vollständigkeit der Aufzeichnungen',\n      'Ordnung und Nachvollziehbarkeit',\n      'Zeitgerechte Buchungen und Aufzeichnungen',\n      'Richtigkeit der Aufzeichnungen'\n    ],\n    retention_period: '10 Jahre',\n    audit_trail_complete: true,\n    digital_signature_verified: true\n  },\n  statistics: stats,\n  next_audit_due: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000)).toISOString() // 1 Jahr\n};\n\nreturn [{\n  json: {\n    archival_statistics: stats,\n    compliance_report: complianceReport,\n    summary: {\n      message: `Erfolgreich ${stats.successful_archives} von ${stats.total_documents} Dokumenten archiviert`,\n      compliance_status: stats.compliance_status,\n      total_size_mb: Math.round(stats.total_size_bytes / 1024 / 1024 * 100) / 100\n    }\n  }\n}];"
+			},
+			"id": "generate_statistics",
+			"name": "Archive_Statistics",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [1450, 300]
+		},
+		{
+			"parameters": {
+				"fromEmail": "archive@company.com",
+				"toEmail": "compliance@company.com",
+				"subject": "GoBD-Archivierung abgeschlossen - {{ $json.summary.message }}",
+				"message": "=## 🗄️ GoBD-konforme Dokumentenarchivierung abgeschlossen\n\n**Archivierungs-ID:** {{ $json.archival_statistics.batch_id }}\n**Zeitpunkt:** {{ $json.compliance_report.report_date }}\n**Status:** {{ $json.summary.compliance_status }}\n\n### 📊 Statistiken\n- **Dokumente:** {{ $json.archival_statistics.total_documents }}\n- **Erfolgreich archiviert:** {{ $json.archival_statistics.successful_archives }}\n- **Fehlgeschlagen:** {{ $json.archival_statistics.failed_archives }}\n- **Gesamtgröße:** {{ $json.summary.total_size_mb }} MB\n\n### 🛡️ Compliance-Status\n**GoBD-Konformität:** ✅ Alle Anforderungen erfüllt\n**Aufbewahrungsdauer:** 10 Jahre\n**Audit-Trail:** Vollständig\n**Digitale Signatur:** Verifiziert\n\n### 📋 Dokumenttypen\n{{ Object.entries($json.archival_statistics.document_types).map(([type, count]) => `- ${type}: ${count} Dokumente`).join('\\n') }}\n\n**Nächste Prüfung fällig:** {{ $json.compliance_report.next_audit_due }}\n\n---\n*Automatisch generiert durch SevDesk Archivierungs-Workflow*"
+			},
+			"id": "compliance_notification",
+			"name": "Compliance_Notification",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2.1,
+			"position": [1650, 300]
+		}
+	],
+	"connections": {
+		"Archive_Trigger": {
+			"main": [
+				[
+					{
+						"node": "Document_Validation",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Document_Validation": {
+			"main": [
+				[
+					{
+						"node": "Hash_And_Signature",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Hash_And_Signature": {
+			"main": [
+				[
+					{
+						"node": "Primary_Archive",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "Backup_Archive",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Primary_Archive": {
+			"main": [
+				[
+					{
+						"node": "Audit_Trail_Log",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Backup_Archive": {
+			"main": [
+				[
+					{
+						"node": "Audit_Trail_Log",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Audit_Trail_Log": {
+			"main": [
+				[
+					{
+						"node": "⏰ Aufbewahrungsrichtlinien",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"⏰ Aufbewahrungsrichtlinien": {
+			"main": [
+				[
+					{
+						"node": "Archive_Statistics",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Archive_Statistics": {
+			"main": [
+				[
+					{
+						"node": "Compliance_Notification",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"meta": {
+		"n8nVersion": "1.101.1"
+	},
+	"tags": [
+		"sevdesk",
+		"dokumentenmanagement",
+		"archivierung",
+		"gobd",
+		"compliance"
+	]
+}

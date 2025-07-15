@@ -1,380 +1,346 @@
 {
-  "name": "SevDesk - Belegerfassung - Teil 1: Erfassung (v2)",
-  "nodes": [
-    {
-      "parameters": {
-        "content": "## SevDesk - Belegerfassung - Teil 1: Erfassung\n\n**Zweck:**\nDieser Workflow ist der erste Schritt im Prozess der automatisierten Belegerfassung. Er ist dafür verantwortlich, neue Dokumente aus verschiedenen Quellen zu empfangen, die ersten Metadaten zu extrahieren und die Dokumente für die detaillierte Analyse und Verarbeitung in Teil 2 vorzubereiten.\n\n**Auslöser:**\n- **Zeitgesteuert:** Überprüft in regelmäßigen Abständen (stündlich) einen definierten Ordner auf neue Belege\n- **Webhook:** Ermöglicht externen Systemen, Dokumente direkt und in Echtzeit an den Workflow zu senden\n- **E-Mail-Anhang:** Verarbeitet automatisch Anhänge aus einem bestimmten E-Mail-Postfach\n\n**Ausgabe:**\nStandardisierte JSON-Objekte mit Dokumentenmetadaten, die an Teil 2 (Verarbeitung) weitergeleitet werden.\n\n**Nächster Schritt:**\nAutomatische Weiterleitung an Teil 2 über Webhook für detaillierte SevDesk-Integration.",
-        "height": 400,
-        "width": 450
-      },
-      "name": "Workflow-Beschreibung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        0,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "hours",
-              "hoursInterval": 1
-            }
-          ]
-        }
-      },
-      "name": "Schedule Trigger",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [
-        250,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "document-upload",
-        "options": {}
-      },
-      "name": "Webhook Trigger",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        250,
-        500
-      ],
-      "webhookId": "document-upload-webhook"
-    },
-    {
-      "parameters": {
-        "path": "/path/to/email/attachments"
-      },
-      "name": "Email Attachments",
-      "type": "n8n-nodes-base.localFileTrigger",
-      "typeVersion": 1,
-      "position": [
-        250,
-        700
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**Eingabekanäle für Dokumente:**\n\n1. **Schedule Trigger (Stündlich):**\n   - Überwacht Scan-Ordner und E-Mail-Anhänge\n   - Ideal für regelmäßige Batch-Verarbeitung\n   - Verhindert Überlastung durch zeitgesteuerte Ausführung\n\n2. **Webhook Trigger:**\n   - Sofortige Verarbeitung bei externen Uploads\n   - Für Echtzeit-Integration mit anderen Systemen\n   - Sicherer Endpoint mit POST-Method\n\n3. **Directory Listing:**\n   - Automatische Erkennung neuer Dateien\n   - Unterstützt verschiedene Dateiformate (PDF, JPG, PNG)\n   - Konfigurierbare Ordnerpfade für verschiedene Dokumenttypen",
-        "width": 320,
-        "height": 280
-      },
-      "name": "Eingabekanäle-Erklärung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        0,
-        450
-      ]
-    },
-    {
-      "parameters": {},
-      "name": "Merge",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        540,
-        500
-      ]
-    },
-    {
-      "parameters": {
-        "code": "// Analyze the trigger and extract document information\nconst item = $input.item.json;\nlet documentData = {};\n\n// If the trigger is a webhook\nif (item.headers) {\n  // Extract data from webhook body\n  documentData = {\n    source: 'webhook',\n    fileName: item.body?.fileName || 'unknown.pdf',\n    fileData: item.body?.fileData || null,\n    fileType: item.body?.fileType || 'application/pdf',\n    metadata: {\n      uploadMethod: 'api',\n      uploadTime: new Date().toISOString(),\n      ...item.body?.metadata\n    }\n  };\n}\n\n// If the trigger is an email attachment or directory listing\nelse if (item.name && item.path) {\n  // Extract file path information\n  const fileExtension = item.name.split('.').pop().toLowerCase();\n  const fileTypeMapping = {\n    'pdf': 'application/pdf',\n    'jpg': 'image/jpeg',\n    'jpeg': 'image/jpeg',\n    'png': 'image/png'\n  };\n  \n  documentData = {\n    source: 'file_system',\n    fileName: item.name,\n    filePath: item.path,\n    fileType: fileTypeMapping[fileExtension] || 'application/octet-stream',\n    metadata: {\n      uploadMethod: 'directory_scan',\n      uploadTime: new Date().toISOString(),\n      fileSize: item.size || null,\n      lastModified: item.modifiedTime || null\n    }\n  };\n}\n\n// If the trigger is the schedule (fallback)\nelse {\n  documentData = {\n    source: 'scheduled',\n    scanTime: new Date().toISOString(),\n    metadata: {\n      uploadMethod: 'scheduled_scan',\n      uploadTime: new Date().toISOString()\n    }\n  };\n}\n\nreturn {\n  json: {\n    ...documentData,\n    timestamp: new Date().toISOString(),\n    processed: false,\n    workflowVersion: 'v2',\n    nextStep: 'Part2-Processing',\n    webhookUrl: 'http://localhost:5678/webhook/document-processing'\n  }\n};"
-      },
-      "name": "Extract Document Data",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        850,
-        500
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**Datenextraktion und -standardisierung:**\n\n**Funktion:** Vereinheitlicht Eingabedaten der verschiedenen Trigger zu einem standardisierten JSON-Format.\n\n**Verarbeitung:**\n- Erkennt Auslöser-Typ (Webhook, File, Schedule)\n- Extrahiert relevante Metadaten (Name, Pfad, Typ, Größe)\n- Bestimmt MIME-Type basierend auf Dateiendung\n- Fügt Zeitstempel und Verarbeitungsstatus hinzu\n\n**Ausgabe:** Einheitliches JSON-Objekt für alle nachfolgenden Schritte mit definierten Feldern für fileName, filePath, fileType, metadata und timestamp.\n\n**Fehlerbehandlung:** Fallback-Werte für unbekannte oder fehlende Datenfelder.",
-        "width": 280,
-        "height": 220
-      },
-      "name": "Datenextraktion-Erklärung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        850,
-        250
-      ]
-    },
-    {
-      "parameters": {
-        "code": "// Data preparation for forwarding to Part 2\nconst data = $input.item.json;\n\n// Validate basic data\nif (!data.fileName && !data.filePath) {\n  throw new Error('No valid document found - fileName or filePath missing');\n}\n\n// Create extended metadata for SevDesk processing\nconst documentData = {\n  // Basic document information\n  document: {\n    fileName: data.fileName || 'unknown.pdf',\n    filePath: data.filePath || null,\n    fileData: data.fileData || null,\n    fileType: data.fileType || 'application/pdf',\n    source: data.source || 'unknown'\n  },\n  \n  // Processing metadata\n  processing: {\n    stage: 'Part1-Completed',\n    timestamp: new Date().toISOString(),\n    workflowVersion: 'v2',\n    nextStep: 'Part2-Processing'\n  },\n  \n  // SevDesk-specific preparation\n  sevdesk: {\n    category: 'IncomingInvoice', // Default category\n    status: 'pending_processing',\n    requiresValidation: true\n  },\n  \n  // Keep original metadata\n  metadata: data.metadata || {}\n};\n\nreturn {\n  json: {\n    ...data, // Keep all previous data for compatibility\n    documentData, // Structured preparation\n    readyForProcessing: true\n  }\n};"
-      },
-      "name": "Prepare Data",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1250,
-        500
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**Datenaufbereitung für SevDesk:**\n\n**Zweck:** Struktur die extrahierten Daten für die optimale Verarbeitung in Teil 2.\n\n**Aufbereitung:**\n- Validierung der Eingabedaten auf Vollständigkeit\n- Erstellung strukturierter Datenobjekte\n- Vorbereitung SevDesk-spezifischer Metadaten\n- Hinzufügung von Standard-Kategorien und Status\n\n**Datenstruktur:**\n- document: Datei-Informationen\n- processing: Workflow-Metadaten  \n- sevdesk: SevDesk-spezifische Felder\n- metadata: Ursprungs-Metadaten\n\n**Qualitätssicherung:** Fehler-Behandlung bei fehlenden kritischen Datenfeldern.",
-        "width": 280,
-        "height": 200
-      },
-      "name": "Datenaufbereitung-Erklärung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1250,
-        250
-      ]
-    },
-    {
-      "parameters": {
-        "url": "http://localhost:5678/webhook/document-processing",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "X-Workflow-Source",
-              "value": "Part1-Capture"
-            }
-          ]
-        },
-        "sendBody": true,
-        "jsonBody": "={{ JSON.stringify($json, null, 2) }}",
-        "options": {
-          "timeout": 30000
-        }
-      },
-      "name": "Forward to Part 2",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1450,
-        500
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**Weiterleitung an Teil 2:**\n\n**Ziel:** Automatische Übertragung der aufbereiteten Dokumentendaten an den nächsten Workflow-Teil.\n\n**HTTP-Request Konfiguration:**\n- POST-Request an Teil 2 Webhook\n- JSON-Body mit vollständigen Dokumentendaten\n- Zusätzliche Header für Workflow-Tracking\n- 30-Sekunden Timeout für zuverlässige Übertragung\n\n**Fehlerbehandlung:** Bei Fehlschlag wird automatisch der Error-Handler aktiviert.\n\n**Übertragene Daten:** Komplettes JSON-Objekt mit document, processing, sevdesk und metadata Strukturen.",
-        "width": 250,
-        "height": 180
-      },
-      "name": "Weiterleitung-Erklärung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1450,
-        280
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $node[\"An Teil 2 weiterleiten\"].json.error !== undefined }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "Error occurred?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        1650,
-        500
-      ]
-    },
-    {
-      "parameters": {
-        "fromEmail": "workflow@company.com",
-        "toEmail": "support@company.com",
-        "subject": "Error in Document Capture Workflow (Part 1: Capture)",
-        "content": "An error has occurred in the Document Capture Workflow (Part 1: Capture):\n\n**Error Details:**\nError: {{ $node[\"Forward to Part 2\"].json.error?.message || 'Unknown error' }}\n\n**Timestamp:** {{ $now.toISOString() }}\n\n**Affected Document:**\n- Filename: {{ $json.documentData?.document?.fileName || 'Unknown' }}\n- Source: {{ $json.documentData?.document?.source || 'Unknown' }}\n- Processing time: {{ $json.timestamp }}\n\n**Workflow Details:**\n- Workflow: Part 1 - Capture  \n- Version: v2\n- Execution time: {{ $workflow.createdAt }}\n\n**Next Steps:**\n1. Check the webhook connection to Part 2\n2. Validate the document data\n3. Check the n8n logs for more details\n\nPlease fix the error and restart the workflow.",
-        "options": {}
-      },
-      "name": "Notify Support",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [
-        1850,
-        400
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**Fehlerbehandlung und Benachrichtigung:**\n\n**Auslöser:** Wird aktiviert, wenn die Weiterleitung an Teil 2 fehlschlägt.\n\n**E-Mail-Benachrichtigung enthält:**\n- Detaillierte Fehlerbeschreibung\n- Zeitstempel des Fehlers\n- Informationen zum betroffenen Dokument\n- Workflow-Metadaten für Debugging\n- Handlungsempfehlungen für die Fehlerbehebung\n\n**Empfänger:** IT-Support oder Workflow-Administrator\n\n**Zweck:** Sofortige Benachrichtigung bei Problemen zur schnellen Fehlerbehebung und Vermeidung von Datenverlusten.",
-        "width": 280,
-        "height": 180
-      },
-      "name": "Fehlerbehandlung-Erklärung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1850,
-        180
-      ]
-    },
-    {
-      "parameters": {
-        "code": "// Log successful processing\nconst data = $input.item.json;\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Part1-Capture',\n  status: 'success',\n  document: {\n    fileName: data.documentData?.document?.fileName || 'Unknown',\n    source: data.documentData?.document?.source || 'Unknown',\n    fileType: data.documentData?.document?.fileType || 'Unknown'\n  },\n  nextStep: 'Part2-Processing',\n  processingTime: Date.now() - new Date(data.timestamp).getTime()\n};\n\nconsole.log('Document capture Part 1 completed successfully:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    successLog,\n    status: 'Part1-Completed'\n  }\n};"
-      },
-      "name": "Log Success",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1850,
-        600
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**Erfolgs-Protokollierung:**\n\n**Zweck:** Dokumentation erfolgreicher Verarbeitungen für Monitoring und Audit-Zwecke.\n\n**Protokollierte Informationen:**\n- Zeitstempel der erfolgreichen Verarbeitung\n- Dokumentendetails (Name, Quelle, Typ)\n- Verarbeitungszeit (Performance-Monitoring)\n- Workflow-Status und nächste Schritte\n\n**Ausgabe:** Erweiterte JSON-Struktur mit Success-Log für nachgelagerte Prozesse und Monitoring-Systeme.",
-        "width": 250,
-        "height": 140
-      },
-      "name": "Erfolgs-Protokollierung-Erklärung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1850,
-        780
-      ]
-    }
-  ],
-  "connections": {
-    "Schedule Trigger": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook Trigger": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Email Attachments": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 2
-          }
-        ]
-      ]
-    },
-    "Merge": {
-      "main": [
-        [
-          {
-            "node": "Extract Document Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract Document Data": {
-      "main": [
-        [
-          {
-            "node": "Prepare Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Data": {
-      "main": [
-        [
-          {
-            "node": "Forward to Part 2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Forward to Part 2": {
-      "main": [
-        [
-          {
-            "node": "Error occurred?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Error occurred?": {
-      "main": [
-        [
-          {
-            "node": "Notify Support",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Log Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "pinData": {},
-  "settings": {},
-  "staticData": null,
-  "tags": [
-    {
-      "createdAt": "2024-01-15T10:00:00.000Z",
-      "updatedAt": "2024-01-15T10:00:00.000Z",
-      "id": "1",
-      "name": "SevDesk"
-    },
-    {
-      "createdAt": "2024-01-15T10:00:00.000Z",
-      "updatedAt": "2024-01-15T10:00:00.000Z",
-      "id": "2",
-      "name": "Belegerfassung"
-    }
-  ],
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "n8nVersion": "1.101.1"
-  },
-  "id": "1001",
-  "versionId": "v2.0.0"
+	"name": "SevDesk - Belegerfassung - Teil 1: Erfassung (v2)",
+	"nodes": [
+		{
+			"parameters": {
+				"content": "## SevDesk - Belegerfassung - Teil 1: Erfassung\n\n**Zweck:**\nDieser Workflow ist der erste Schritt im Prozess der automatisierten Belegerfassung. Er ist dafür verantwortlich, neue Dokumente aus verschiedenen Quellen zu empfangen, die ersten Metadaten zu extrahieren und die Dokumente für die detaillierte Analyse und Verarbeitung in Teil 2 vorzubereiten.\n\n**Auslöser:**\n- **Zeitgesteuert:** Überprüft in regelmäßigen Abständen (stündlich) einen definierten Ordner auf neue Belege\n- **Webhook:** Ermöglicht externen Systemen, Dokumente direkt und in Echtzeit an den Workflow zu senden\n- **E-Mail-Anhang:** Verarbeitet automatisch Anhänge aus einem bestimmten E-Mail-Postfach\n\n**Ausgabe:**\nStandardisierte JSON-Objekte mit Dokumentenmetadaten, die an Teil 2 (Verarbeitung) weitergeleitet werden.\n\n**Nächster Schritt:**\nAutomatische Weiterleitung an Teil 2 über Webhook für detaillierte SevDesk-Integration.",
+				"height": 400,
+				"width": 450
+			},
+			"id": "011_DOC_01",
+			"name": "Workflow-Beschreibung",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [0, 0]
+		},
+		{
+			"parameters": {
+				"rule": {
+					"interval": [
+						{
+							"field": "hours",
+							"hoursInterval": 1
+						}
+					]
+				}
+			},
+			"id": "011_TRG_01",
+			"name": "Schedule Trigger",
+			"type": "n8n-nodes-base.scheduleTrigger",
+			"typeVersion": 1.2,
+			"position": [250, 300]
+		},
+		{
+			"parameters": {
+				"httpMethod": "POST",
+				"path": "document-upload",
+				"options": {}
+			},
+			"id": "011_TRG_02",
+			"name": "Webhook Trigger",
+			"type": "n8n-nodes-base.webhook",
+			"typeVersion": 2,
+			"position": [250, 500],
+			"webhookId": "document-upload-webhook"
+		},
+		{
+			"parameters": {
+				"path": "/path/to/email/attachments"
+			},
+			"id": "011_TRG_03",
+			"name": "Email Attachments",
+			"type": "n8n-nodes-base.localFileTrigger",
+			"typeVersion": 1,
+			"position": [250, 700]
+		},
+		{
+			"parameters": {
+				"content": "**Eingabekanäle für Dokumente:**\n\n1. **Schedule Trigger (Stündlich):**\n   - Überwacht Scan-Ordner und E-Mail-Anhänge\n   - Ideal für regelmäßige Batch-Verarbeitung\n   - Verhindert Überlastung durch zeitgesteuerte Ausführung\n\n2. **Webhook Trigger:**\n   - Sofortige Verarbeitung bei externen Uploads\n   - Für Echtzeit-Integration mit anderen Systemen\n   - Sicherer Endpoint mit POST-Method\n\n3. **Directory Listing:**\n   - Automatische Erkennung neuer Dateien\n   - Unterstützt verschiedene Dateiformate (PDF, JPG, PNG)\n   - Konfigurierbare Ordnerpfade für verschiedene Dokumenttypen",
+				"width": 320,
+				"height": 280
+			},
+			"id": "011_DOC_02",
+			"name": "Eingabekanäle-Erklärung",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [0, 450]
+		},
+		{
+			"parameters": {},
+			"id": "011_MRG_01",
+			"name": "Merge",
+			"type": "n8n-nodes-base.merge",
+			"typeVersion": 3.2,
+			"position": [540, 500]
+		},
+		{
+			"parameters": {
+				"code": "// Analyze the trigger and extract document information\nconst item = $input.item.json;\nlet documentData = {};\n\n// If the trigger is a webhook\nif (item.headers) {\n  // Extract data from webhook body\n  documentData = {\n    source: 'webhook',\n    fileName: (item.body && item.body.fileName) || 'unknown.pdf',\n    fileData: (item.body && item.body.fileData) || null,\n    fileType: (item.body && item.body.fileType) || 'application/pdf',\n    metadata: {\n      uploadMethod: 'api',\n      uploadTime: new Date().toISOString(),\n      ...(item.body && item.body.metadata)\n    }\n  };\n}\n\n// If the trigger is an email attachment or directory listing\nelse if (item.name && item.path) {\n  // Extract file path information\n  const fileExtension = item.name.split('.').pop().toLowerCase();\n  const fileTypeMapping = {\n    'pdf': 'application/pdf',\n    'jpg': 'image/jpeg',\n    'jpeg': 'image/jpeg',\n    'png': 'image/png'\n  };\n  \n  documentData = {\n    source: 'file_system',\n    fileName: item.name,\n    filePath: item.path,\n    fileType: fileTypeMapping[fileExtension] || 'application/octet-stream',\n    metadata: {\n      uploadMethod: 'directory_scan',\n      uploadTime: new Date().toISOString(),\n      fileSize: item.size || null,\n      lastModified: item.modifiedTime || null\n    }\n  };\n}\n\n// If the trigger is the schedule (fallback)\nelse {\n  documentData = {\n    source: 'scheduled',\n    scanTime: new Date().toISOString(),\n    metadata: {\n      uploadMethod: 'scheduled_scan',\n      uploadTime: new Date().toISOString()\n    }\n  };\n}\n\nreturn {\n  json: {\n    ...documentData,\n    timestamp: new Date().toISOString(),\n    processed: false,\n    workflowVersion: 'v2',\n    nextStep: 'Part2-Processing',\n    webhookUrl: 'http://localhost:5678/webhook/document-processing'\n  }\n};"
+			},
+			"id": "011_EXT_01",
+			"name": "Extract Document Data",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [850, 500]
+		},
+		{
+			"parameters": {
+				"content": "**Datenextraktion und -standardisierung:**\n\n**Funktion:** Vereinheitlicht Eingabedaten der verschiedenen Trigger zu einem standardisierten JSON-Format.\n\n**Verarbeitung:**\n- Erkennt Auslöser-Typ (Webhook, File, Schedule)\n- Extrahiert relevante Metadaten (Name, Pfad, Typ, Größe)\n- Bestimmt MIME-Type basierend auf Dateiendung\n- Fügt Zeitstempel und Verarbeitungsstatus hinzu\n\n**Ausgabe:** Einheitliches JSON-Objekt für alle nachfolgenden Schritte mit definierten Feldern für fileName, filePath, fileType, metadata und timestamp.\n\n**Fehlerbehandlung:** Fallback-Werte für unbekannte oder fehlende Datenfelder.",
+				"width": 280,
+				"height": 220
+			},
+			"id": "011_DOC_03",
+			"name": "Datenextraktion-Erklärung",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [850, 250]
+		},
+		{
+			"parameters": {
+				"code": "// Data preparation for forwarding to Part 2\nconst data = $input.item.json;\n\n// Validate basic data\nif (!data.fileName && !data.filePath) {\n  throw new Error('No valid document found - fileName or filePath missing');\n}\n\n// Create extended metadata for SevDesk processing\nconst documentData = {\n  // Basic document information\n  document: {\n    fileName: data.fileName || 'unknown.pdf',\n    filePath: data.filePath || null,\n    fileData: data.fileData || null,\n    fileType: data.fileType || 'application/pdf',\n    source: data.source || 'unknown'\n  },\n  \n  // Processing metadata\n  processing: {\n    stage: 'Part1-Completed',\n    timestamp: new Date().toISOString(),\n    workflowVersion: 'v2',\n    nextStep: 'Part2-Processing'\n  },\n  \n  // SevDesk-specific preparation\n  sevdesk: {\n    category: 'IncomingInvoice', // Default category\n    status: 'pending_processing',\n    requiresValidation: true\n  },\n  \n  // Keep original metadata\n  metadata: data.metadata || {}\n};\n\nreturn {\n  json: {\n    ...data, // Keep all previous data for compatibility\n    documentData, // Structured preparation\n    readyForProcessing: true\n  }\n};"
+			},
+			"id": "011_TRF_01",
+			"name": "Prepare Data",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [1250, 500]
+		},
+		{
+			"parameters": {
+				"content": "**Datenaufbereitung für SevDesk:**\n\n**Zweck:** Struktur die extrahierten Daten für die optimale Verarbeitung in Teil 2.\n\n**Aufbereitung:**\n- Validierung der Eingabedaten auf Vollständigkeit\n- Erstellung strukturierter Datenobjekte\n- Vorbereitung SevDesk-spezifischer Metadaten\n- Hinzufügung von Standard-Kategorien und Status\n\n**Datenstruktur:**\n- document: Datei-Informationen\n- processing: Workflow-Metadaten  \n- sevdesk: SevDesk-spezifische Felder\n- metadata: Ursprungs-Metadaten\n\n**Qualitätssicherung:** Fehler-Behandlung bei fehlenden kritischen Datenfeldern.",
+				"width": 280,
+				"height": 200
+			},
+			"id": "011_DOC_04",
+			"name": "Datenaufbereitung-Erklärung",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1250, 250]
+		},
+		{
+			"parameters": {
+				"url": "http://localhost:5678/webhook/document-processing",
+				"sendHeaders": true,
+				"headerParameters": {
+					"parameters": [
+						{
+							"name": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"name": "X-Workflow-Source",
+							"value": "Part1-Capture"
+						}
+					]
+				},
+				"sendBody": true,
+				"jsonBody": "={{ JSON.stringify($json, null, 2) }}",
+				"options": {
+					"timeout": 30000
+				}
+			},
+			"id": "011_FWD_01",
+			"name": "Forward to Part 2",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4.2,
+			"position": [1450, 500]
+		},
+		{
+			"parameters": {
+				"content": "**Weiterleitung an Teil 2:**\n\n**Ziel:** Automatische Übertragung der aufbereiteten Dokumentendaten an den nächsten Workflow-Teil.\n\n**HTTP-Request Konfiguration:**\n- POST-Request an Teil 2 Webhook\n- JSON-Body mit vollständigen Dokumentendaten\n- Zusätzliche Header für Workflow-Tracking\n- 30-Sekunden Timeout für zuverlässige Übertragung\n\n**Fehlerbehandlung:** Bei Fehlschlag wird automatisch der Error-Handler aktiviert.\n\n**Übertragene Daten:** Komplettes JSON-Objekt mit document, processing, sevdesk und metadata Strukturen.",
+				"width": 250,
+				"height": 180
+			},
+			"id": "011_DOC_05",
+			"name": "Weiterleitung-Erklärung",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1450, 280]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $node[\"011_FWD_01\"].json.error !== undefined }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"id": "011_ERR_01",
+			"name": "Error occurred?",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [1650, 500]
+		},
+		{
+			"parameters": {
+				"fromEmail": "workflow@company.com",
+				"toEmail": "support@company.com",
+				"subject": "Error in Document Capture Workflow (Part 1: Capture)",
+				"content": "An error has occurred in the Document Capture Workflow (Part 1: Capture):\n\n**Error Details:**\nError: {{ $node[\"011_FWD_01\"].(json.error && json.error.message) || 'Unknown error' }}\n\n**Timestamp:** {{ $now.toISOString() }}\n\n**Affected Document:**\n- Filename: {{ $(json.documentData && json.documentData.document)?.fileName || 'Unknown' }}\n- Source: {{ $(json.documentData && json.documentData.document)?.source || 'Unknown' }}\n- Processing time: {{ $json.timestamp }}\n\n**Workflow Details:**\n- Workflow: Part 1 - Capture  \n- Version: v2\n- Execution time: {{ $workflow.createdAt }}\n\n**Next Steps:**\n1. Check the webhook connection to Part 2\n2. Validate the document data\n3. Check the n8n logs for more details\n\nPlease fix the error and restart the workflow.",
+				"options": {}
+			},
+			"id": "011_NOT_01",
+			"name": "Notify Support",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2.1,
+			"position": [1850, 400]
+		},
+		{
+			"parameters": {
+				"content": "**Fehlerbehandlung und Benachrichtigung:**\n\n**Auslöser:** Wird aktiviert, wenn die Weiterleitung an Teil 2 fehlschlägt.\n\n**E-Mail-Benachrichtigung enthält:**\n- Detaillierte Fehlerbeschreibung\n- Zeitstempel des Fehlers\n- Informationen zum betroffenen Dokument\n- Workflow-Metadaten für Debugging\n- Handlungsempfehlungen für die Fehlerbehebung\n\n**Empfänger:** IT-Support oder Workflow-Administrator\n\n**Zweck:** Sofortige Benachrichtigung bei Problemen zur schnellen Fehlerbehebung und Vermeidung von Datenverlusten.",
+				"width": 280,
+				"height": 180
+			},
+			"id": "011_DOC_06",
+			"name": "Fehlerbehandlung-Erklärung",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1850, 180]
+		},
+		{
+			"parameters": {
+				"code": "// Log successful processing\nconst data = $input.item.json;\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Part1-Capture',\n  status: 'success',\n  document: {\n    fileName: (data.documentData && data.documentData.document)?.fileName || 'Unknown',\n    source: (data.documentData && data.documentData.document)?.source || 'Unknown',\n    fileType: (data.documentData && data.documentData.document)?.fileType || 'Unknown'\n  },\n  nextStep: 'Part2-Processing',\n  processingTime: Date.now() - new Date(data.timestamp).getTime()\n};\n\nconsole.log('Document capture Part 1 completed successfully:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    successLog,\n    status: 'Part1-Completed'\n  }\n};"
+			},
+			"id": "011_LOG_01",
+			"name": "Log Success",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [1850, 600]
+		},
+		{
+			"parameters": {
+				"content": "**Erfolgs-Protokollierung:**\n\n**Zweck:** Dokumentation erfolgreicher Verarbeitungen für Monitoring und Audit-Zwecke.\n\n**Protokollierte Informationen:**\n- Zeitstempel der erfolgreichen Verarbeitung\n- Dokumentendetails (Name, Quelle, Typ)\n- Verarbeitungszeit (Performance-Monitoring)\n- Workflow-Status und nächste Schritte\n\n**Ausgabe:** Erweiterte JSON-Struktur mit Success-Log für nachgelagerte Prozesse und Monitoring-Systeme.",
+				"width": 250,
+				"height": 140
+			},
+			"id": "011_DOC_07",
+			"name": "Erfolgs-Protokollierung-Erklärung",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1850, 780]
+		}
+	],
+	"connections": {
+		"011_TRG_01": {
+			"main": [
+				[
+					{
+						"node": "011_MRG_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"011_TRG_02": {
+			"main": [
+				[
+					{
+						"node": "011_MRG_01",
+						"type": "main",
+						"index": 1
+					}
+				]
+			]
+		},
+		"011_TRG_03": {
+			"main": [
+				[
+					{
+						"node": "011_MRG_01",
+						"type": "main",
+						"index": 2
+					}
+				]
+			]
+		},
+		"011_MRG_01": {
+			"main": [
+				[
+					{
+						"node": "011_EXT_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"011_EXT_01": {
+			"main": [
+				[
+					{
+						"node": "011_TRF_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"011_TRF_01": {
+			"main": [
+				[
+					{
+						"node": "011_FWD_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"011_FWD_01": {
+			"main": [
+				[
+					{
+						"node": "011_ERR_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"011_ERR_01": {
+			"main": [
+				[
+					{
+						"node": "011_NOT_01",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[
+					{
+						"node": "011_LOG_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {},
+	"settings": {},
+	"staticData": null,
+	"tags": [
+		{
+			"createdAt": "2024-01-15T10:00:00.000Z",
+			"updatedAt": "2024-01-15T10:00:00.000Z",
+			"id": "1",
+			"name": "SevDesk"
+		},
+		{
+			"createdAt": "2024-01-15T10:00:00.000Z",
+			"updatedAt": "2024-01-15T10:00:00.000Z",
+			"id": "2",
+			"name": "Belegerfassung"
+		}
+	],
+	"meta": {
+		"templateCredsSetupCompleted": true,
+		"n8nVersion": "1.101.1"
+	},
+	"id": "1001",
+	"versionId": "v2.0.0"
 }

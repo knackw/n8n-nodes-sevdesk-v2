@@ -1,518 +1,518 @@
 {
-  "name": "SevDesk - Kundenkommunikation - Teil 1: Auslöser (v2)",
-  "nodes": [
-    {
-      "parameters": {
-        "content": "## 📋 SevDesk - Kundenkommunikation - Teil 1: Auslöser (v2)\n\n**🎯 Zweck:**\nIntelligente Erkennung von Ereignissen die eine automatische Kundenkommunikation auslösen sollen.\n\n**📊 Erkannte Auslöser:**\n• Überfällige Rechnungen (>14 Tage)\n• Zahlungseingänge bestätigen\n• Geburtstage und Jubiläen\n• Projektmeilensteine\n• Angebots-Follow-ups\n\n**⚙️ Verarbeitung:**\n• Tägliche automatische Prüfung\n• Prioritäts-basierte Klassifizierung\n• Duplikat-Vermeidung\n• Eskalations-Logik\n\n**🔄 Workflow-Architektur:**\nTeil 1 → Teil 2 → Teil 3\nAuslöser → Erstellung → Versand",
-        "height": 350,
-        "width": 450,
-        "color": 6
-      },
-      "name": "📋 Workflow-Dokumentation",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [0, 0]
-    },
-    {
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "hours",
-              "hoursInterval": 6
-            }
-          ]
-        },
-        "triggerOnStartup": false
-      },
-      "name": "🕕 Regelmäßige Prüfung",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [250, 300]
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "customer-communication-trigger",
-        "options": {
-          "responseMode": "responseNode"
-        }
-      },
-      "name": "🌐 Webhook Trigger",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [250, 500],
-      "webhookId": "customer-communication-trigger"
-    },
-    {
-      "parameters": {},
-      "name": "🔀 Trigger vereinen",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [450, 400]
-    },
-    {
-      "parameters": {
-        "code": "// Bestimme Prüfungsparameter basierend auf Auslöser\nconst item = $input.item.json;\nlet checkConfig = {};\n\n// Webhook-Auslöser (manuell oder extern)\nif (item.headers) {\n  checkConfig = {\n    trigger_source: 'webhook',\n    check_types: item.body?.check_types || ['overdue_invoices', 'payment_confirmations'],\n    priority_filter: item.body?.priority || 'all',\n    customer_filter: item.body?.customer_ids || null\n  };\n}\n// Schedule-Auslöser (automatisch)\nelse {\n  checkConfig = {\n    trigger_source: 'scheduled',\n    check_types: ['overdue_invoices', 'payment_confirmations', 'birthdays', 'follow_ups'],\n    priority_filter: 'high',\n    customer_filter: null\n  };\n}\n\nreturn {\n  json: {\n    ...checkConfig,\n    check_timestamp: new Date().toISOString(),\n    workflow_version: 'v2',\n    session_id: `CHECK_${new Date().toISOString().replace(/[:.]/g, '_')}`\n  }\n};"
-      },
-      "name": "⚙️ Prüfparameter bestimmen",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [650, 400]
-    },
-    {
-      "parameters": {
-        "content": "**🔧 Trigger-Konfiguration:**\n\n**🕕 Schedule (6h-Intervall):**\n• Automatische Geschäftszeiten-Prüfung\n• Fokus auf kritische Ereignisse\n• Batch-Verarbeitung für Effizienz\n\n**🌐 Webhook (Manuell/Extern):**\n• Sofortige Ereignis-Verarbeitung\n• Spezifische Kunden-/Event-Filter\n• API-Integration für Drittsysteme\n\n**🔀 Intelligente Vereinigung:**\n• Duplikat-Erkennung\n• Prioritäts-basierte Verarbeitung\n• Session-Tracking für Audit-Trail",
-        "width": 350,
-        "height": 220,
-        "color": 7
-      },
-      "name": "🔧 Trigger-Erklärung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [250, 50]
-    },
-    {
-      "parameters": {
-        "resource": "invoice",
-        "operation": "getMany",
-        "additionalFields": {
-          "status": "200,1000",
-          "limit": 500,
-          "startDate": "={{ $now.minus({days: 60}).format('YYYY-MM-DD') }}",
-          "endDate": "={{ $now.format('YYYY-MM-DD') }}"
-        }
-      },
-      "name": "📄 SevDesk - Rechnungen laden",
-      "type": "n8n-nodes-sevdesk-v2.sevDesk",
-      "typeVersion": 1,
-      "position": [950, 300],
-      "credentials": {
-        "sevDeskApi": {
-          "id": "6",
-          "name": "SevDesk API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "resource": "checkAccountTransaction",
-        "operation": "getMany",
-        "additionalFields": {
-          "startDate": "={{ $now.minus({days: 7}).format('YYYY-MM-DD') }}",
-          "endDate": "={{ $now.format('YYYY-MM-DD') }}",
-          "limit": 200
-        }
-      },
-      "name": "💰 SevDesk - Zahlungen laden",
-      "type": "n8n-nodes-sevdesk-v2.sevDesk",
-      "typeVersion": 1,
-      "position": [950, 450],
-      "credentials": {
-        "sevDeskApi": {
-          "id": "6",
-          "name": "SevDesk API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "resource": "contact",
-        "operation": "getMany",
-        "additionalFields": {
-          "limit": 1000
-        }
-      },
-      "name": "👥 SevDesk - Kontakte laden",
-      "type": "n8n-nodes-sevdesk-v2.sevDesk",
-      "typeVersion": 1,
-      "position": [950, 600],
-      "credentials": {
-        "sevDeskApi": {
-          "id": "6",
-          "name": "SevDesk API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "content": "**📊 Parallele Datenextraktion:**\n\n**📄 Rechnungen (60 Tage):**\n• Verschickte und gebuchte Rechnungen\n• Fälligkeitsdaten für Überfälligkeits-Check\n• Kunden-Zuordnungen\n\n**💰 Zahlungen (7 Tage):**\n• Aktuelle Zahlungseingänge\n• Zuordnung zu offenen Rechnungen\n• Bestätigungs-relevante Transaktionen\n\n**👥 Kontakte (Vollständig):**\n• Kundenstammdaten\n• Geburtstage und wichtige Daten\n• Kommunikationspräferenzen",
-        "width": 320,
-        "height": 200,
-        "color": 3
-      },
-      "name": "📊 Datenextraktion-Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [950, 50]
-    },
-    {
-      "parameters": {},
-      "name": "📈 Daten zusammenführen",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [1250, 450]
-    },
-    {
-      "parameters": {
-        "code": "// Analysiere SevDesk-Daten und erkenne Kommunikations-Auslöser\nconst config = $node[\"⚙️ Prüfparameter bestimmen\"].json;\nconst invoices = $node[\"📄 SevDesk - Rechnungen laden\"].json || [];\nconst payments = $node[\"💰 SevDesk - Zahlungen laden\"].json || [];\nconst contacts = $node[\"👥 SevDesk - Kontakte laden\"].json || [];\n\nconst triggers = [];\nconst today = new Date();\n\n// === 1. ÜBERFÄLLIGE RECHNUNGEN ===\nif (config.check_types.includes('overdue_invoices')) {\n  const overdueInvoices = invoices.filter(invoice => {\n    const dueDate = new Date(invoice.dueDate);\n    const daysOverdue = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));\n    return daysOverdue > 14; // Mehr als 14 Tage überfällig\n  });\n  \n  overdueInvoices.forEach(invoice => {\n    const daysOverdue = Math.floor((today - new Date(invoice.dueDate)) / (1000 * 60 * 60 * 24));\n    const contact = contacts.find(c => c.id === invoice.contact?.id);\n    \n    triggers.push({\n      type: 'overdue_invoice',\n      priority: daysOverdue > 30 ? 'critical' : 'high',\n      customer_id: invoice.contact?.id,\n      customer_name: contact?.name || 'Unbekannt',\n      customer_email: contact?.email || null,\n      invoice_id: invoice.id,\n      invoice_number: invoice.invoiceNumber,\n      amount: parseFloat(invoice.sumGross || 0),\n      days_overdue: daysOverdue,\n      due_date: invoice.dueDate,\n      escalation_level: daysOverdue > 45 ? 3 : (daysOverdue > 30 ? 2 : 1),\n      recommended_action: daysOverdue > 45 ? 'final_notice' : 'reminder',\n      metadata: {\n        invoice_date: invoice.invoiceDate,\n        customer_number: contact?.customerNumber,\n        last_reminder: null // Würde aus CRM/Historie geladen\n      }\n    });\n  });\n}\n\n// === 2. ZAHLUNGSBESTÄTIGUNGEN ===\nif (config.check_types.includes('payment_confirmations')) {\n  payments.forEach(payment => {\n    // Suche zugehörige Rechnung basierend auf Betrag und Zeitraum\n    const matchingInvoice = invoices.find(invoice => {\n      const amountMatch = Math.abs(parseFloat(invoice.sumGross) - Math.abs(parseFloat(payment.amount))) < 0.01;\n      const dateMatch = new Date(payment.date) >= new Date(invoice.invoiceDate);\n      return amountMatch && dateMatch;\n    });\n    \n    if (matchingInvoice) {\n      const contact = contacts.find(c => c.id === matchingInvoice.contact?.id);\n      \n      triggers.push({\n        type: 'payment_confirmation',\n        priority: 'medium',\n        customer_id: matchingInvoice.contact?.id,\n        customer_name: contact?.name || 'Unbekannt',\n        customer_email: contact?.email || null,\n        invoice_id: matchingInvoice.id,\n        invoice_number: matchingInvoice.invoiceNumber,\n        payment_amount: Math.abs(parseFloat(payment.amount)),\n        payment_date: payment.date,\n        recommended_action: 'thank_you_confirmation',\n        metadata: {\n          payment_method: payment.paymentMethod || 'Überweisung',\n          transaction_id: payment.id\n        }\n      });\n    }\n  });\n}\n\n// === 3. GEBURTSTAGE UND JUBILÄEN ===\nif (config.check_types.includes('birthdays')) {\n  const todayMonth = today.getMonth() + 1;\n  const todayDay = today.getDate();\n  \n  contacts.forEach(contact => {\n    if (contact.birthday) {\n      const birthday = new Date(contact.birthday);\n      if (birthday.getMonth() + 1 === todayMonth && birthday.getDate() === todayDay) {\n        triggers.push({\n          type: 'birthday',\n          priority: 'low',\n          customer_id: contact.id,\n          customer_name: contact.name,\n          customer_email: contact.email,\n          recommended_action: 'birthday_greeting',\n          metadata: {\n            age: today.getFullYear() - birthday.getFullYear(),\n            customer_since: contact.createDate\n          }\n        });\n      }\n    }\n  });\n}\n\n// === 4. ANGEBOTS-FOLLOW-UPS ===\nif (config.check_types.includes('follow_ups')) {\n  // Hier würden Angebote aus SevDesk geladen und auf Follow-up-Bedarf geprüft\n  // Für Demo: Simuliere basierend auf Kundenkontakt-Datum\n  contacts.forEach(contact => {\n    const lastContact = new Date(contact.updateDate || contact.createDate);\n    const daysSinceContact = Math.floor((today - lastContact) / (1000 * 60 * 60 * 24));\n    \n    // Follow-up nach 30 Tagen ohne Kontakt\n    if (daysSinceContact > 30 && daysSinceContact < 35) {\n      triggers.push({\n        type: 'follow_up',\n        priority: 'medium',\n        customer_id: contact.id,\n        customer_name: contact.name,\n        customer_email: contact.email,\n        days_since_contact: daysSinceContact,\n        recommended_action: 'general_follow_up',\n        metadata: {\n          last_contact_date: lastContact.toISOString().split('T')[0],\n          customer_category: contact.category?.name || 'Standard'\n        }\n      });\n    }\n  });\n}\n\n// Prioritäts-Filter anwenden\nlet filteredTriggers = triggers;\nif (config.priority_filter !== 'all') {\n  filteredTriggers = triggers.filter(t => t.priority === config.priority_filter);\n}\n\n// Kunden-Filter anwenden\nif (config.customer_filter) {\n  filteredTriggers = filteredTriggers.filter(t => config.customer_filter.includes(t.customer_id));\n}\n\n// Duplikate entfernen (basierend auf Kunde + Typ)\nconst uniqueTriggers = filteredTriggers.reduce((acc, trigger) => {\n  const key = `${trigger.customer_id}_${trigger.type}`;\n  if (!acc.keys.has(key)) {\n    acc.keys.add(key);\n    acc.triggers.push(trigger);\n  }\n  return acc;\n}, { keys: new Set(), triggers: [] }).triggers;\n\n// Statistiken\nconst stats = {\n  total_triggers_found: triggers.length,\n  after_filtering: uniqueTriggers.length,\n  by_type: {\n    overdue_invoice: uniqueTriggers.filter(t => t.type === 'overdue_invoice').length,\n    payment_confirmation: uniqueTriggers.filter(t => t.type === 'payment_confirmation').length,\n    birthday: uniqueTriggers.filter(t => t.type === 'birthday').length,\n    follow_up: uniqueTriggers.filter(t => t.type === 'follow_up').length\n  },\n  by_priority: {\n    critical: uniqueTriggers.filter(t => t.priority === 'critical').length,\n    high: uniqueTriggers.filter(t => t.priority === 'high').length,\n    medium: uniqueTriggers.filter(t => t.priority === 'medium').length,\n    low: uniqueTriggers.filter(t => t.priority === 'low').length\n  }\n};\n\nreturn {\n  json: {\n    session_id: config.session_id,\n    trigger_source: config.trigger_source,\n    analysis_timestamp: new Date().toISOString(),\n    communication_triggers: uniqueTriggers,\n    statistics: stats,\n    has_triggers: uniqueTriggers.length > 0,\n    next_step: uniqueTriggers.length > 0 ? 'process_triggers' : 'no_action_needed',\n    webhook_url: 'http://localhost:5678/webhook/communication-creation'\n  }\n};"
-      },
-      "name": "🎯 Auslöser-Analyse",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1550, 450]
-    },
-    {
-      "parameters": {
-        "content": "**🎯 Intelligente Auslöser-Erkennung:**\n\n**📋 Überfällige Rechnungen:**\n• >14 Tage: Standard-Mahnung\n• >30 Tage: Intensive Mahnung  \n• >45 Tage: Letzte Mahnung\n\n**✅ Zahlungsbestätigungen:**\n• Automatische Zahlungszuordnung\n• Dankesschreiben-Generierung\n• Kundenbindungs-Maßnahmen\n\n**🎂 Ereignis-Marketing:**\n• Geburtstage und Jubiläen\n• Kundenjahrestage\n• Saisonale Anlässe\n\n**🔄 Follow-up-Management:**\n• Automatische Kontaktpflege\n• Angebots-Nachfassungen\n• Relationship-Management",
-        "width": 350,
-        "height": 250,
-        "color": 4
-      },
-      "name": "🎯 Analyse-Erklärung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [1550, 150]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $json.has_triggers }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "📤 Auslöser gefunden?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1850, 450]
-    },
-    {
-      "parameters": {
-        "url": "={{ $json.webhook_url }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "X-Session-ID",
-              "value": "={{ $json.session_id }}"
-            },
-            {
-              "name": "X-Workflow-Source",
-              "value": "Teil1-Auslöser"
-            }
-          ]
-        },
-        "sendBody": true,
-        "jsonBody": "={{ JSON.stringify($json, null, 2) }}",
-        "options": {
-          "timeout": 30000
-        }
-      },
-      "name": "🚀 An Teil 2 weiterleiten",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2150, 350]
-    },
-    {
-      "parameters": {
-        "chatId": "customer-communication-alerts",
-        "content": "=📊 **Kundenkommunikation - Auslöser-Analyse**\n\n🔍 **Session:** {{ $json.session_id }}\n📅 **Zeitpunkt:** {{ $json.analysis_timestamp }}\n\n📈 **Statistiken:**\n• Auslöser gefunden: {{ $json.statistics.total_triggers_found }}\n• Nach Filterung: {{ $json.statistics.after_filtering }}\n\n🎯 **Nach Typ:**\n• Überfällige Rechnungen: {{ $json.statistics.by_type.overdue_invoice }}\n• Zahlungsbestätigungen: {{ $json.statistics.by_type.payment_confirmation }}\n• Geburtstage: {{ $json.statistics.by_type.birthday }}\n• Follow-ups: {{ $json.statistics.by_type.follow_up }}\n\n⚠️ **Prioritäten:**\n• Kritisch: {{ $json.statistics.by_priority.critical }}\n• Hoch: {{ $json.statistics.by_priority.high }}\n• Mittel: {{ $json.statistics.by_priority.medium }}\n• Niedrig: {{ $json.statistics.by_priority.low }}\n\n▶️ **Nächster Schritt:** Teil 2 - Nachrichtenerstellung"
-      },
-      "name": "📱 Slack/Teams Benachrichtigung",
-      "type": "n8n-nodes-base.signal",
-      "typeVersion": 2,
-      "position": [2150, 550],
-      "credentials": {
-        "signalApi": {
-          "id": "3",
-          "name": "Signal account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "fromEmail": "workflow@company.com",
-        "toEmail": "customer-service@company.com,management@company.com",
-        "subject": "Keine Kundenkommunikations-Auslöser - {{ $json.session_id }}",
-        "content": "Die Auslöser-Analyse für Kundenkommunikation hat keine Ereignisse erkannt, die eine automatische Kommunikation auslösen würden.\n\n**Session-Details:**\n- Session-ID: {{ $json.session_id }}\n- Auslöser-Quelle: {{ $json.trigger_source }}\n- Analyse-Zeitpunkt: {{ $json.analysis_timestamp }}\n\n**Geprüfte Bereiche:**\n- Überfällige Rechnungen: ✓\n- Zahlungsbestätigungen: ✓\n- Geburtstage/Jubiläen: ✓\n- Follow-up-Bedarf: ✓\n\n**Ergebnis:**\n- Keine kritischen oder zeitkritischen Kommunikations-Ereignisse erkannt\n- Alle Kunden scheinen aktuell zufriedenstellend betreut\n- Keine sofortigen Maßnahmen erforderlich\n\n**Empfehlung:**\n- Nächste automatische Prüfung in 6 Stunden\n- Bei Bedarf manuelle Auslösung über Webhook möglich\n- Proaktive Kundenpflege-Maßnahmen können optional durchgeführt werden\n\nDies ist eine Routine-Information und erfordert keine weiteren Maßnahmen.",
-        "options": {}
-      },
-      "name": "📧 Leerlauf-Benachrichtigung",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [2150, 650],
-      "credentials": {
-        "smtp": {
-          "id": "10",
-          "name": "SMTP"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "content": "**📤 Ergebnis-Verarbeitung:**\n\n**✅ Auslöser gefunden:**\n• Weiterleitung an Teil 2 (Nachrichtenerstellung)\n• Automatische Priorisierung\n• Session-Tracking für Audit-Trail\n• Team-Benachrichtigung über Slack/Teams\n\n**❌ Keine Auslöser:**\n• Information an Customer Service Team\n• Dokumentation der erfolgreichen Prüfung\n• Kein weiterer Handlungsbedarf\n• Nächste Prüfung in 6 Stunden\n\n**📊 Monitoring:**\n• Vollständige Statistiken\n• Trend-Analyse für Optimierung\n• Performance-Tracking",
-        "width": 350,
-        "height": 220,
-        "color": 5
-      },
-      "name": "📤 Verarbeitung-Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [1850, 150]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $node[\"🚀 An Teil 2 weiterleiten\"].json.error !== undefined }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "❌ Fehler aufgetreten?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [2450, 350]
-    },
-    {
-      "parameters": {
-        "fromEmail": "workflow@company.com",
-        "toEmail": "support@company.com,management@company.com",
-        "subject": "🚨 FEHLER: Kundenkommunikation Teil 1 - {{ $json.session_id }}",
-        "content": "Ein kritischer Fehler ist im Kundenkommunikation-Workflow (Teil 1: Auslöser) aufgetreten.\n\n**🚨 Fehlerdetails:**\n- Fehler: {{ $node[\"🚀 An Teil 2 weiterleiten\"].json.error?.message || 'Unbekannter Fehler' }}\n- Session-ID: {{ $json.session_id }}\n- Zeitstempel: {{ $now.toISOString() }}\n- Auslöser-Quelle: {{ $json.trigger_source }}\n\n**📊 Gefundene Auslöser:**\n- Anzahl Auslöser: {{ $json.statistics?.total_triggers_found || 'N/A' }}\n- Kritische Ereignisse: {{ $json.statistics?.by_priority?.critical || 0 }}\n- Überfällige Rechnungen: {{ $json.statistics?.by_type?.overdue_invoice || 0 }}\n\n**⚠️ Auswirkungen:**\n- Automatische Kundenkommunikation unterbrochen\n- Möglicherweise verzögerte Mahnungen/Bestätigungen\n- Manuelle Intervention erforderlich\n\n**🔧 Sofortmaßnahmen:**\n1. Webhook-Verbindung zu Teil 2 prüfen\n2. SevDesk API-Verbindung validieren\n3. n8n-Logs auf weitere Details prüfen\n4. Bei kritischen Auslösern: Manuelle Bearbeitung\n\n**📋 Nächste Schritte:**\n1. Fehlerursache identifizieren und beheben\n2. Workflow-Test durchführen\n3. Verpasste Kommunikation nacharbeiten\n4. Monitoring verstärken\n\n⏰ **Zeitkritisch:** Bei überfälligen Rechnungen umgehend handeln!",
-        "options": {}
-      },
-      "name": "🚨 Fehler-Benachrichtigung",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [2750, 250],
-      "credentials": {
-        "smtp": {
-          "id": "10",
-          "name": "SMTP"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "code": "// Protokolliere erfolgreiche Workflow-Ausführung\nconst data = $input.item.json;\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil1-Auslöser',\n  status: data.has_triggers ? 'triggers_found' : 'no_triggers',\n  session_id: data.session_id,\n  trigger_source: data.trigger_source,\n  statistics: data.statistics,\n  processing_time_ms: Date.now() - new Date(data.analysis_timestamp).getTime(),\n  next_execution: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(), // +6 Stunden\n  audit_trail: {\n    data_sources_accessed: ['invoices', 'payments', 'contacts'],\n    filters_applied: data.trigger_source === 'scheduled' ? 'high_priority_only' : 'custom',\n    triggers_processed: data.communication_triggers?.length || 0,\n    escalated_to_part2: data.has_triggers\n  }\n};\n\nconsole.log('Kundenkommunikation Teil 1 erfolgreich abgeschlossen:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    execution_log: successLog,\n    workflow_completed: true,\n    status: 'Teil1-Erfolgreich-Abgeschlossen'\n  }\n};"
-      },
-      "name": "✅ Erfolg protokollieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2750, 450]
-    }
-  ],
-  "connections": {
-    "🕕 Regelmäßige Prüfung": {
-      "main": [
-        [
-          {
-            "node": "🔀 Trigger vereinen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🌐 Webhook Trigger": {
-      "main": [
-        [
-          {
-            "node": "🔀 Trigger vereinen",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "🔀 Trigger vereinen": {
-      "main": [
-        [
-          {
-            "node": "⚙️ Prüfparameter bestimmen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "⚙️ Prüfparameter bestimmen": {
-      "main": [
-        [
-          {
-            "node": "📄 SevDesk - Rechnungen laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "💰 SevDesk - Zahlungen laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "👥 SevDesk - Kontakte laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📄 SevDesk - Rechnungen laden": {
-      "main": [
-        [
-          {
-            "node": "📈 Daten zusammenführen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "💰 SevDesk - Zahlungen laden": {
-      "main": [
-        [
-          {
-            "node": "📈 Daten zusammenführen",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "👥 SevDesk - Kontakte laden": {
-      "main": [
-        [
-          {
-            "node": "📈 Daten zusammenführen",
-            "type": "main",
-            "index": 2
-          }
-        ]
-      ]
-    },
-    "📈 Daten zusammenführen": {
-      "main": [
-        [
-          {
-            "node": "🎯 Auslöser-Analyse",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🎯 Auslöser-Analyse": {
-      "main": [
-        [
-          {
-            "node": "📤 Auslöser gefunden?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📤 Auslöser gefunden?": {
-      "main": [
-        [
-          {
-            "node": "🚀 An Teil 2 weiterleiten",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "📱 Slack/Teams Benachrichtigung",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "📧 Leerlauf-Benachrichtigung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🚀 An Teil 2 weiterleiten": {
-      "main": [
-        [
-          {
-            "node": "❌ Fehler aufgetreten?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📱 Slack/Teams Benachrichtigung": {
-      "main": [
-        [
-          {
-            "node": "✅ Erfolg protokollieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📧 Leerlauf-Benachrichtigung": {
-      "main": [
-        [
-          {
-            "node": "✅ Erfolg protokollieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "❌ Fehler aufgetreten?": {
-      "main": [
-        [
-          {
-            "node": "🚨 Fehler-Benachrichtigung",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "✅ Erfolg protokollieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "pinData": {},
-  "settings": {},
-  "staticData": {},
-  "tags": [
-    {
-      "createdAt": "2024-12-19T10:00:00.000Z",
-      "updatedAt": "2024-12-19T10:00:00.000Z",
-      "id": "8",
-      "name": "Kundenkommunikation"
-    }
-  ],
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "n8nVersion": "1.101.1"
-  },
-  "id": "8001",
-  "versionId": "v2.0.0"
-} 
+	"name": "SevDesk - Kundenkommunikation - Teil 1: Auslöser (v2)",
+	"nodes": [
+		{
+			"parameters": {
+				"content": "## 📋 SevDesk - Kundenkommunikation - Teil 1: Auslöser (v2)\n\n**🎯 Zweck:**\nIntelligente Erkennung von Ereignissen die eine automatische Kundenkommunikation auslösen sollen.\n\n**📊 Erkannte Auslöser:**\n• Überfällige Rechnungen (>14 Tage)\n• Zahlungseingänge bestätigen\n• Geburtstage und Jubiläen\n• Projektmeilensteine\n• Angebots-Follow-ups\n\n**⚙️ Verarbeitung:**\n• Tägliche automatische Prüfung\n• Prioritäts-basierte Klassifizierung\n• Duplikat-Vermeidung\n• Eskalations-Logik\n\n**🔄 Workflow-Architektur:**\nTeil 1 → Teil 2 → Teil 3\nAuslöser → Erstellung → Versand",
+				"height": 350,
+				"width": 450,
+				"color": 6
+			},
+			"name": "Workflow_Documentation",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [0, 0]
+		},
+		{
+			"parameters": {
+				"rule": {
+					"interval": [
+						{
+							"field": "hours",
+							"hoursInterval": 6
+						}
+					]
+				},
+				"triggerOnStartup": false
+			},
+			"name": "🕕 Regelmäßige Prüfung",
+			"type": "n8n-nodes-base.scheduleTrigger",
+			"typeVersion": 1.2,
+			"position": [250, 300]
+		},
+		{
+			"parameters": {
+				"httpMethod": "POST",
+				"path": "customer-communication-trigger",
+				"options": {
+					"responseMode": "responseNode"
+				}
+			},
+			"name": "Webhook_Trigger",
+			"type": "n8n-nodes-base.webhook",
+			"typeVersion": 2,
+			"position": [250, 500],
+			"webhookId": "customer-communication-trigger"
+		},
+		{
+			"parameters": {},
+			"name": "🔀 Trigger vereinen",
+			"type": "n8n-nodes-base.merge",
+			"typeVersion": 3.2,
+			"position": [450, 400]
+		},
+		{
+			"parameters": {
+				"code": "// Bestimme Prüfungsparameter basierend auf Auslöser\nconst item = $input.item.json;\nlet checkConfig = {};\n\n// Webhook-Auslöser (manuell oder extern)\nif (item.headers) {\n  checkConfig = {\n    trigger_source: 'webhook',\n    check_types: (item.body && item.body.check_types) || ['overdue_invoices', 'payment_confirmations'],\n    priority_filter: (item.body && item.body.priority) || 'all',\n    customer_filter: (item.body && item.body.customer_ids) || null\n  };\n}\n// Schedule-Auslöser (automatisch)\nelse {\n  checkConfig = {\n    trigger_source: 'scheduled',\n    check_types: ['overdue_invoices', 'payment_confirmations', 'birthdays', 'follow_ups'],\n    priority_filter: 'high',\n    customer_filter: null\n  };\n}\n\nreturn {\n  json: {\n    ...checkConfig,\n    check_timestamp: new Date().toISOString(),\n    workflow_version: 'v2',\n    session_id: `CHECK_${new Date().toISOString().replace(/[:.]/g, '_')}`\n  }\n};"
+			},
+			"name": "Set_Check_Parameters",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [650, 400]
+		},
+		{
+			"parameters": {
+				"content": "**🔧 Trigger-Konfiguration:**\n\n**🕕 Schedule (6h-Intervall):**\n• Automatische Geschäftszeiten-Prüfung\n• Fokus auf kritische Ereignisse\n• Batch-Verarbeitung für Effizienz\n\n**🌐 Webhook (Manuell/Extern):**\n• Sofortige Ereignis-Verarbeitung\n• Spezifische Kunden-/Event-Filter\n• API-Integration für Drittsysteme\n\n**🔀 Intelligente Vereinigung:**\n• Duplikat-Erkennung\n• Prioritäts-basierte Verarbeitung\n• Session-Tracking für Audit-Trail",
+				"width": 350,
+				"height": 220,
+				"color": 7
+			},
+			"name": "Trigger_Explanation",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [250, 50]
+		},
+		{
+			"parameters": {
+				"resource": "invoice",
+				"operation": "getMany",
+				"additionalFields": {
+					"status": "200,1000",
+					"limit": 500,
+					"startDate": "={{ $now.minus({days: 60}).format('YYYY-MM-DD') }}",
+					"endDate": "={{ $now.format('YYYY-MM-DD') }}"
+				}
+			},
+			"name": "SevDesk_Load_Invoices",
+			"type": "n8n-nodes-sevdesk-v2.sevDesk",
+			"typeVersion": 1,
+			"position": [950, 300],
+			"credentials": {
+				"sevDeskApi": {
+					"id": "6",
+					"name": "SevDesk API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"resource": "checkAccountTransaction",
+				"operation": "getMany",
+				"additionalFields": {
+					"startDate": "={{ $now.minus({days: 7}).format('YYYY-MM-DD') }}",
+					"endDate": "={{ $now.format('YYYY-MM-DD') }}",
+					"limit": 200
+				}
+			},
+			"name": "💰 SevDesk - Zahlungen laden",
+			"type": "n8n-nodes-sevdesk-v2.sevDesk",
+			"typeVersion": 1,
+			"position": [950, 450],
+			"credentials": {
+				"sevDeskApi": {
+					"id": "6",
+					"name": "SevDesk API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"resource": "contact",
+				"operation": "getMany",
+				"additionalFields": {
+					"limit": 1000
+				}
+			},
+			"name": "👥 SevDesk - Kontakte laden",
+			"type": "n8n-nodes-sevdesk-v2.sevDesk",
+			"typeVersion": 1,
+			"position": [950, 600],
+			"credentials": {
+				"sevDeskApi": {
+					"id": "6",
+					"name": "SevDesk API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"content": "**📊 Parallele Datenextraktion:**\n\n**📄 Rechnungen (60 Tage):**\n• Verschickte und gebuchte Rechnungen\n• Fälligkeitsdaten für Überfälligkeits-Check\n• Kunden-Zuordnungen\n\n**💰 Zahlungen (7 Tage):**\n• Aktuelle Zahlungseingänge\n• Zuordnung zu offenen Rechnungen\n• Bestätigungs-relevante Transaktionen\n\n**👥 Kontakte (Vollständig):**\n• Kundenstammdaten\n• Geburtstage und wichtige Daten\n• Kommunikationspräferenzen",
+				"width": 320,
+				"height": 200,
+				"color": 3
+			},
+			"name": "Data_Extraction_Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [950, 50]
+		},
+		{
+			"parameters": {},
+			"name": "Merge_Data",
+			"type": "n8n-nodes-base.merge",
+			"typeVersion": 3.2,
+			"position": [1250, 450]
+		},
+		{
+			"parameters": {
+				"code": "// Analysiere SevDesk-Daten und erkenne Kommunikations-Auslöser\nconst config = $node[\"Set_Check_Parameters\"].json;\nconst invoices = $node[\"SevDesk_Load_Invoices\"].json || [];\nconst payments = $node[\"💰 SevDesk - Zahlungen laden\"].json || [];\nconst contacts = $node[\"👥 SevDesk - Kontakte laden\"].json || [];\n\nconst triggers = [];\nconst today = new Date();\n\n// === 1. ÜBERFÄLLIGE RECHNUNGEN ===\nif (config.check_types.includes('overdue_invoices')) {\n  const overdueInvoices = invoices.filter(invoice => {\n    const dueDate = new Date(invoice.dueDate);\n    const daysOverdue = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));\n    return daysOverdue > 14; // Mehr als 14 Tage überfällig\n  });\n  \n  overdueInvoices.forEach(invoice => {\n    const daysOverdue = Math.floor((today - new Date(invoice.dueDate)) / (1000 * 60 * 60 * 24));\n    const contact = contacts.find(c => c.id === (invoice.contact && invoice.contact.id));\n    \n    triggers.push({\n      type: 'overdue_invoice',\n      priority: daysOverdue > 30 ? 'critical' : 'high',\n      customer_id: (invoice.contact && invoice.contact.id),\n      customer_name: (contact && contact.name) || 'Unbekannt',\n      customer_email: (contact && contact.email) || null,\n      invoice_id: invoice.id,\n      invoice_number: invoice.invoiceNumber,\n      amount: parseFloat(invoice.sumGross || 0),\n      days_overdue: daysOverdue,\n      due_date: invoice.dueDate,\n      escalation_level: daysOverdue > 45 ? 3 : (daysOverdue > 30 ? 2 : 1),\n      recommended_action: daysOverdue > 45 ? 'final_notice' : 'reminder',\n      metadata: {\n        invoice_date: invoice.invoiceDate,\n        customer_number: (contact && contact.customerNumber),\n        last_reminder: null // Würde aus CRM/Historie geladen\n      }\n    });\n  });\n}\n\n// === 2. ZAHLUNGSBESTÄTIGUNGEN ===\nif (config.check_types.includes('payment_confirmations')) {\n  payments.forEach(payment => {\n    // Suche zugehörige Rechnung basierend auf Betrag und Zeitraum\n    const matchingInvoice = invoices.find(invoice => {\n      const amountMatch = Math.abs(parseFloat(invoice.sumGross) - Math.abs(parseFloat(payment.amount))) < 0.01;\n      const dateMatch = new Date(payment.date) >= new Date(invoice.invoiceDate);\n      return amountMatch && dateMatch;\n    });\n    \n    if (matchingInvoice) {\n      const contact = contacts.find(c => c.id === (matchingInvoice.contact && matchingInvoice.contact.id));\n      \n      triggers.push({\n        type: 'payment_confirmation',\n        priority: 'medium',\n        customer_id: (matchingInvoice.contact && matchingInvoice.contact.id),\n        customer_name: (contact && contact.name) || 'Unbekannt',\n        customer_email: (contact && contact.email) || null,\n        invoice_id: matchingInvoice.id,\n        invoice_number: matchingInvoice.invoiceNumber,\n        payment_amount: Math.abs(parseFloat(payment.amount)),\n        payment_date: payment.date,\n        recommended_action: 'thank_you_confirmation',\n        metadata: {\n          payment_method: payment.paymentMethod || 'Überweisung',\n          transaction_id: payment.id\n        }\n      });\n    }\n  });\n}\n\n// === 3. GEBURTSTAGE UND JUBILÄEN ===\nif (config.check_types.includes('birthdays')) {\n  const todayMonth = today.getMonth() + 1;\n  const todayDay = today.getDate();\n  \n  contacts.forEach(contact => {\n    if (contact.birthday) {\n      const birthday = new Date(contact.birthday);\n      if (birthday.getMonth() + 1 === todayMonth && birthday.getDate() === todayDay) {\n        triggers.push({\n          type: 'birthday',\n          priority: 'low',\n          customer_id: contact.id,\n          customer_name: contact.name,\n          customer_email: contact.email,\n          recommended_action: 'birthday_greeting',\n          metadata: {\n            age: today.getFullYear() - birthday.getFullYear(),\n            customer_since: contact.createDate\n          }\n        });\n      }\n    }\n  });\n}\n\n// === 4. ANGEBOTS-FOLLOW-UPS ===\nif (config.check_types.includes('follow_ups')) {\n  // Hier würden Angebote aus SevDesk geladen und auf Follow-up-Bedarf geprüft\n  // Für Demo: Simuliere basierend auf Kundenkontakt-Datum\n  contacts.forEach(contact => {\n    const lastContact = new Date(contact.updateDate || contact.createDate);\n    const daysSinceContact = Math.floor((today - lastContact) / (1000 * 60 * 60 * 24));\n    \n    // Follow-up nach 30 Tagen ohne Kontakt\n    if (daysSinceContact > 30 && daysSinceContact < 35) {\n      triggers.push({\n        type: 'follow_up',\n        priority: 'medium',\n        customer_id: contact.id,\n        customer_name: contact.name,\n        customer_email: contact.email,\n        days_since_contact: daysSinceContact,\n        recommended_action: 'general_follow_up',\n        metadata: {\n          last_contact_date: lastContact.toISOString().split('T')[0],\n          customer_category: (contact.category && contact.category.name) || 'Standard'\n        }\n      });\n    }\n  });\n}\n\n// Prioritäts-Filter anwenden\nlet filteredTriggers = triggers;\nif (config.priority_filter !== 'all') {\n  filteredTriggers = triggers.filter(t => t.priority === config.priority_filter);\n}\n\n// Kunden-Filter anwenden\nif (config.customer_filter) {\n  filteredTriggers = filteredTriggers.filter(t => config.customer_filter.includes(t.customer_id));\n}\n\n// Duplikate entfernen (basierend auf Kunde + Typ)\nconst uniqueTriggers = filteredTriggers.reduce((acc, trigger) => {\n  const key = `${trigger.customer_id}_${trigger.type}`;\n  if (!acc.keys.has(key)) {\n    acc.keys.add(key);\n    acc.triggers.push(trigger);\n  }\n  return acc;\n}, { keys: new Set(), triggers: [] }).triggers;\n\n// Statistiken\nconst stats = {\n  total_triggers_found: triggers.length,\n  after_filtering: uniqueTriggers.length,\n  by_type: {\n    overdue_invoice: uniqueTriggers.filter(t => t.type === 'overdue_invoice').length,\n    payment_confirmation: uniqueTriggers.filter(t => t.type === 'payment_confirmation').length,\n    birthday: uniqueTriggers.filter(t => t.type === 'birthday').length,\n    follow_up: uniqueTriggers.filter(t => t.type === 'follow_up').length\n  },\n  by_priority: {\n    critical: uniqueTriggers.filter(t => t.priority === 'critical').length,\n    high: uniqueTriggers.filter(t => t.priority === 'high').length,\n    medium: uniqueTriggers.filter(t => t.priority === 'medium').length,\n    low: uniqueTriggers.filter(t => t.priority === 'low').length\n  }\n};\n\nreturn {\n  json: {\n    session_id: config.session_id,\n    trigger_source: config.trigger_source,\n    analysis_timestamp: new Date().toISOString(),\n    communication_triggers: uniqueTriggers,\n    statistics: stats,\n    has_triggers: uniqueTriggers.length > 0,\n    next_step: uniqueTriggers.length > 0 ? 'process_triggers' : 'no_action_needed',\n    webhook_url: 'http://localhost:5678/webhook/communication-creation'\n  }\n};"
+			},
+			"name": "Trigger_Analysis",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [1550, 450]
+		},
+		{
+			"parameters": {
+				"content": "**🎯 Intelligente Auslöser-Erkennung:**\n\n**📋 Überfällige Rechnungen:**\n• >14 Tage: Standard-Mahnung\n• >30 Tage: Intensive Mahnung  \n• >45 Tage: Letzte Mahnung\n\n**✅ Zahlungsbestätigungen:**\n• Automatische Zahlungszuordnung\n• Dankesschreiben-Generierung\n• Kundenbindungs-Maßnahmen\n\n**🎂 Ereignis-Marketing:**\n• Geburtstage und Jubiläen\n• Kundenjahrestage\n• Saisonale Anlässe\n\n**🔄 Follow-up-Management:**\n• Automatische Kontaktpflege\n• Angebots-Nachfassungen\n• Relationship-Management",
+				"width": 350,
+				"height": 250,
+				"color": 4
+			},
+			"name": "Analysis_Explanation",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1550, 150]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $json.has_triggers }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"name": "Triggers_Found",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [1850, 450]
+		},
+		{
+			"parameters": {
+				"url": "={{ $json.webhook_url }}",
+				"sendHeaders": true,
+				"headerParameters": {
+					"parameters": [
+						{
+							"name": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"name": "X-Session-ID",
+							"value": "={{ $json.session_id }}"
+						},
+						{
+							"name": "X-Workflow-Source",
+							"value": "Teil1-Auslöser"
+						}
+					]
+				},
+				"sendBody": true,
+				"jsonBody": "={{ JSON.stringify($json, null, 2) }}",
+				"options": {
+					"timeout": 30000
+				}
+			},
+			"name": "Forward_To_Part2",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4.2,
+			"position": [2150, 350]
+		},
+		{
+			"parameters": {
+				"chatId": "customer-communication-alerts",
+				"content": "=📊 **Kundenkommunikation - Auslöser-Analyse**\n\n🔍 **Session:** {{ $json.session_id }}\n📅 **Zeitpunkt:** {{ $json.analysis_timestamp }}\n\n📈 **Statistiken:**\n• Auslöser gefunden: {{ $json.statistics.total_triggers_found }}\n• Nach Filterung: {{ $json.statistics.after_filtering }}\n\n🎯 **Nach Typ:**\n• Überfällige Rechnungen: {{ $json.statistics.by_type.overdue_invoice }}\n• Zahlungsbestätigungen: {{ $json.statistics.by_type.payment_confirmation }}\n• Geburtstage: {{ $json.statistics.by_type.birthday }}\n• Follow-ups: {{ $json.statistics.by_type.follow_up }}\n\n⚠️ **Prioritäten:**\n• Kritisch: {{ $json.statistics.by_priority.critical }}\n• Hoch: {{ $json.statistics.by_priority.high }}\n• Mittel: {{ $json.statistics.by_priority.medium }}\n• Niedrig: {{ $json.statistics.by_priority.low }}\n\n▶️ **Nächster Schritt:** Teil 2 - Nachrichtenerstellung"
+			},
+			"name": "📱 Slack/Teams Benachrichtigung",
+			"type": "n8n-nodes-base.signal",
+			"typeVersion": 2,
+			"position": [2150, 550],
+			"credentials": {
+				"signalApi": {
+					"id": "3",
+					"name": "Signal account"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"fromEmail": "workflow@company.com",
+				"toEmail": "customer-service@company.com,management@company.com",
+				"subject": "Keine Kundenkommunikations-Auslöser - {{ $json.session_id }}",
+				"content": "Die Auslöser-Analyse für Kundenkommunikation hat keine Ereignisse erkannt, die eine automatische Kommunikation auslösen würden.\n\n**Session-Details:**\n- Session-ID: {{ $json.session_id }}\n- Auslöser-Quelle: {{ $json.trigger_source }}\n- Analyse-Zeitpunkt: {{ $json.analysis_timestamp }}\n\n**Geprüfte Bereiche:**\n- Überfällige Rechnungen: ✓\n- Zahlungsbestätigungen: ✓\n- Geburtstage/Jubiläen: ✓\n- Follow-up-Bedarf: ✓\n\n**Ergebnis:**\n- Keine kritischen oder zeitkritischen Kommunikations-Ereignisse erkannt\n- Alle Kunden scheinen aktuell zufriedenstellend betreut\n- Keine sofortigen Maßnahmen erforderlich\n\n**Empfehlung:**\n- Nächste automatische Prüfung in 6 Stunden\n- Bei Bedarf manuelle Auslösung über Webhook möglich\n- Proaktive Kundenpflege-Maßnahmen können optional durchgeführt werden\n\nDies ist eine Routine-Information und erfordert keine weiteren Maßnahmen.",
+				"options": {}
+			},
+			"name": "Idle_Notification",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2.1,
+			"position": [2150, 650],
+			"credentials": {
+				"smtp": {
+					"id": "10",
+					"name": "SMTP"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"content": "**📤 Ergebnis-Verarbeitung:**\n\n**✅ Auslöser gefunden:**\n• Weiterleitung an Teil 2 (Nachrichtenerstellung)\n• Automatische Priorisierung\n• Session-Tracking für Audit-Trail\n• Team-Benachrichtigung über Slack/Teams\n\n**❌ Keine Auslöser:**\n• Information an Customer Service Team\n• Dokumentation der erfolgreichen Prüfung\n• Kein weiterer Handlungsbedarf\n• Nächste Prüfung in 6 Stunden\n\n**📊 Monitoring:**\n• Vollständige Statistiken\n• Trend-Analyse für Optimierung\n• Performance-Tracking",
+				"width": 350,
+				"height": 220,
+				"color": 5
+			},
+			"name": "Processing_Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1850, 150]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $node[\"Forward_To_Part2\"].json.error !== undefined }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"name": "Error_Occurred",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [2450, 350]
+		},
+		{
+			"parameters": {
+				"fromEmail": "workflow@company.com",
+				"toEmail": "support@company.com,management@company.com",
+				"subject": "🚨 FEHLER: Kundenkommunikation Teil 1 - {{ $json.session_id }}",
+				"content": "Ein kritischer Fehler ist im Kundenkommunikation-Workflow (Teil 1: Auslöser) aufgetreten.\n\n**🚨 Fehlerdetails:**\n- Fehler: {{ $node[\"Forward_To_Part2\"].(json.error && json.error.message) || 'Unbekannter Fehler' }}\n- Session-ID: {{ $json.session_id }}\n- Zeitstempel: {{ $now.toISOString() }}\n- Auslöser-Quelle: {{ $json.trigger_source }}\n\n**📊 Gefundene Auslöser:**\n- Anzahl Auslöser: {{ $(json.statistics && json.statistics.total_triggers_found) || 'N/A' }}\n- Kritische Ereignisse: {{ $(json.statistics && json.statistics.by_priority)?.critical || 0 }}\n- Überfällige Rechnungen: {{ $(json.statistics && json.statistics.by_type)?.overdue_invoice || 0 }}\n\n**⚠️ Auswirkungen:**\n- Automatische Kundenkommunikation unterbrochen\n- Möglicherweise verzögerte Mahnungen/Bestätigungen\n- Manuelle Intervention erforderlich\n\n**🔧 Sofortmaßnahmen:**\n1. Webhook-Verbindung zu Teil 2 prüfen\n2. SevDesk API-Verbindung validieren\n3. n8n-Logs auf weitere Details prüfen\n4. Bei kritischen Auslösern: Manuelle Bearbeitung\n\n**📋 Nächste Schritte:**\n1. Fehlerursache identifizieren und beheben\n2. Workflow-Test durchführen\n3. Verpasste Kommunikation nacharbeiten\n4. Monitoring verstärken\n\n⏰ **Zeitkritisch:** Bei überfälligen Rechnungen umgehend handeln!",
+				"options": {}
+			},
+			"name": "🚨 Fehler-Benachrichtigung",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2.1,
+			"position": [2750, 250],
+			"credentials": {
+				"smtp": {
+					"id": "10",
+					"name": "SMTP"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"code": "// Protokolliere erfolgreiche Workflow-Ausführung\nconst data = $input.item.json;\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil1-Auslöser',\n  status: data.has_triggers ? 'triggers_found' : 'no_triggers',\n  session_id: data.session_id,\n  trigger_source: data.trigger_source,\n  statistics: data.statistics,\n  processing_time_ms: Date.now() - new Date(data.analysis_timestamp).getTime(),\n  next_execution: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(), // +6 Stunden\n  audit_trail: {\n    data_sources_accessed: ['invoices', 'payments', 'contacts'],\n    filters_applied: data.trigger_source === 'scheduled' ? 'high_priority_only' : 'custom',\n    triggers_processed: (data.communication_triggers && data.communication_triggers.length) || 0,\n    escalated_to_part2: data.has_triggers\n  }\n};\n\nconsole.log('Kundenkommunikation Teil 1 erfolgreich abgeschlossen:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    execution_log: successLog,\n    workflow_completed: true,\n    status: 'Teil1-Erfolgreich-Abgeschlossen'\n  }\n};"
+			},
+			"name": "Log_Success",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [2750, 450]
+		}
+	],
+	"connections": {
+		"🕕 Regelmäßige Prüfung": {
+			"main": [
+				[
+					{
+						"node": "🔀 Trigger vereinen",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"🌐 Webhook Trigger": {
+			"main": [
+				[
+					{
+						"node": "🔀 Trigger vereinen",
+						"type": "main",
+						"index": 1
+					}
+				]
+			]
+		},
+		"🔀 Trigger vereinen": {
+			"main": [
+				[
+					{
+						"node": "Set_Check_Parameters",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Set_Check_Parameters": {
+			"main": [
+				[
+					{
+						"node": "SevDesk_Load_Invoices",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "💰 SevDesk - Zahlungen laden",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "👥 SevDesk - Kontakte laden",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"SevDesk_Load_Invoices": {
+			"main": [
+				[
+					{
+						"node": "Merge_Data",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"💰 SevDesk - Zahlungen laden": {
+			"main": [
+				[
+					{
+						"node": "Merge_Data",
+						"type": "main",
+						"index": 1
+					}
+				]
+			]
+		},
+		"👥 SevDesk - Kontakte laden": {
+			"main": [
+				[
+					{
+						"node": "Merge_Data",
+						"type": "main",
+						"index": 2
+					}
+				]
+			]
+		},
+		"Merge_Data": {
+			"main": [
+				[
+					{
+						"node": "Trigger_Analysis",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Trigger_Analysis": {
+			"main": [
+				[
+					{
+						"node": "Triggers_Found",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Triggers_Found": {
+			"main": [
+				[
+					{
+						"node": "Forward_To_Part2",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "📱 Slack/Teams Benachrichtigung",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[
+					{
+						"node": "Idle_Notification",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Forward_To_Part2": {
+			"main": [
+				[
+					{
+						"node": "Error_Occurred",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"📱 Slack/Teams Benachrichtigung": {
+			"main": [
+				[
+					{
+						"node": "Log_Success",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Idle_Notification": {
+			"main": [
+				[
+					{
+						"node": "Log_Success",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Error_Occurred": {
+			"main": [
+				[
+					{
+						"node": "🚨 Fehler-Benachrichtigung",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[
+					{
+						"node": "Log_Success",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {},
+	"settings": {},
+	"staticData": {},
+	"tags": [
+		{
+			"createdAt": "2024-12-19T10:00:00.000Z",
+			"updatedAt": "2024-12-19T10:00:00.000Z",
+			"id": "8",
+			"name": "Kundenkommunikation"
+		}
+	],
+	"meta": {
+		"templateCredsSetupCompleted": true,
+		"n8nVersion": "1.101.1"
+	},
+	"id": "8001",
+	"versionId": "v2.0.0"
+}

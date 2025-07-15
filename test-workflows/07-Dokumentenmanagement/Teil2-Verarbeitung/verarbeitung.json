@@ -1,404 +1,350 @@
 {
-  "name": "SevDesk - Dokumentenmanagement - Teil 2: Verarbeitung (v2)",
-  "nodes": [
-    {
-      "parameters": {
-        "content": "## 📂 SevDesk - Document Management - Part 2: Processing\n\n**Purpose:** Advanced document processing with OCR, AI, and intelligent categorization\n\n**Key Functions:**\n🔍 **OCR Text Extraction:** Converts images and PDFs to searchable text\n🤖 **AI Classification:** Intelligent document categorization and metadata extraction\n📊 **Data Validation:** Quality checks and business rule enforcement\n🔗 **SevDesk Integration:** Direct integration with accounting workflows\n☁️ **Smart Archiving:** Organized storage with advanced indexing\n\n**Technology Stack:** OCR APIs, Machine Learning, SevDesk API, Cloud Storage",
-        "height": 320,
-        "width": 450,
-        "color": 3
-      },
-      "name": "📂 Workflow Overview",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        0,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "document-processing",
-        "options": {}
-      },
-      "name": "Webhook Trigger",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        250,
-        300
-      ],
-      "webhookId": "document-processing-webhook"
-    },
-    {
-      "parameters": {
-        "content": "**🔐 Security & Input Validation**\n\nReceives and validates document data:\n• Webhook authentication checks\n• File format validation\n• Size and security scanning\n• Metadata integrity verification",
-        "width": 280,
-        "height": 130
-      },
-      "name": "🔐 Security Validation",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        250,
-        130
-      ]
-    },
-    {
-      "parameters": {
-        "code": "// Validate webhook data and prepare for processing\nconst data = $input.item.json;\nconst documents = data.processed_documents || [];\n\n// Enhanced validation and security checks\nconst validatedDocuments = documents.map(doc => {\n  // Security validation\n  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/tiff'];\n  const fileType = doc.file_type || 'unknown';\n  \n  if (!allowedTypes.includes(fileType)) {\n    throw new Error(`Unsupported file type: ${fileType}`);\n  }\n  \n  // Size validation (10MB limit)\n  const maxSize = 10 * 1024 * 1024;\n  if (doc.file_size && doc.file_size > maxSize) {\n    throw new Error(`File too large: ${doc.file_size} bytes`);\n  }\n  \n  return {\n    ...doc,\n    validation_status: 'passed',\n    processing_started: new Date().toISOString(),\n    security_checks: {\n      type_validation: 'passed',\n      size_validation: 'passed',\n      malware_scan: 'clean'\n    }\n  };\n});\n\nreturn {\n  json: {\n    ...data,\n    validated_documents: validatedDocuments,\n    validation_completed: new Date().toISOString(),\n    total_documents: validatedDocuments.length\n  }\n};"
-      },
-      "name": "Document Validation",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        450,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**🔍 OCR & Text Extraction**\n\nAdvanced optical character recognition:\n• Multi-language support (DE, EN, FR)\n• Table and form recognition\n• Handwriting detection\n• High accuracy text extraction",
-        "width": 280,
-        "height": 130
-      },
-      "name": "🔍 OCR Processing Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        650,
-        130
-      ]
-    },
-    {
-      "parameters": {
-        "code": "// Advanced OCR text extraction simulation\nconst data = $input.item.json;\nconst documents = data.validated_documents || [];\n\n// Simulate OCR processing for each document\nconst processedDocuments = documents.map(doc => {\n  // Simulate different document types and OCR results\n  const documentTypes = ['invoice', 'receipt', 'contract', 'letter', 'form'];\n  const randomType = documentTypes[Math.floor(Math.random() * documentTypes.length)];\n  \n  // Generate realistic OCR text based on document type\n  let extractedText = '';\n  let structuredData = {};\n  \n  switch(randomType) {\n    case 'invoice':\n      extractedText = `RECHNUNG\\nRechnungsnummer: R-${Math.floor(Math.random() * 10000)}\\nDatum: ${new Date().toLocaleDateString('de-DE')}\\nLieferant: Musterfirma GmbH\\nBetrag: ${(Math.random() * 1000).toFixed(2)}€\\nMehrwertsteuer: 19%`;\n      structuredData = {\n        document_type: 'invoice',\n        invoice_number: `R-${Math.floor(Math.random() * 10000)}`,\n        supplier: 'Musterfirma GmbH',\n        total_amount: parseFloat((Math.random() * 1000).toFixed(2)),\n        tax_rate: 19,\n        currency: 'EUR',\n        date: new Date().toISOString().split('T')[0]\n      };\n      break;\n    case 'receipt':\n      extractedText = `KASSENBON\\nMarkt: Supermarkt XY\\nDatum: ${new Date().toLocaleDateString('de-DE')}\\nSumme: ${(Math.random() * 100).toFixed(2)}€`;\n      structuredData = {\n        document_type: 'receipt',\n        vendor: 'Supermarkt XY',\n        total_amount: parseFloat((Math.random() * 100).toFixed(2)),\n        date: new Date().toISOString().split('T')[0]\n      };\n      break;\n    default:\n      extractedText = `Dokument Text\\nTyp: ${randomType}\\nInhalt: Verschiedene Textinhalte...`;\n      structuredData = {\n        document_type: randomType,\n        date: new Date().toISOString().split('T')[0]\n      };\n  }\n  \n  return {\n    ...doc,\n    ocr_results: {\n      extracted_text: extractedText,\n      confidence_score: 0.92 + Math.random() * 0.07, // 92-99% confidence\n      language_detected: 'de',\n      processing_time_ms: 1500 + Math.random() * 2000\n    },\n    structured_data: structuredData,\n    ai_classification: {\n      category: randomType,\n      confidence: 0.88 + Math.random() * 0.11, // 88-99% confidence\n      tags: [randomType, 'business', 'financial']\n    },\n    processing_stage: 'ocr_completed'\n  };\n});\n\nreturn {\n  json: {\n    ...data,\n    processed_documents: processedDocuments,\n    ocr_completed: new Date().toISOString(),\n    processing_stats: {\n      total_processed: processedDocuments.length,\n      average_confidence: processedDocuments.reduce((sum, doc) => sum + doc.ocr_results.confidence_score, 0) / processedDocuments.length,\n      types_detected: [...new Set(processedDocuments.map(doc => doc.ai_classification.category))]\n    }\n  }\n};"
-      },
-      "name": "OCR & AI Processing",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        650,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**🤖 AI Classification & Analysis**\n\nIntelligent document processing:\n• Automatic categorization\n• Entity extraction (dates, amounts, etc.)\n• Business rule validation\n• Quality score assessment",
-        "width": 280,
-        "height": 130
-      },
-      "name": "🤖 AI Classification Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        850,
-        130
-      ]
-    },
-    {
-      "parameters": {
-        "code": "// Quality control and business rule validation\nconst data = $input.item.json;\nconst documents = data.processed_documents || [];\n\n// Apply quality control and business rules\nconst qualityControlledDocs = documents.map(doc => {\n  const qualityChecks = {\n    ocr_confidence_check: doc.ocr_results.confidence_score >= 0.85,\n    classification_confidence_check: doc.ai_classification.confidence >= 0.80,\n    required_fields_check: true,\n    data_consistency_check: true\n  };\n  \n  // Calculate overall quality score\n  const qualityScore = Object.values(qualityChecks).filter(Boolean).length / Object.keys(qualityChecks).length;\n  \n  // Determine processing status\n  let status = 'approved';\n  if (qualityScore < 0.75) {\n    status = 'needs_review';\n  } else if (qualityScore < 0.9) {\n    status = 'conditional_approval';\n  }\n  \n  // Enhanced metadata for SevDesk integration\n  const sevdeskMetadata = {\n    ready_for_sevdesk: qualityScore >= 0.85,\n    suggested_category: doc.ai_classification.category,\n    requires_manual_review: qualityScore < 0.9,\n    compliance_status: 'compliant',\n    archival_category: `${doc.ai_classification.category}/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}`\n  };\n  \n  return {\n    ...doc,\n    quality_control: {\n      checks: qualityChecks,\n      quality_score: qualityScore,\n      status: status,\n      reviewed_at: new Date().toISOString()\n    },\n    sevdesk_metadata: sevdeskMetadata,\n    processing_stage: 'quality_control_completed'\n  };\n});\n\n// Generate processing summary\nconst processingSummary = {\n  total_documents: qualityControlledDocs.length,\n  approved: qualityControlledDocs.filter(doc => doc.quality_control.status === 'approved').length,\n  needs_review: qualityControlledDocs.filter(doc => doc.quality_control.status === 'needs_review').length,\n  conditional: qualityControlledDocs.filter(doc => doc.quality_control.status === 'conditional_approval').length,\n  ready_for_sevdesk: qualityControlledDocs.filter(doc => doc.sevdesk_metadata.ready_for_sevdesk).length\n};\n\nreturn {\n  json: {\n    ...data,\n    processed_documents: qualityControlledDocs,\n    quality_control_completed: new Date().toISOString(),\n    processing_summary: processingSummary\n  }\n};"
-      },
-      "name": "Quality Control",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        850,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**📊 Quality Control & Validation**\n\nComprehensive quality assurance:\n• OCR accuracy verification\n• Data consistency checks\n• Business rule compliance\n• Manual review flagging",
-        "width": 280,
-        "height": 130
-      },
-      "name": "📊 Quality Control Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1050,
-        130
-      ]
-    },
-    {
-      "parameters": {
-        "bucketName": "sevdesk-document-processed",
-        "fileName": "={{ 'processed/' + $json.processing_summary.total_documents + '_documents_' + $now.format('YYYY-MM-DD_HH-mm-ss') + '.json' }}",
-        "binaryPropertyName": "data",
-        "options": {
-          "metadata": {
-            "metadataValues": [
-              {
-                "name": "processing_date",
-                "value": "={{ $now.toISOString() }}"
-              },
-              {
-                "name": "total_documents",
-                "value": "={{ $json.processing_summary.total_documents }}"
-              },
-              {
-                "name": "approved_count",
-                "value": "={{ $json.processing_summary.approved }}"
-              },
-              {
-                "name": "workflow_version",
-                "value": "v2.0"
-              }
-            ]
-          }
-        }
-      },
-      "name": "Archive to Cloud",
-      "type": "n8n-nodes-base.googleCloudStorage",
-      "typeVersion": 1.2,
-      "position": [
-        1050,
-        300
-      ],
-      "credentials": {
-        "googleCloudStorageOAuth2Api": {
-          "id": "8",
-          "name": "Google Cloud Storage"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "content": "**☁️ Intelligent Archiving**\n\nSmart document storage:\n• Organized folder structure\n• Rich metadata tagging\n• Search optimization\n• Compliance retention",
-        "width": 280,
-        "height": 130
-      },
-      "name": "☁️ Cloud Archive Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1250,
-        130
-      ]
-    },
-    {
-      "parameters": {
-        "url": "http://localhost:5678/webhook/document-archiving",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "X-Workflow-Stage",
-              "value": "processing-to-archiving"
-            }
-          ]
-        },
-        "sendBody": true,
-        "jsonBody": "={{ JSON.stringify({webhook_key: 'secret-key', data: {...$json, cloud_archive_path: $node['Archive to Cloud'].json.fileUrl, processing_completed_at: $now.toISOString()}}) }}",
-        "options": {}
-      },
-      "name": "Forward to Part 3",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1250,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**🚀 Workflow Orchestration**\n\nSeamless process continuation:\n• Complete processing results\n• Cloud storage references\n• Quality metrics transmission\n• Archival trigger activation",
-        "width": 280,
-        "height": 130
-      },
-      "name": "🚀 Orchestration Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1450,
-        130
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $node['Forward to Part 3'].error !== undefined }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "Error Check",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        1450,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**⚠️ Error Handling & Recovery**\n\nRobust error management:\n• Processing retry mechanisms\n• Data integrity preservation\n• Support team notifications\n• Graceful failure handling",
-        "width": 280,
-        "height": 130
-      },
-      "name": "⚠️ Error Handling Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1650,
-        50
-      ]
-    },
-    {
-      "parameters": {
-        "fromEmail": "document-processing@example.com",
-        "toEmail": "support@example.com",
-        "subject": "Fehler im Dokumentenmanagement-Workflow (Verarbeitung)",
-        "content": "=Es ist ein Fehler im Dokumentenmanagement-Workflow (Teil 2: Verarbeitung) aufgetreten:\n\nFehler: {{ $node['Forward to Part 3'].error?.message || 'Unbekannter Fehler' }}\n\nVerarbeitungsdetails:\n- Anzahl Dokumente: {{ $json.processing_summary?.total_documents || 'Unbekannt' }}\n- Verarbeitungszeit: {{ $json.quality_control_completed }}\n- Qualitätsstatus: {{ JSON.stringify($json.processing_summary, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
-        "options": {}
-      },
-      "name": "Error Notification",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [
-        1650,
-        200
-      ],
-      "credentials": {
-        "smtp": {
-          "id": "10",
-          "name": "SMTP"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "respond": "when",
-        "responseFor": "webhook",
-        "responseCode": 200,
-        "body": "{\n    \"success\": true,\n    \"message\": \"Dokumentenverarbeitung erfolgreich abgeschlossen\",\n    \"processing_summary\": {{ JSON.stringify($json.processing_summary) }},\n    \"cloud_archive_path\": \"{{ $node['Archive to Cloud'].json.fileUrl }}\",\n    \"processed_at\": \"{{ $now.toISOString() }}\"\n}"
-      },
-      "name": "Success Response",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 2,
-      "position": [
-        1450,
-        500
-      ]
-    },
-    {
-      "parameters": {
-        "respond": "when",
-        "responseFor": "webhook",
-        "responseCode": 500,
-        "body": "{\n    \"success\": false,\n    \"message\": \"Fehler bei der Dokumentenverarbeitung\",\n    \"error\": \"{{ $json.error?.message || 'Unbekannter Verarbeitungsfehler' }}\",\n    \"timestamp\": \"{{ $now.toISOString() }}\"\n}"
-      },
-      "name": "Error Response",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 2,
-      "position": [
-        1900,
-        300
-      ]
-    }
-  ],
-  "connections": {
-    "Webhook Trigger": {
-      "main": [
-        [
-          {
-            "node": "Document Validation",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Document Validation": {
-      "main": [
-        [
-          {
-            "node": "OCR & AI Processing",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OCR & AI Processing": {
-      "main": [
-        [
-          {
-            "node": "Quality Control",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Quality Control": {
-      "main": [
-        [
-          {
-            "node": "Archive to Cloud",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Archive to Cloud": {
-      "main": [
-        [
-          {
-            "node": "Forward to Part 3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Forward to Part 3": {
-      "main": [
-        [
-          {
-            "node": "Error Check",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Error Check": {
-      "main": [
-        [
-          {
-            "node": "Error Notification",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Success Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "meta": {
-    "n8nVersion": "1.101.1"
-  }
+	"name": "SevDesk - Dokumentenmanagement - Teil 2: Verarbeitung (v2)",
+	"nodes": [
+		{
+			"parameters": {
+				"content": "## 📂 SevDesk - Document Management - Part 2: Processing\n\n**Purpose:** Advanced document processing with OCR, AI, and intelligent categorization\n\n**Key Functions:**\n🔍 **OCR Text Extraction:** Converts images and PDFs to searchable text\n🤖 **AI Classification:** Intelligent document categorization and metadata extraction\n📊 **Data Validation:** Quality checks and business rule enforcement\n🔗 **SevDesk Integration:** Direct integration with accounting workflows\n☁️ **Smart Archiving:** Organized storage with advanced indexing\n\n**Technology Stack:** OCR APIs, Machine Learning, SevDesk API, Cloud Storage",
+				"height": 320,
+				"width": 450,
+				"color": 3
+			},
+			"name": "📂 Workflow Overview",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [0, 0]
+		},
+		{
+			"parameters": {
+				"httpMethod": "POST",
+				"path": "document-processing",
+				"options": {}
+			},
+			"name": "Webhook Trigger",
+			"type": "n8n-nodes-base.webhook",
+			"typeVersion": 2,
+			"position": [250, 300],
+			"webhookId": "document-processing-webhook"
+		},
+		{
+			"parameters": {
+				"content": "**🔐 Security & Input Validation**\n\nReceives and validates document data:\n• Webhook authentication checks\n• File format validation\n• Size and security scanning\n• Metadata integrity verification",
+				"width": 280,
+				"height": 130
+			},
+			"name": "Security_Validation",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [250, 130]
+		},
+		{
+			"parameters": {
+				"code": "// Validate webhook data and prepare for processing\nconst data = $input.item.json;\nconst documents = data.processed_documents || [];\n\n// Enhanced validation and security checks\nconst validatedDocuments = documents.map(doc => {\n  // Security validation\n  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/tiff'];\n  const fileType = doc.file_type || 'unknown';\n  \n  if (!allowedTypes.includes(fileType)) {\n    throw new Error(`Unsupported file type: ${fileType}`);\n  }\n  \n  // Size validation (10MB limit)\n  const maxSize = 10 * 1024 * 1024;\n  if (doc.file_size && doc.file_size > maxSize) {\n    throw new Error(`File too large: ${doc.file_size} bytes`);\n  }\n  \n  return {\n    ...doc,\n    validation_status: 'passed',\n    processing_started: new Date().toISOString(),\n    security_checks: {\n      type_validation: 'passed',\n      size_validation: 'passed',\n      malware_scan: 'clean'\n    }\n  };\n});\n\nreturn {\n  json: {\n    ...data,\n    validated_documents: validatedDocuments,\n    validation_completed: new Date().toISOString(),\n    total_documents: validatedDocuments.length\n  }\n};"
+			},
+			"name": "Document Validation",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [450, 300]
+		},
+		{
+			"parameters": {
+				"content": "**🔍 OCR & Text Extraction**\n\nAdvanced optical character recognition:\n• Multi-language support (DE, EN, FR)\n• Table and form recognition\n• Handwriting detection\n• High accuracy text extraction",
+				"width": 280,
+				"height": 130
+			},
+			"name": "OCR_Processing_Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [650, 130]
+		},
+		{
+			"parameters": {
+				"code": "// Advanced OCR text extraction simulation\nconst data = $input.item.json;\nconst documents = data.validated_documents || [];\n\n// Simulate OCR processing for each document\nconst processedDocuments = documents.map(doc => {\n  // Simulate different document types and OCR results\n  const documentTypes = ['invoice', 'receipt', 'contract', 'letter', 'form'];\n  const randomType = documentTypes[Math.floor(Math.random() * documentTypes.length)];\n  \n  // Generate realistic OCR text based on document type\n  let extractedText = '';\n  let structuredData = {};\n  \n  switch(randomType) {\n    case 'invoice':\n      extractedText = `RECHNUNG\\nRechnungsnummer: R-${Math.floor(Math.random() * 10000)}\\nDatum: ${new Date().toLocaleDateString('de-DE')}\\nLieferant: Musterfirma GmbH\\nBetrag: ${(Math.random() * 1000).toFixed(2)}€\\nMehrwertsteuer: 19%`;\n      structuredData = {\n        document_type: 'invoice',\n        invoice_number: `R-${Math.floor(Math.random() * 10000)}`,\n        supplier: 'Musterfirma GmbH',\n        total_amount: parseFloat((Math.random() * 1000).toFixed(2)),\n        tax_rate: 19,\n        currency: 'EUR',\n        date: new Date().toISOString().split('T')[0]\n      };\n      break;\n    case 'receipt':\n      extractedText = `KASSENBON\\nMarkt: Supermarkt XY\\nDatum: ${new Date().toLocaleDateString('de-DE')}\\nSumme: ${(Math.random() * 100).toFixed(2)}€`;\n      structuredData = {\n        document_type: 'receipt',\n        vendor: 'Supermarkt XY',\n        total_amount: parseFloat((Math.random() * 100).toFixed(2)),\n        date: new Date().toISOString().split('T')[0]\n      };\n      break;\n    default:\n      extractedText = `Dokument Text\\nTyp: ${randomType}\\nInhalt: Verschiedene Textinhalte...`;\n      structuredData = {\n        document_type: randomType,\n        date: new Date().toISOString().split('T')[0]\n      };\n  }\n  \n  return {\n    ...doc,\n    ocr_results: {\n      extracted_text: extractedText,\n      confidence_score: 0.92 + Math.random() * 0.07, // 92-99% confidence\n      language_detected: 'de',\n      processing_time_ms: 1500 + Math.random() * 2000\n    },\n    structured_data: structuredData,\n    ai_classification: {\n      category: randomType,\n      confidence: 0.88 + Math.random() * 0.11, // 88-99% confidence\n      tags: [randomType, 'business', 'financial']\n    },\n    processing_stage: 'ocr_completed'\n  };\n});\n\nreturn {\n  json: {\n    ...data,\n    processed_documents: processedDocuments,\n    ocr_completed: new Date().toISOString(),\n    processing_stats: {\n      total_processed: processedDocuments.length,\n      average_confidence: processedDocuments.reduce((sum, doc) => sum + doc.ocr_results.confidence_score, 0) / processedDocuments.length,\n      types_detected: [...new Set(processedDocuments.map(doc => doc.ai_classification.category))]\n    }\n  }\n};"
+			},
+			"name": "OCR & AI Processing",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [650, 300]
+		},
+		{
+			"parameters": {
+				"content": "**🤖 AI Classification & Analysis**\n\nIntelligent document processing:\n• Automatic categorization\n• Entity extraction (dates, amounts, etc.)\n• Business rule validation\n• Quality score assessment",
+				"width": 280,
+				"height": 130
+			},
+			"name": "🤖 AI Classification Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [850, 130]
+		},
+		{
+			"parameters": {
+				"code": "// Quality control and business rule validation\nconst data = $input.item.json;\nconst documents = data.processed_documents || [];\n\n// Apply quality control and business rules\nconst qualityControlledDocs = documents.map(doc => {\n  const qualityChecks = {\n    ocr_confidence_check: doc.ocr_results.confidence_score >= 0.85,\n    classification_confidence_check: doc.ai_classification.confidence >= 0.80,\n    required_fields_check: true,\n    data_consistency_check: true\n  };\n  \n  // Calculate overall quality score\n  const qualityScore = Object.values(qualityChecks).filter(Boolean).length / Object.keys(qualityChecks).length;\n  \n  // Determine processing status\n  let status = 'approved';\n  if (qualityScore < 0.75) {\n    status = 'needs_review';\n  } else if (qualityScore < 0.9) {\n    status = 'conditional_approval';\n  }\n  \n  // Enhanced metadata for SevDesk integration\n  const sevdeskMetadata = {\n    ready_for_sevdesk: qualityScore >= 0.85,\n    suggested_category: doc.ai_classification.category,\n    requires_manual_review: qualityScore < 0.9,\n    compliance_status: 'compliant',\n    archival_category: `${doc.ai_classification.category}/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}`\n  };\n  \n  return {\n    ...doc,\n    quality_control: {\n      checks: qualityChecks,\n      quality_score: qualityScore,\n      status: status,\n      reviewed_at: new Date().toISOString()\n    },\n    sevdesk_metadata: sevdeskMetadata,\n    processing_stage: 'quality_control_completed'\n  };\n});\n\n// Generate processing summary\nconst processingSummary = {\n  total_documents: qualityControlledDocs.length,\n  approved: qualityControlledDocs.filter(doc => doc.quality_control.status === 'approved').length,\n  needs_review: qualityControlledDocs.filter(doc => doc.quality_control.status === 'needs_review').length,\n  conditional: qualityControlledDocs.filter(doc => doc.quality_control.status === 'conditional_approval').length,\n  ready_for_sevdesk: qualityControlledDocs.filter(doc => doc.sevdesk_metadata.ready_for_sevdesk).length\n};\n\nreturn {\n  json: {\n    ...data,\n    processed_documents: qualityControlledDocs,\n    quality_control_completed: new Date().toISOString(),\n    processing_summary: processingSummary\n  }\n};"
+			},
+			"name": "Quality Control",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [850, 300]
+		},
+		{
+			"parameters": {
+				"content": "**📊 Quality Control & Validation**\n\nComprehensive quality assurance:\n• OCR accuracy verification\n• Data consistency checks\n• Business rule compliance\n• Manual review flagging",
+				"width": 280,
+				"height": 130
+			},
+			"name": "Quality_Control_Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1050, 130]
+		},
+		{
+			"parameters": {
+				"bucketName": "sevdesk-document-processed",
+				"fileName": "={{ 'processed/' + $json.processing_summary.total_documents + '_documents_' + $now.format('YYYY-MM-DD_HH-mm-ss') + '.json' }}",
+				"binaryPropertyName": "data",
+				"options": {
+					"metadata": {
+						"metadataValues": [
+							{
+								"name": "processing_date",
+								"value": "={{ $now.toISOString() }}"
+							},
+							{
+								"name": "total_documents",
+								"value": "={{ $json.processing_summary.total_documents }}"
+							},
+							{
+								"name": "approved_count",
+								"value": "={{ $json.processing_summary.approved }}"
+							},
+							{
+								"name": "workflow_version",
+								"value": "v2.0"
+							}
+						]
+					}
+				}
+			},
+			"name": "Archive to Cloud",
+			"type": "n8n-nodes-base.googleCloudStorage",
+			"typeVersion": 1.2,
+			"position": [1050, 300],
+			"credentials": {
+				"googleCloudStorageOAuth2Api": {
+					"id": "8",
+					"name": "Google Cloud Storage"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"content": "**☁️ Intelligent Archiving**\n\nSmart document storage:\n• Organized folder structure\n• Rich metadata tagging\n• Search optimization\n• Compliance retention",
+				"width": 280,
+				"height": 130
+			},
+			"name": "Cloud_Archive_Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1250, 130]
+		},
+		{
+			"parameters": {
+				"url": "http://localhost:5678/webhook/document-archiving",
+				"sendHeaders": true,
+				"headerParameters": {
+					"parameters": [
+						{
+							"name": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"name": "X-Workflow-Stage",
+							"value": "processing-to-archiving"
+						}
+					]
+				},
+				"sendBody": true,
+				"jsonBody": "={{ JSON.stringify({webhook_key: 'secret-key', data: {...$json, cloud_archive_path: $node['Archive to Cloud'].json.fileUrl, processing_completed_at: $now.toISOString()}}) }}",
+				"options": {}
+			},
+			"name": "Forward to Part 3",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4.2,
+			"position": [1250, 300]
+		},
+		{
+			"parameters": {
+				"content": "**🚀 Workflow Orchestration**\n\nSeamless process continuation:\n• Complete processing results\n• Cloud storage references\n• Quality metrics transmission\n• Archival trigger activation",
+				"width": 280,
+				"height": 130
+			},
+			"name": "🚀 Orchestration Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1450, 130]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $node['Forward to Part 3'].error !== undefined }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"name": "Error Check",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [1450, 300]
+		},
+		{
+			"parameters": {
+				"content": "**⚠️ Error Handling & Recovery**\n\nRobust error management:\n• Processing retry mechanisms\n• Data integrity preservation\n• Support team notifications\n• Graceful failure handling",
+				"width": 280,
+				"height": 130
+			},
+			"name": "Error_Handling_Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1650, 50]
+		},
+		{
+			"parameters": {
+				"fromEmail": "document-processing@example.com",
+				"toEmail": "support@example.com",
+				"subject": "Fehler im Dokumentenmanagement-Workflow (Verarbeitung)",
+				"content": "=Es ist ein Fehler im Dokumentenmanagement-Workflow (Teil 2: Verarbeitung) aufgetreten:\n\nFehler: {{ $node['Forward to Part 3'].(error && error.message) || 'Unbekannter Fehler' }}\n\nVerarbeitungsdetails:\n- Anzahl Dokumente: {{ $(json.processing_summary && json.processing_summary.total_documents) || 'Unbekannt' }}\n- Verarbeitungszeit: {{ $json.quality_control_completed }}\n- Qualitätsstatus: {{ JSON.stringify($json.processing_summary, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
+				"options": {}
+			},
+			"name": "Error Notification",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2.1,
+			"position": [1650, 200],
+			"credentials": {
+				"smtp": {
+					"id": "10",
+					"name": "SMTP"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"respond": "when",
+				"responseFor": "webhook",
+				"responseCode": 200,
+				"body": "{\n    \"success\": true,\n    \"message\": \"Dokumentenverarbeitung erfolgreich abgeschlossen\",\n    \"processing_summary\": {{ JSON.stringify($json.processing_summary) }},\n    \"cloud_archive_path\": \"{{ $node['Archive to Cloud'].json.fileUrl }}\",\n    \"processed_at\": \"{{ $now.toISOString() }}\"\n}"
+			},
+			"name": "Success Response",
+			"type": "n8n-nodes-base.respondToWebhook",
+			"typeVersion": 2,
+			"position": [1450, 500]
+		},
+		{
+			"parameters": {
+				"respond": "when",
+				"responseFor": "webhook",
+				"responseCode": 500,
+				"body": "{\n    \"success\": false,\n    \"message\": \"Fehler bei der Dokumentenverarbeitung\",\n    \"error\": \"{{ $(json.error && json.error.message) || 'Unbekannter Verarbeitungsfehler' }}\",\n    \"timestamp\": \"{{ $now.toISOString() }}\"\n}"
+			},
+			"name": "Error Response",
+			"type": "n8n-nodes-base.respondToWebhook",
+			"typeVersion": 2,
+			"position": [1900, 300]
+		}
+	],
+	"connections": {
+		"Webhook Trigger": {
+			"main": [
+				[
+					{
+						"node": "Document Validation",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Document Validation": {
+			"main": [
+				[
+					{
+						"node": "OCR & AI Processing",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"OCR & AI Processing": {
+			"main": [
+				[
+					{
+						"node": "Quality Control",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Quality Control": {
+			"main": [
+				[
+					{
+						"node": "Archive to Cloud",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Archive to Cloud": {
+			"main": [
+				[
+					{
+						"node": "Forward to Part 3",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Forward to Part 3": {
+			"main": [
+				[
+					{
+						"node": "Error Check",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Error Check": {
+			"main": [
+				[
+					{
+						"node": "Error Notification",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "Error Response",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[
+					{
+						"node": "Success Response",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"meta": {
+		"n8nVersion": "1.101.1"
+	}
 }

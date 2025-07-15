@@ -1,0 +1,93 @@
+{
+	"generated": "2025-07-15T08:12:12.396Z",
+	"totalMappings": 11,
+	"mappings": [
+		{
+			"newId": "083_DOC_04",
+			"name": "🎉 Komplett-Abschluss Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"workflow": "08-Kundenkommunikation/Teil3-Versand",
+			"functionCode": "DOC"
+		},
+		{
+			"oldId": "workflow_beschreibung",
+			"newId": "073_DOC_01",
+			"name": "Workflow-Beschreibung",
+			"type": "n8n-nodes-base.stickyNote",
+			"workflow": "07-Dokumentenmanagement/Teil3-Archivierung",
+			"functionCode": "DOC"
+		},
+		{
+			"oldId": "webhook_trigger",
+			"newId": "073_TRG_01",
+			"name": "Archive_Trigger",
+			"type": "n8n-nodes-base.webhook",
+			"workflow": "07-Dokumentenmanagement/Teil3-Archivierung",
+			"functionCode": "TRG"
+		},
+		{
+			"oldId": "validate_documents",
+			"newId": "073_TRF_01",
+			"name": "Document_Validation",
+			"type": "n8n-nodes-base.code",
+			"workflow": "07-Dokumentenmanagement/Teil3-Archivierung",
+			"functionCode": "TRF"
+		},
+		{
+			"oldId": "create_hash_signature",
+			"newId": "073_TRF_02",
+			"name": "Hash_And_Signature",
+			"type": "n8n-nodes-base.code",
+			"workflow": "07-Dokumentenmanagement/Teil3-Archivierung",
+			"functionCode": "TRF"
+		},
+		{
+			"oldId": "primary_archive",
+			"newId": "073_TRF_03",
+			"name": "Primary_Archive",
+			"type": "n8n-nodes-base.googleCloudStorage",
+			"workflow": "07-Dokumentenmanagement/Teil3-Archivierung",
+			"functionCode": "TRF"
+		},
+		{
+			"oldId": "backup_archive",
+			"newId": "073_TRF_04",
+			"name": "Backup_Archive",
+			"type": "n8n-nodes-base.googleCloudStorage",
+			"workflow": "07-Dokumentenmanagement/Teil3-Archivierung",
+			"functionCode": "TRF"
+		},
+		{
+			"oldId": "audit_trail_logging",
+			"newId": "073_SVC_01",
+			"name": "Audit_Trail_Log",
+			"type": "n8n-nodes-base.httpRequest",
+			"workflow": "07-Dokumentenmanagement/Teil3-Archivierung",
+			"functionCode": "SVC"
+		},
+		{
+			"oldId": "retention_policy",
+			"newId": "073_SVC_02",
+			"name": "⏰ Aufbewahrungsrichtlinien",
+			"type": "n8n-nodes-base.httpRequest",
+			"workflow": "07-Dokumentenmanagement/Teil3-Archivierung",
+			"functionCode": "SVC"
+		},
+		{
+			"oldId": "generate_statistics",
+			"newId": "073_TRF_05",
+			"name": "Archive_Statistics",
+			"type": "n8n-nodes-base.code",
+			"workflow": "07-Dokumentenmanagement/Teil3-Archivierung",
+			"functionCode": "TRF"
+		},
+		{
+			"oldId": "compliance_notification",
+			"newId": "073_NOT_01",
+			"name": "Compliance_Notification",
+			"type": "n8n-nodes-base.emailSend",
+			"workflow": "07-Dokumentenmanagement/Teil3-Archivierung",
+			"functionCode": "NOT"
+		}
+	]
+}

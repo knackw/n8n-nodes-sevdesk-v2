@@ -1,454 +1,408 @@
 {
-  "name": "SevDesk - Steuerberater-Export - Teil 1: Extraktion (v2)",
-  "nodes": [
-    {
-      "parameters": {
-        "content": "## SevDesk - Steuerberater-Export - Teil 1: Extraktion\n\n**Zweck:**\nDieser Workflow sammelt alle relevanten Buchhaltungsdaten für den Export an den Steuerberater. Er extrahiert strukturiert alle Belege, Rechnungen, Transaktionen und Kontendaten für einen definierten Zeitraum.\n\n**Funktionen:**\n- Zeitraumbasierte Datenextraktion\n- DATEV-konforme Datensammlung\n- Vollständigkeitsprüfung der Datensätze\n- Formatierung für Steuerberater-Software\n\n**Auslöser:**\n- Monatlicher Zeitplan (1. Werktag des Folgemonats)\n- Manueller Webhook-Trigger für Ad-hoc-Exports\n- Quartalsweiser automatischer Export",
-        "height": 350,
-        "width": 450
-      },
-      "name": "Workflow-Beschreibung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        0,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "months",
-              "monthsInterval": 1
-            }
-          ]
-        },
-        "triggerOnStartup": false
-      },
-      "name": "Monatlicher Trigger",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [
-        250,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "steuerberater-export",
-        "options": {}
-      },
-      "name": "Webhook Trigger",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        250,
-        500
-      ],
-      "webhookId": "steuerberater-export-webhook"
-    },
-    {
-      "parameters": {},
-      "name": "Merge",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        450,
-        400
-      ]
-    },
-    {
-      "parameters": {
-        "code": "// Bestimme den Exportzeitraum\nconst item = $input.item.json;\nlet startDate, endDate;\n\n// Wenn über Webhook ausgelöst mit spezifischen Daten\nif (item.body && item.body.startDate && item.body.endDate) {\n  startDate = item.body.startDate;\n  endDate = item.body.endDate;\n}\n// Andernfalls: Vormonat als Standard\nelse {\n  const today = new Date();\n  const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);\n  const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);\n  \n  startDate = firstDayLastMonth.toISOString().split('T')[0];\n  endDate = lastDayLastMonth.toISOString().split('T')[0];\n}\n\n// Export-Konfiguration\nconst exportConfig = {\n  zeitraum: {\n    von: startDate,\n    bis: endDate\n  },\n  export_typ: item.body?.export_typ || 'vollstaendig',\n  datev_format: true,\n  include_attachments: item.body?.include_attachments || true,\n  steuerberater_id: item.body?.steuerberater_id || 'default',\n  export_id: `EXPORT_${new Date().toISOString().replace(/[:.]/g, '_')}`\n};\n\nreturn {\n  json: {\n    ...exportConfig,\n    timestamp: new Date().toISOString(),\n    status: 'extraktion_gestartet',\n    webhookUrl: 'http://localhost:5678/webhook/steuerberater-aufbereitung'\n  }\n};"
-      },
-      "name": "Export-Parameter bestimmen",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        650,
-        400
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**Export-Parameter-Bestimmung:**\n\n**Zeitraum-Logik:**\n- Webhook: Verwendung übermittelter Start-/Enddaten\n- Schedule: Automatisch Vormonat\n- Fallback: Manueller Zeitraum aus Konfiguration\n\n**Export-Typen:**\n- vollstaendig: Alle Daten (Standard)\n- differenziell: Nur Änderungen seit letztem Export\n- quartalsweise: Erweiterte Quartals-Daten\n\n**DATEV-Konformität:** Strukturierung nach DATEV-Standards für Steuerberater-Software",
-        "width": 280,
-        "height": 200
-      },
-      "name": "Parameter-Erklärung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        650,
-        150
-      ]
-    },
-    {
-      "parameters": {
-        "resource": "voucher",
-        "operation": "getMany",
-        "additionalFields": {
-          "startDate": "={{ $json.zeitraum.von }}",
-          "endDate": "={{ $json.zeitraum.bis }}",
-          "status": "1000",
-          "limit": 1000
-        }
-      },
-      "name": "SevDesk - Belege laden",
-      "type": "n8n-nodes-sevdesk-v2.sevDesk",
-      "typeVersion": 1,
-      "position": [
-        950,
-        300
-      ],
-      "credentials": {
-        "sevDeskApi": {
-          "id": "6",
-          "name": "SevDesk API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "resource": "invoice",
-        "operation": "getMany",
-        "additionalFields": {
-          "startDate": "={{ $json.zeitraum.von }}",
-          "endDate": "={{ $json.zeitraum.bis }}",
-          "status": "200,1000",
-          "limit": 1000
-        }
-      },
-      "name": "SevDesk - Rechnungen laden",
-      "type": "n8n-nodes-sevdesk-v2.sevDesk",
-      "typeVersion": 1,
-      "position": [
-        950,
-        450
-      ],
-      "credentials": {
-        "sevDeskApi": {
-          "id": "6",
-          "name": "SevDesk API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "resource": "checkAccountTransaction",
-        "operation": "getMany",
-        "additionalFields": {
-          "startDate": "={{ $json.zeitraum.von }}",
-          "endDate": "={{ $json.zeitraum.bis }}",
-          "limit": 1000
-        }
-      },
-      "name": "SevDesk - Transaktionen laden",
-      "type": "n8n-nodes-sevdesk-v2.sevDesk",
-      "typeVersion": 1,
-      "position": [
-        950,
-        600
-      ],
-      "credentials": {
-        "sevDeskApi": {
-          "id": "6",
-          "name": "SevDesk API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "content": "**Parallele Datenextraktion:**\n\n**Belege (Vouchers):**\n- Nur gebuchte Belege (Status 1000)\n- Vollständige Metadaten und Positionen\n- Anhänge falls konfiguriert\n\n**Rechnungen (Invoices):**\n- Verschickte und gebuchte Rechnungen\n- Kunden- und Zahlungsinformationen\n- Steuersätze und Beträge\n\n**Transaktionen:**\n- Alle Kontobewegungen im Zeitraum\n- Zuordnungen und Kategorisierungen\n- Saldo-Informationen",
-        "width": 300,
-        "height": 180
-      },
-      "name": "Datenextraktion-Erklärung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        950,
-        50
-      ]
-    },
-    {
-      "parameters": {},
-      "name": "Daten zusammenführen",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        1250,
-        450
-      ]
-    },
-    {
-      "parameters": {
-        "code": "// Konsolidiere alle exportierten Daten in ein einheitliches Format\nconst baseData = $node[\"Export-Parameter bestimmen\"].json;\nconst belege = $node[\"SevDesk - Belege laden\"].json || [];\nconst rechnungen = $node[\"SevDesk - Rechnungen laden\"].json || [];\nconst transaktionen = $node[\"SevDesk - Transaktionen laden\"].json || [];\n\n// Statistiken berechnen\nconst statistics = {\n  anzahl_belege: Array.isArray(belege) ? belege.length : 0,\n  anzahl_rechnungen: Array.isArray(rechnungen) ? rechnungen.length : 0,\n  anzahl_transaktionen: Array.isArray(transaktionen) ? transaktionen.length : 0,\n  gesamtsumme_belege: Array.isArray(belege) ? belege.reduce((sum, b) => sum + parseFloat(b.sumGross || 0), 0) : 0,\n  gesamtsumme_rechnungen: Array.isArray(rechnungen) ? rechnungen.reduce((sum, r) => sum + parseFloat(r.sumGross || 0), 0) : 0\n};\n\n// Vollständigkeitsprüfung\nconst vollstaendigkeitsPruefung = {\n  belege_vollstaendig: statistics.anzahl_belege > 0,\n  rechnungen_vollstaendig: statistics.anzahl_rechnungen >= 0, // Kann 0 sein\n  transaktionen_vollstaendig: statistics.anzahl_transaktionen > 0,\n  status: 'extrahiert'\n};\n\n// Konsolidierte Datenstruktur\nconst exportData = {\n  export_info: {\n    ...baseData,\n    extraktion_abgeschlossen: new Date().toISOString(),\n    ...statistics,\n    vollstaendigkeitsPruefung\n  },\n  daten: {\n    belege: belege,\n    rechnungen: rechnungen,\n    transaktionen: transaktionen\n  }\n};\n\nreturn {\n  json: exportData\n};"
-      },
-      "name": "Daten konsolidieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1550,
-        450
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**Datenkonsolidierung:**\n\n**Statistiken:**\n- Anzahl Datensätze pro Kategorie\n- Gesamtsummen für Kontrolle\n- Vollständigkeitsprüfung\n\n**Datenstruktur:**\n- Einheitliches JSON-Format\n- Export-Metadaten\n- Kategorisierte Rohdaten\n\n**Qualitätskontrolle:**\n- Plausibilitätsprüfungen\n- Fehlende Daten identifizieren\n- Status-Tracking für nachgelagerte Prozesse",
-        "width": 280,
-        "height": 160
-      },
-      "name": "Konsolidierung-Erklärung",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1550,
-        250
-      ]
-    },
-    {
-      "parameters": {
-        "url": "={{ $json.export_info.webhookUrl }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "X-Export-ID",
-              "value": "={{ $json.export_info.export_id }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "jsonBody": "={{ JSON.stringify($json, null, 2) }}",
-        "options": {
-          "timeout": 60000
-        }
-      },
-      "name": "An Teil 2 weiterleiten",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1850,
-        450
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $node[\"An Teil 2 weiterleiten\"].json.error !== undefined }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "Fehler aufgetreten?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        2050,
-        450
-      ]
-    },
-    {
-      "parameters": {
-        "fromEmail": "buchhaltung@company.com",
-        "toEmail": "support@company.com",
-        "subject": "Fehler im Steuerberater-Export (Extraktion)",
-        "content": "Ein Fehler ist im Steuerberater-Export-Workflow (Teil 1: Extraktion) aufgetreten:\n\n**Fehlerdetails:**\nFehler: {{ $node[\"An Teil 2 weiterleiten\"].json.error?.message || 'Unbekannter Fehler' }}\n\n**Zeitstempel:** {{ $now.toISOString() }}\n\n**Export-Details:**\n- Export-ID: {{ $json.export_info?.export_id || 'Unbekannt' }}\n- Zeitraum: {{ $json.export_info?.zeitraum?.von || 'Unbekannt' }} bis {{ $json.export_info?.zeitraum?.bis || 'Unbekannt' }}\n- Anzahl Belege: {{ $json.export_info?.anzahl_belege || 0 }}\n- Anzahl Rechnungen: {{ $json.export_info?.anzahl_rechnungen || 0 }}\n- Anzahl Transaktionen: {{ $json.export_info?.anzahl_transaktionen || 0 }}\n\n**Nächste Schritte:**\n1. Überprüfen Sie die SevDesk-API-Verbindung\n2. Validieren Sie die Zeitraum-Parameter\n3. Prüfen Sie die n8n-Logs für weitere Details\n\nBitte beheben Sie den Fehler und starten Sie den Export erneut.",
-        "options": {}
-      },
-      "name": "Support benachrichtigen",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [
-        2250,
-        350
-      ],
-      "credentials": {
-        "smtp": {
-          "id": "10",
-          "name": "SMTP"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "code": "// Erfolgreiche Extraktion protokollieren\nconst data = $input.item.json;\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil1-Extraktion',\n  status: 'success',\n  export_id: data.export_info?.export_id || 'Unbekannt',\n  zeitraum: data.export_info?.zeitraum || {},\n  statistics: {\n    belege: data.export_info?.anzahl_belege || 0,\n    rechnungen: data.export_info?.anzahl_rechnungen || 0,\n    transaktionen: data.export_info?.anzahl_transaktionen || 0,\n    gesamtsumme_belege: data.export_info?.gesamtsumme_belege || 0,\n    gesamtsumme_rechnungen: data.export_info?.gesamtsumme_rechnungen || 0\n  },\n  nextStep: 'Teil2-Aufbereitung'\n};\n\nconsole.log('Steuerberater-Export Teil 1 erfolgreich abgeschlossen:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    successLog,\n    status: 'Teil1-Completed'\n  }\n};"
-      },
-      "name": "Erfolg protokollieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2250,
-        550
-      ]
-    }
-  ],
-  "connections": {
-    "Monatlicher Trigger": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook Trigger": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge": {
-      "main": [
-        [
-          {
-            "node": "Export-Parameter bestimmen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Export-Parameter bestimmen": {
-      "main": [
-        [
-          {
-            "node": "SevDesk - Belege laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "SevDesk - Rechnungen laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "SevDesk - Transaktionen laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SevDesk - Belege laden": {
-      "main": [
-        [
-          {
-            "node": "Daten zusammenführen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SevDesk - Rechnungen laden": {
-      "main": [
-        [
-          {
-            "node": "Daten zusammenführen",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "SevDesk - Transaktionen laden": {
-      "main": [
-        [
-          {
-            "node": "Daten zusammenführen",
-            "type": "main",
-            "index": 2
-          }
-        ]
-      ]
-    },
-    "Daten zusammenführen": {
-      "main": [
-        [
-          {
-            "node": "Daten konsolidieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Daten konsolidieren": {
-      "main": [
-        [
-          {
-            "node": "An Teil 2 weiterleiten",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "An Teil 2 weiterleiten": {
-      "main": [
-        [
-          {
-            "node": "Fehler aufgetreten?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fehler aufgetreten?": {
-      "main": [
-        [
-          {
-            "node": "Support benachrichtigen",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Erfolg protokollieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "pinData": {},
-  "settings": {},
-  "staticData": null,
-  "tags": [
-    {
-      "createdAt": "2024-12-19T10:00:00.000Z",
-      "updatedAt": "2024-12-19T10:00:00.000Z",
-      "id": "4",
-      "name": "Steuerberater-Export"
-    }
-  ],
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "n8nVersion": "1.101.1"
-  },
-  "id": "4001",
-  "versionId": "v2.0.0"
+	"name": "SevDesk - Steuerberater-Export - Teil 1: Extraktion (v2)",
+	"nodes": [
+		{
+			"parameters": {
+				"content": "## SevDesk - Steuerberater-Export - Teil 1: Extraktion\n\n**Zweck:**\nDieser Workflow sammelt alle relevanten Buchhaltungsdaten für den Export an den Steuerberater. Er extrahiert strukturiert alle Belege, Rechnungen, Transaktionen und Kontendaten für einen definierten Zeitraum.\n\n**Funktionen:**\n- Zeitraumbasierte Datenextraktion\n- DATEV-konforme Datensammlung\n- Vollständigkeitsprüfung der Datensätze\n- Formatierung für Steuerberater-Software\n\n**Auslöser:**\n- Monatlicher Zeitplan (1. Werktag des Folgemonats)\n- Manueller Webhook-Trigger für Ad-hoc-Exports\n- Quartalsweiser automatischer Export",
+				"height": 350,
+				"width": 450
+			},
+			"id": "041_DOC_01",
+			"name": "Workflow-Beschreibung",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [0, 0]
+		},
+		{
+			"parameters": {
+				"rule": {
+					"interval": [
+						{
+							"field": "months",
+							"monthsInterval": 1
+						}
+					]
+				},
+				"triggerOnStartup": false
+			},
+			"id": "041_TRG_01",
+			"name": "Monatlicher Trigger",
+			"type": "n8n-nodes-base.scheduleTrigger",
+			"typeVersion": 1.2,
+			"position": [250, 300]
+		},
+		{
+			"parameters": {
+				"httpMethod": "POST",
+				"path": "steuerberater-export",
+				"options": {}
+			},
+			"id": "041_TRG_02",
+			"name": "Webhook Trigger",
+			"type": "n8n-nodes-base.webhook",
+			"typeVersion": 2,
+			"position": [250, 500],
+			"webhookId": "steuerberater-export-webhook"
+		},
+		{
+			"parameters": {},
+			"id": "041_MRG_01",
+			"name": "Merge",
+			"type": "n8n-nodes-base.merge",
+			"typeVersion": 3.2,
+			"position": [450, 400]
+		},
+		{
+			"parameters": {
+				"code": "// Bestimme den Exportzeitraum\nconst item = $input.item.json;\nlet startDate, endDate;\n\n// Wenn über Webhook ausgelöst mit spezifischen Daten\nif (item.body && item.body.startDate && item.body.endDate) {\n  startDate = item.body.startDate;\n  endDate = item.body.endDate;\n}\n// Andernfalls: Vormonat als Standard\nelse {\n  const today = new Date();\n  const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);\n  const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);\n  \n  startDate = firstDayLastMonth.toISOString().split('T')[0];\n  endDate = lastDayLastMonth.toISOString().split('T')[0];\n}\n\n// Export-Konfiguration\nconst exportConfig = {\n  zeitraum: {\n    von: startDate,\n    bis: endDate\n  },\n  export_typ: (item.body && item.body.export_typ) || 'vollstaendig',\n  datev_format: true,\n  include_attachments: (item.body && item.body.include_attachments) || true,\n  steuerberater_id: (item.body && item.body.steuerberater_id) || 'default',\n  export_id: `EXPORT_${new Date().toISOString().replace(/[:.]/g, '_')}`\n};\n\nreturn {\n  json: {\n    ...exportConfig,\n    timestamp: new Date().toISOString(),\n    status: 'extraktion_gestartet',\n    webhookUrl: 'http://localhost:5678/webhook/steuerberater-aufbereitung'\n  }\n};"
+			},
+			"id": "041_TRF_01",
+			"name": "Export-Parameter bestimmen",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [650, 400]
+		},
+		{
+			"parameters": {
+				"content": "**Export-Parameter-Bestimmung:**\n\n**Zeitraum-Logik:**\n- Webhook: Verwendung übermittelter Start-/Enddaten\n- Schedule: Automatisch Vormonat\n- Fallback: Manueller Zeitraum aus Konfiguration\n\n**Export-Typen:**\n- vollstaendig: Alle Daten (Standard)\n- differenziell: Nur Änderungen seit letztem Export\n- quartalsweise: Erweiterte Quartals-Daten\n\n**DATEV-Konformität:** Strukturierung nach DATEV-Standards für Steuerberater-Software",
+				"width": 280,
+				"height": 200
+			},
+			"name": "Parameter-Erklärung",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [650, 150]
+		},
+		{
+			"parameters": {
+				"resource": "voucher",
+				"operation": "getMany",
+				"additionalFields": {
+					"startDate": "={{ $json.zeitraum.von }}",
+					"endDate": "={{ $json.zeitraum.bis }}",
+					"status": "1000",
+					"limit": 1000
+				}
+			},
+			"name": "SevDesk - Belege laden",
+			"type": "n8n-nodes-sevdesk-v2.sevDesk",
+			"typeVersion": 1,
+			"position": [950, 300],
+			"credentials": {
+				"sevDeskApi": {
+					"id": "6",
+					"name": "SevDesk API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"resource": "invoice",
+				"operation": "getMany",
+				"additionalFields": {
+					"startDate": "={{ $json.zeitraum.von }}",
+					"endDate": "={{ $json.zeitraum.bis }}",
+					"status": "200,1000",
+					"limit": 1000
+				}
+			},
+			"name": "SevDesk - Rechnungen laden",
+			"type": "n8n-nodes-sevdesk-v2.sevDesk",
+			"typeVersion": 1,
+			"position": [950, 450],
+			"credentials": {
+				"sevDeskApi": {
+					"id": "6",
+					"name": "SevDesk API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"resource": "checkAccountTransaction",
+				"operation": "getMany",
+				"additionalFields": {
+					"startDate": "={{ $json.zeitraum.von }}",
+					"endDate": "={{ $json.zeitraum.bis }}",
+					"limit": 1000
+				}
+			},
+			"name": "SevDesk - Transaktionen laden",
+			"type": "n8n-nodes-sevdesk-v2.sevDesk",
+			"typeVersion": 1,
+			"position": [950, 600],
+			"credentials": {
+				"sevDeskApi": {
+					"id": "6",
+					"name": "SevDesk API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"content": "**Parallele Datenextraktion:**\n\n**Belege (Vouchers):**\n- Nur gebuchte Belege (Status 1000)\n- Vollständige Metadaten und Positionen\n- Anhänge falls konfiguriert\n\n**Rechnungen (Invoices):**\n- Verschickte und gebuchte Rechnungen\n- Kunden- und Zahlungsinformationen\n- Steuersätze und Beträge\n\n**Transaktionen:**\n- Alle Kontobewegungen im Zeitraum\n- Zuordnungen und Kategorisierungen\n- Saldo-Informationen",
+				"width": 300,
+				"height": 180
+			},
+			"name": "Datenextraktion-Erklärung",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [950, 50]
+		},
+		{
+			"parameters": {},
+			"name": "Daten zusammenführen",
+			"type": "n8n-nodes-base.merge",
+			"typeVersion": 3.2,
+			"position": [1250, 450]
+		},
+		{
+			"parameters": {
+				"code": "// Konsolidiere alle exportierten Daten in ein einheitliches Format\nconst baseData = $node[\"Export-Parameter bestimmen\"].json;\nconst belege = $node[\"SevDesk - Belege laden\"].json || [];\nconst rechnungen = $node[\"SevDesk - Rechnungen laden\"].json || [];\nconst transaktionen = $node[\"SevDesk - Transaktionen laden\"].json || [];\n\n// Statistiken berechnen\nconst statistics = {\n  anzahl_belege: Array.isArray(belege) ? belege.length : 0,\n  anzahl_rechnungen: Array.isArray(rechnungen) ? rechnungen.length : 0,\n  anzahl_transaktionen: Array.isArray(transaktionen) ? transaktionen.length : 0,\n  gesamtsumme_belege: Array.isArray(belege) ? belege.reduce((sum, b) => sum + parseFloat(b.sumGross || 0), 0) : 0,\n  gesamtsumme_rechnungen: Array.isArray(rechnungen) ? rechnungen.reduce((sum, r) => sum + parseFloat(r.sumGross || 0), 0) : 0\n};\n\n// Vollständigkeitsprüfung\nconst vollstaendigkeitsPruefung = {\n  belege_vollstaendig: statistics.anzahl_belege > 0,\n  rechnungen_vollstaendig: statistics.anzahl_rechnungen >= 0, // Kann 0 sein\n  transaktionen_vollstaendig: statistics.anzahl_transaktionen > 0,\n  status: 'extrahiert'\n};\n\n// Konsolidierte Datenstruktur\nconst exportData = {\n  export_info: {\n    ...baseData,\n    extraktion_abgeschlossen: new Date().toISOString(),\n    ...statistics,\n    vollstaendigkeitsPruefung\n  },\n  daten: {\n    belege: belege,\n    rechnungen: rechnungen,\n    transaktionen: transaktionen\n  }\n};\n\nreturn {\n  json: exportData\n};"
+			},
+			"name": "Daten konsolidieren",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [1550, 450]
+		},
+		{
+			"parameters": {
+				"content": "**Datenkonsolidierung:**\n\n**Statistiken:**\n- Anzahl Datensätze pro Kategorie\n- Gesamtsummen für Kontrolle\n- Vollständigkeitsprüfung\n\n**Datenstruktur:**\n- Einheitliches JSON-Format\n- Export-Metadaten\n- Kategorisierte Rohdaten\n\n**Qualitätskontrolle:**\n- Plausibilitätsprüfungen\n- Fehlende Daten identifizieren\n- Status-Tracking für nachgelagerte Prozesse",
+				"width": 280,
+				"height": 160
+			},
+			"name": "Konsolidierung-Erklärung",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1550, 250]
+		},
+		{
+			"parameters": {
+				"url": "={{ $json.export_info.webhookUrl }}",
+				"sendHeaders": true,
+				"headerParameters": {
+					"parameters": [
+						{
+							"name": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"name": "X-Export-ID",
+							"value": "={{ $json.export_info.export_id }}"
+						}
+					]
+				},
+				"sendBody": true,
+				"jsonBody": "={{ JSON.stringify($json, null, 2) }}",
+				"options": {
+					"timeout": 60000
+				}
+			},
+			"name": "An Teil 2 weiterleiten",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4.2,
+			"position": [1850, 450]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $node[\"An Teil 2 weiterleiten\"].json.error !== undefined }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"name": "Fehler aufgetreten?",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [2050, 450]
+		},
+		{
+			"parameters": {
+				"fromEmail": "buchhaltung@company.com",
+				"toEmail": "support@company.com",
+				"subject": "Fehler im Steuerberater-Export (Extraktion)",
+				"content": "Ein Fehler ist im Steuerberater-Export-Workflow (Teil 1: Extraktion) aufgetreten:\n\n**Fehlerdetails:**\nFehler: {{ $node[\"An Teil 2 weiterleiten\"].(json.error && json.error.message) || 'Unbekannter Fehler' }}\n\n**Zeitstempel:** {{ $now.toISOString() }}\n\n**Export-Details:**\n- Export-ID: {{ $(json.export_info && json.export_info.export_id) || 'Unbekannt' }}\n- Zeitraum: {{ $(json.export_info && json.export_info.zeitraum)?.von || 'Unbekannt' }} bis {{ $(json.export_info && json.export_info.zeitraum)?.bis || 'Unbekannt' }}\n- Anzahl Belege: {{ $(json.export_info && json.export_info.anzahl_belege) || 0 }}\n- Anzahl Rechnungen: {{ $(json.export_info && json.export_info.anzahl_rechnungen) || 0 }}\n- Anzahl Transaktionen: {{ $(json.export_info && json.export_info.anzahl_transaktionen) || 0 }}\n\n**Nächste Schritte:**\n1. Überprüfen Sie die SevDesk-API-Verbindung\n2. Validieren Sie die Zeitraum-Parameter\n3. Prüfen Sie die n8n-Logs für weitere Details\n\nBitte beheben Sie den Fehler und starten Sie den Export erneut.",
+				"options": {}
+			},
+			"name": "Support benachrichtigen",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2.1,
+			"position": [2250, 350],
+			"credentials": {
+				"smtp": {
+					"id": "10",
+					"name": "SMTP"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"code": "// Erfolgreiche Extraktion protokollieren\nconst data = $input.item.json;\n\nconst successLog = {\n  timestamp: new Date().toISOString(),\n  workflow: 'Teil1-Extraktion',\n  status: 'success',\n  export_id: (data.export_info && data.export_info.export_id) || 'Unbekannt',\n  zeitraum: (data.export_info && data.export_info.zeitraum) || {},\n  statistics: {\n    belege: (data.export_info && data.export_info.anzahl_belege) || 0,\n    rechnungen: (data.export_info && data.export_info.anzahl_rechnungen) || 0,\n    transaktionen: (data.export_info && data.export_info.anzahl_transaktionen) || 0,\n    gesamtsumme_belege: (data.export_info && data.export_info.gesamtsumme_belege) || 0,\n    gesamtsumme_rechnungen: data.export_info?.gesamtsumme_rechnungen || 0\n  },\n  nextStep: 'Teil2-Aufbereitung'\n};\n\nconsole.log('Steuerberater-Export Teil 1 erfolgreich abgeschlossen:', JSON.stringify(successLog, null, 2));\n\nreturn {\n  json: {\n    ...data,\n    successLog,\n    status: 'Teil1-Completed'\n  }\n};"
+			},
+			"name": "Erfolg protokollieren",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [2250, 550]
+		}
+	],
+	"connections": {
+		"Monatlicher Trigger": {
+			"main": [
+				[
+					{
+						"node": "Merge",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Webhook Trigger": {
+			"main": [
+				[
+					{
+						"node": "Merge",
+						"type": "main",
+						"index": 1
+					}
+				]
+			]
+		},
+		"Merge": {
+			"main": [
+				[
+					{
+						"node": "Export-Parameter bestimmen",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Export-Parameter bestimmen": {
+			"main": [
+				[
+					{
+						"node": "SevDesk - Belege laden",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "SevDesk - Rechnungen laden",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "SevDesk - Transaktionen laden",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"SevDesk - Belege laden": {
+			"main": [
+				[
+					{
+						"node": "Daten zusammenführen",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"SevDesk - Rechnungen laden": {
+			"main": [
+				[
+					{
+						"node": "Daten zusammenführen",
+						"type": "main",
+						"index": 1
+					}
+				]
+			]
+		},
+		"SevDesk - Transaktionen laden": {
+			"main": [
+				[
+					{
+						"node": "Daten zusammenführen",
+						"type": "main",
+						"index": 2
+					}
+				]
+			]
+		},
+		"Daten zusammenführen": {
+			"main": [
+				[
+					{
+						"node": "Daten konsolidieren",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Daten konsolidieren": {
+			"main": [
+				[
+					{
+						"node": "An Teil 2 weiterleiten",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"An Teil 2 weiterleiten": {
+			"main": [
+				[
+					{
+						"node": "Fehler aufgetreten?",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Fehler aufgetreten?": {
+			"main": [
+				[
+					{
+						"node": "Support benachrichtigen",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[
+					{
+						"node": "Erfolg protokollieren",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {},
+	"settings": {},
+	"staticData": null,
+	"tags": [
+		{
+			"createdAt": "2024-12-19T10:00:00.000Z",
+			"updatedAt": "2024-12-19T10:00:00.000Z",
+			"id": "4",
+			"name": "Steuerberater-Export"
+		}
+	],
+	"meta": {
+		"templateCredsSetupCompleted": true,
+		"n8nVersion": "1.101.1"
+	},
+	"id": "4001",
+	"versionId": "v2.0.0"
 }

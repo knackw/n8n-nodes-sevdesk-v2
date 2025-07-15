@@ -1,414 +1,378 @@
 {
-  "name": "SevDesk - Belegerfassung - Teil 2: Verarbeitung (v2)",
-  "nodes": [
-    {
-      "parameters": {
-        "content": "## 📄 SevDesk - Document Processing - Part 2: Processing\n\n**Purpose:** Receives pre-processed data from Part 1 and handles core business logic.\n\n**Key Functions:**\n🔄 **Data Transformation:** Converts extracted information into SevDesk-compatible format\n📝 **Voucher Creation:** Creates draft voucher in SevDesk with document upload\n☁️ **Cloud Archiving:** Stores original documents in external cloud storage\n🚀 **Workflow Orchestration:** Forwards voucher ID to Part 3 for final validation\n\n**Technology Stack:** SevDesk API, Google Cloud Storage, n8n Webhooks",
-        "height": 280,
-        "width": 450,
-        "color": 4
-      },
-      "name": "📄 Workflow Overview",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        0,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "document-processing",
-        "options": {}
-      },
-      "name": "Webhook Trigger",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        250,
-        300
-      ],
-      "webhookId": "document-processing-webhook"
-    },
-    {
-      "parameters": {
-        "content": "**🔐 Webhook Security Validation**\n\nReceives data from Part 1 workflow and validates:\n• Webhook authentication key\n• Request payload structure\n• Data integrity checks\n• Security compliance",
-        "width": 280,
-        "height": 120
-      },
-      "name": "🔐 Security Validation",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        250,
-        130
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "string": [
-            {
-              "value1": "={{ $json.body?.webhook_key }}",
-              "value2": "secret-key"
-            }
-          ]
-        }
-      },
-      "name": "Webhook-Key validieren",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        500,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "code": "// Extract document data from webhook\nconst webhookData = $input.item.json.body;\nconst documentData = webhookData.data;\nconst config = {}; // Empty config object since load node was removed\n\n// Calculate voucher type\nlet voucherType = 'VOU'; // Default is invoice\nconst docType = documentData.documentData?.documentType?.toLowerCase() || '';\n\nif (docType.includes('gutschrift') || docType.includes('credit')) {\n  voucherType = 'VOU_CREDIT';\n}\n\n// Determine remaining data\nconst supplierName = documentData.documentData?.supplierName || 'Unknown Supplier';\nconst documentDate = documentData.documentData?.invoiceDate || new Date().toISOString().split('T')[0];\nconst totalAmount = documentData.documentData?.totalAmount || 0;\n\n// Create voucher data for SevDesk\nconst voucherData = {\n  voucherType: voucherType,\n  supplierName: supplierName,\n  documentDate: documentDate,\n  totalAmount: totalAmount,\n  currency: documentData.documentData?.currency || 'EUR',\n  description: `Automatically captured: ${documentData.fileName || 'Document'} (${docType})`,\n  status: 100, // Draft\n  fileName: documentData.fileName || 'document.pdf',\n  fileData: documentData.fileData || null,\n  filePath: documentData.filePath || null,\n  fileType: documentData.fileType || 'application/pdf',\n  invoiceNumber: documentData.documentData?.invoiceNumber || '',\n  webhookUrl: 'http://localhost:5678/webhook/document-validation',\n  taxRate: documentData.documentData?.taxAmount ? \n    ((documentData.documentData.taxAmount / (totalAmount - documentData.documentData.taxAmount)) * 100).toFixed(2) : \n    '19'\n};\n\nreturn {\n  json: {\n    ...documentData,\n    voucherData\n  }\n};"
-      },
-      "name": "Prepare Voucher Data",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        800,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**📋 Data Preparation for SevDesk API**\n\nProcesses incoming document data and prepares structured voucher information including:\n• Document type classification\n• Supplier data extraction  \n• Amount & tax calculation\n• SevDesk-specific formatting",
-        "width": 280,
-        "height": 160
-      },
-      "name": "📋 Data Preparation Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        800,
-        130
-      ]
-    },
-    {
-      "parameters": {
-        "resource": "voucher",
-        "operation": "create",
-        "voucherType": "={{ $json.voucherData.voucherType }}",
-        "voucherDate": "={{ $json.voucherData.documentDate }}",
-        "description": "={{ $json.voucherData.description }}",
-        "status": "={{ $json.voucherData.status }}",
-        "supplierName": "={{ $json.voucherData.supplierName }}",
-        "invoiceNumber": "={{ $json.voucherData.invoiceNumber }}",
-        "totalAmount": "={{ $json.voucherData.totalAmount }}",
-        "taxRate": "={{ $json.voucherData.taxRate }}",
-        "additionalOptions": {
-          "uploadDocument": true,
-          "documentName": "={{ $json.voucherData.fileName }}",
-          "documentContent": "={{ $json.voucherData.fileData || $json.voucherData.filePath }}",
-          "documentContentType": "={{ $json.voucherData.fileType }}"
-        }
-      },
-      "name": "SevDesk - Create Voucher",
-      "type": "n8n-nodes-sevdesk-v2.sevDesk",
-      "typeVersion": 1,
-      "position": [
-        1100,
-        300
-      ],
-      "credentials": {
-        "sevDeskApi": {
-          "id": "6",
-          "name": "SevDesk API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "content": "**🏢 Core SevDesk Integration**\n\nCentral processing step that:\n• Creates voucher in SevDesk\n• Uploads document attachment\n• Validates all required fields\n• Returns voucher ID for tracking",
-        "width": 260,
-        "height": 140
-      },
-      "name": "🏢 SevDesk Integration",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1100,
-        150
-      ]
-    },
-    {
-      "parameters": {
-        "bucketName": "sevdesk-documents-archive",
-        "fileName": "={{ 'belege/' + $json.voucherData.supplierName.replace(/[^a-zA-Z0-9]/g, '_') + '/' + $json.voucherData.documentDate + '_' + $json.voucherData.invoiceNumber.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf' }}",
-        "binaryPropertyName": "data"
-      },
-      "name": "Save to Cloud",
-      "type": "n8n-nodes-base.googleCloudStorage",
-      "typeVersion": 1.2,
-      "position": [
-        1400,
-        300
-      ],
-      "credentials": {
-        "googleCloudStorageOAuth2Api": {
-          "id": "8",
-          "name": "Google Cloud Storage"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "content": "**☁️ Cloud Storage Archive**\n\nSecure document archiving:\n• Organized folder structure\n• Metadata preservation\n• Long-term accessibility\n• Backup & compliance",
-        "width": 260,
-        "height": 120
-      },
-      "name": "☁️ Cloud Storage Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1400,
-        150
-      ]
-    },
-    {
-      "parameters": {
-        "url": "={{ $json.voucherData.webhookUrl }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "jsonBody": "={{ { webhook_key: 'secret-key', data: { voucherId: $node[\"SevDesk - Create Voucher\"].json.id, cloudStoragePath: $node[\"Save to Cloud\"].json.fileUrl || '', ...$json } } }}",
-        "options": {}
-      },
-      "name": "Forward to Part 3",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        1700,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**🚀 Workflow Orchestration**\n\nForwards processed data to validation:\n• Voucher ID transmission\n• Cloud storage path\n• Complete document metadata\n• Validation trigger",
-        "width": 260,
-        "height": 120
-      },
-      "name": "🚀 Orchestration Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        1700,
-        150
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $node[\"SevDesk - Create Voucher\"].error !== undefined || $node[\"Forward to Part 3\"].error !== undefined }}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "Error occurred?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        1950,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "content": "**⚠️ Error Handling & Monitoring**\n\nComprehensive error management:\n• Multi-channel notifications\n• Detailed error logging\n• Support team alerts\n• User feedback responses",
-        "width": 280,
-        "height": 120
-      },
-      "name": "⚠️ Error Handling Info",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 2,
-      "position": [
-        2200,
-        50
-      ]
-    },
-    {
-      "parameters": {
-        "fromEmail": "error-reporting@example.com",
-        "toEmail": "support@example.com",
-        "subject": "Fehler im Belegerfassung-Workflow (Verarbeitung)",
-        "content": "=Es ist ein Fehler im Belegerfassung-Workflow (Teil 2: Verarbeitung) aufgetreten:\n\nFehler: {{ $node[\"SevDesk - Create Voucher\"].error ? $node[\"SevDesk - Create Voucher\"].error.message : $node[\"Forward to Part 3\"].error.message }}\n\nDetails: {{ JSON.stringify($node[\"SevDesk - Create Voucher\"].error || $node[\"Forward to Part 3\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
-        "options": {}
-      },
-      "name": "Notify Support",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [
-        2200,
-        200
-      ],
-      "credentials": {
-        "smtp": {
-          "id": "10",
-          "name": "SMTP"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "chatId": "support-alerts",
-        "content": "=⚠️ FEHLER im Belegerfassung-Workflow (Verarbeitung):\n\n{{ $node[\"SevDesk - Create Voucher\"].error ? $node[\"SevDesk - Create Voucher\"].error.message : $node[\"Forward to Part 3\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
-      },
-      "name": "Schedule Notification",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [
-        2200,
-        400
-      ],
-      "credentials": {
-        "signalApi": {
-          "id": "11",
-          "name": "Signal API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "respond": "when",
-        "responseFor": "webhook",
-        "responseCode": 200,
-        "body": "{\n    \"success\": true,\n    \"message\": \"Beleg erfolgreich verarbeitet\",\n    \"voucherId\": \"{{ $node[\"SevDesk - Create Voucher\"].json.id }}\"\n}"
-      },
-      "name": "Success Response",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 2,
-      "position": [
-        1950,
-        600
-      ]
-    },
-    {
-      "parameters": {
-        "respond": "when",
-        "responseFor": "webhook",
-        "responseCode": 500,
-        "body": "{\n    \"success\": false,\n    \"message\": \"Fehler bei der Verarbeitung\",\n    \"error\": \"{{ $json.error.message }}\"\n}"
-      },
-      "name": "Error Response",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 2,
-      "position": [
-        2450,
-        300
-      ]
-    }
-  ],
-  "connections": {
-    "Webhook Trigger": {
-      "main": [
-        [
-          {
-            "node": "Webhook-Key validieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook-Key validieren": {
-      "main": [
-        [
-          {
-            "node": "Prepare Voucher Data",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
-    },
-    "Prepare Voucher Data": {
-      "main": [
-        [
-          {
-            "node": "SevDesk - Create Voucher",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SevDesk - Create Voucher": {
-      "main": [
-        [
-          {
-            "node": "Save to Cloud",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Save to Cloud": {
-      "main": [
-        [
-          {
-            "node": "Forward to Part 3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Forward to Part 3": {
-      "main": [
-        [
-          {
-            "node": "Error occurred?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Error occurred?": {
-      "main": [
-        [
-          {
-            "node": "Notify Support",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Schedule Notification",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Success Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  }
+	"name": "SevDesk - Belegerfassung - Teil 2: Verarbeitung (v2)",
+	"nodes": [
+		{
+			"parameters": {
+				"content": "## 📄 SevDesk - Document Processing - Part 2: Processing\n\n**Purpose:** Receives pre-processed data from Part 1 and handles core business logic.\n\n**Key Functions:**\n🔄 **Data Transformation:** Converts extracted information into SevDesk-compatible format\n📝 **Voucher Creation:** Creates draft voucher in SevDesk with document upload\n☁️ **Cloud Archiving:** Stores original documents in external cloud storage\n🚀 **Workflow Orchestration:** Forwards voucher ID to Part 3 for final validation\n\n**Technology Stack:** SevDesk API, Google Cloud Storage, n8n Webhooks",
+				"height": 280,
+				"width": 450,
+				"color": 4
+			},
+			"id": "012_DOC_01",
+			"name": "Workflow_Overview",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [0, 0]
+		},
+		{
+			"parameters": {
+				"httpMethod": "POST",
+				"path": "document-processing",
+				"options": {}
+			},
+			"id": "012_TRG_01",
+			"name": "Webhook Trigger",
+			"type": "n8n-nodes-base.webhook",
+			"typeVersion": 2,
+			"position": [250, 300],
+			"webhookId": "document-processing-webhook"
+		},
+		{
+			"parameters": {
+				"content": "**🔐 Webhook Security Validation**\n\nReceives data from Part 1 workflow and validates:\n• Webhook authentication key\n• Request payload structure\n• Data integrity checks\n• Security compliance",
+				"width": 280,
+				"height": 120
+			},
+			"id": "012_DOC_02",
+			"name": "Security_Validation",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [250, 130]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"string": [
+						{
+							"value1": "={{ $(json.body && json.body.webhook_key) }}",
+							"value2": "secret-key"
+						}
+					]
+				}
+			},
+			"id": "012_VAL_01",
+			"name": "Webhook-Key validieren",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [500, 300]
+		},
+		{
+			"parameters": {
+				"code": "// Extract document data from webhook\nconst webhookData = $input.item.json.body;\nconst documentData = webhookData.data;\nconst config = {}; // Empty config object since load node was removed\n\n// Calculate voucher type\nlet voucherType = 'VOU'; // Default is invoice\nconst docType = (documentData.documentData && documentData.documentData.documentType)?.toLowerCase() || '';\n\nif (docType.includes('gutschrift') || docType.includes('credit')) {\n  voucherType = 'VOU_CREDIT';\n}\n\n// Determine remaining data\nconst supplierName = (documentData.documentData && documentData.documentData.supplierName) || 'Unknown Supplier';\nconst documentDate = (documentData.documentData && documentData.documentData.invoiceDate) || new Date().toISOString().split('T')[0];\nconst totalAmount = (documentData.documentData && documentData.documentData.totalAmount) || 0;\n\n// Create voucher data for SevDesk\nconst voucherData = {\n  voucherType: voucherType,\n  supplierName: supplierName,\n  documentDate: documentDate,\n  totalAmount: totalAmount,\n  currency: (documentData.documentData && documentData.documentData.currency) || 'EUR',\n  description: `Automatically captured: ${documentData.fileName || 'Document'} (${docType})`,\n  status: 100, // Draft\n  fileName: documentData.fileName || 'document.pdf',\n  fileData: documentData.fileData || null,\n  filePath: documentData.filePath || null,\n  fileType: documentData.fileType || 'application/pdf',\n  invoiceNumber: (documentData.documentData && documentData.documentData.invoiceNumber) || '',\n  webhookUrl: 'http://localhost:5678/webhook/document-validation',\n  taxRate: (documentData.documentData && documentData.documentData.taxAmount) ? \n    ((documentData.documentData.taxAmount / (totalAmount - documentData.documentData.taxAmount)) * 100).toFixed(2) : \n    '19'\n};\n\nreturn {\n  json: {\n    ...documentData,\n    voucherData\n  }\n};"
+			},
+			"id": "012_TRF_01",
+			"name": "Prepare Voucher Data",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [800, 300]
+		},
+		{
+			"parameters": {
+				"content": "**📋 Data Preparation for SevDesk API**\n\nProcesses incoming document data and prepares structured voucher information including:\n• Document type classification\n• Supplier data extraction  \n• Amount & tax calculation\n• SevDesk-specific formatting",
+				"width": 280,
+				"height": 160
+			},
+			"id": "012_DOC_03",
+			"name": "Data_Preparation_Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [800, 130]
+		},
+		{
+			"parameters": {
+				"resource": "voucher",
+				"operation": "create",
+				"voucherType": "={{ $json.voucherData.voucherType }}",
+				"voucherDate": "={{ $json.voucherData.documentDate }}",
+				"description": "={{ $json.voucherData.description }}",
+				"status": "={{ $json.voucherData.status }}",
+				"supplierName": "={{ $json.voucherData.supplierName }}",
+				"invoiceNumber": "={{ $json.voucherData.invoiceNumber }}",
+				"totalAmount": "={{ $json.voucherData.totalAmount }}",
+				"taxRate": "={{ $json.voucherData.taxRate }}",
+				"additionalOptions": {
+					"uploadDocument": true,
+					"documentName": "={{ $json.voucherData.fileName }}",
+					"documentContent": "={{ $json.voucherData.fileData || $json.voucherData.filePath }}",
+					"documentContentType": "={{ $json.voucherData.fileType }}"
+				}
+			},
+			"id": "012_SVC_01",
+			"name": "SevDesk - Create Voucher",
+			"type": "n8n-nodes-sevdesk-v2.sevDesk",
+			"typeVersion": 1,
+			"position": [1100, 300],
+			"credentials": {
+				"sevDeskApi": {
+					"id": "6",
+					"name": "SevDesk API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"content": "**🏢 Core SevDesk Integration**\n\nCentral processing step that:\n• Creates voucher in SevDesk\n• Uploads document attachment\n• Validates all required fields\n• Returns voucher ID for tracking",
+				"width": 260,
+				"height": 140
+			},
+			"id": "012_DOC_04",
+			"name": "🏢 SevDesk Integration",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1100, 150]
+		},
+		{
+			"parameters": {
+				"bucketName": "sevdesk-documents-archive",
+				"fileName": "={{ 'belege/' + $json.voucherData.supplierName.replace(/[^a-zA-Z0-9]/g, '_') + '/' + $json.voucherData.documentDate + '_' + $json.voucherData.invoiceNumber.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf' }}",
+				"binaryPropertyName": "data"
+			},
+			"id": "012_FIL_01",
+			"name": "Save to Cloud",
+			"type": "n8n-nodes-base.googleCloudStorage",
+			"typeVersion": 1.2,
+			"position": [1400, 300],
+			"credentials": {
+				"googleCloudStorageOAuth2Api": {
+					"id": "8",
+					"name": "Google Cloud Storage"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"content": "**☁️ Cloud Storage Archive**\n\nSecure document archiving:\n• Organized folder structure\n• Metadata preservation\n• Long-term accessibility\n• Backup & compliance",
+				"width": 260,
+				"height": 120
+			},
+			"id": "012_DOC_05",
+			"name": "Cloud_Storage_Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1400, 150]
+		},
+		{
+			"parameters": {
+				"url": "={{ $json.voucherData.webhookUrl }}",
+				"sendHeaders": true,
+				"headerParameters": {
+					"parameters": [
+						{
+							"name": "Content-Type",
+							"value": "application/json"
+						}
+					]
+				},
+				"sendBody": true,
+				"jsonBody": "={{ { webhook_key: 'secret-key', data: { voucherId: $node[\"012_SVC_01\"].json.id, cloudStoragePath: $node[\"012_FIL_01\"].json.fileUrl || '', ...$json } } }}",
+				"options": {}
+			},
+			"id": "012_FWD_01",
+			"name": "Forward to Part 3",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4.2,
+			"position": [1700, 300]
+		},
+		{
+			"parameters": {
+				"content": "**🚀 Workflow Orchestration**\n\nForwards processed data to validation:\n• Voucher ID transmission\n• Cloud storage path\n• Complete document metadata\n• Validation trigger",
+				"width": 260,
+				"height": 120
+			},
+			"id": "012_DOC_06",
+			"name": "🚀 Orchestration Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [1700, 150]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"boolean": [
+						{
+							"value1": "={{ $node[\"012_SVC_01\"].error !== undefined || $node[\"012_FWD_01\"].error !== undefined }}",
+							"value2": true
+						}
+					]
+				}
+			},
+			"id": "012_ERR_01",
+			"name": "Error occurred?",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.2,
+			"position": [1950, 300]
+		},
+		{
+			"parameters": {
+				"content": "**⚠️ Error Handling & Monitoring**\n\nComprehensive error management:\n• Multi-channel notifications\n• Detailed error logging\n• Support team alerts\n• User feedback responses",
+				"width": 280,
+				"height": 120
+			},
+			"id": "012_DOC_07",
+			"name": "Error_Handling_Info",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 2,
+			"position": [2200, 50]
+		},
+		{
+			"parameters": {
+				"fromEmail": "error-reporting@example.com",
+				"toEmail": "support@example.com",
+				"subject": "Fehler im Belegerfassung-Workflow (Verarbeitung)",
+				"content": "=Es ist ein Fehler im Belegerfassung-Workflow (Teil 2: Verarbeitung) aufgetreten:\n\nFehler: {{ $node[\"012_SVC_01\"].error ? $node[\"012_SVC_01\"].error.message : $node[\"012_FWD_01\"].error.message }}\n\nDetails: {{ JSON.stringify($node[\"012_SVC_01\"].error || $node[\"012_FWD_01\"].error, null, 2) }}\n\nZeitstempel: {{ $now.toISOString() }}\n\nBitte überprüfen Sie den Workflow und beheben Sie den Fehler.",
+				"options": {}
+			},
+			"id": "012_NOT_01",
+			"name": "Notify Support",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2.1,
+			"position": [2200, 200],
+			"credentials": {
+				"smtp": {
+					"id": "10",
+					"name": "SMTP"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"chatId": "support-alerts",
+				"content": "=⚠️ FEHLER im Belegerfassung-Workflow (Verarbeitung):\n\n{{ $node[\"012_SVC_01\"].error ? $node[\"012_SVC_01\"].error.message : $node[\"012_FWD_01\"].error.message }}\n\nZeitstempel: {{ $now.toISOString() }}"
+			},
+			"id": "012_NOT_02",
+			"name": "Schedule Notification",
+			"type": "n8n-nodes-base.scheduleTrigger",
+			"typeVersion": 1.2,
+			"position": [2200, 400],
+			"credentials": {
+				"signalApi": {
+					"id": "11",
+					"name": "Signal API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"respond": "when",
+				"responseFor": "webhook",
+				"responseCode": 200,
+				"body": "{\n    \"success\": true,\n    \"message\": \"Beleg erfolgreich verarbeitet\",\n    \"voucherId\": \"{{ $node[\"012_SVC_01\"].json.id }}\"\n}"
+			},
+			"id": "012_OUT_01",
+			"name": "Success Response",
+			"type": "n8n-nodes-base.respondToWebhook",
+			"typeVersion": 2,
+			"position": [1950, 600]
+		},
+		{
+			"parameters": {
+				"respond": "when",
+				"responseFor": "webhook",
+				"responseCode": 500,
+				"body": "{\n    \"success\": false,\n    \"message\": \"Fehler bei der Verarbeitung\",\n    \"error\": \"{{ $json.error.message }}\"\n}"
+			},
+			"id": "012_OUT_02",
+			"name": "Error Response",
+			"type": "n8n-nodes-base.respondToWebhook",
+			"typeVersion": 2,
+			"position": [2450, 300]
+		}
+	],
+	"connections": {
+		"012_TRG_01": {
+			"main": [
+				[
+					{
+						"node": "012_VAL_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"012_VAL_01": {
+			"main": [
+				[
+					{
+						"node": "012_TRF_01",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[]
+			]
+		},
+		"012_TRF_01": {
+			"main": [
+				[
+					{
+						"node": "012_SVC_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"012_SVC_01": {
+			"main": [
+				[
+					{
+						"node": "012_FIL_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"012_FIL_01": {
+			"main": [
+				[
+					{
+						"node": "012_FWD_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"012_FWD_01": {
+			"main": [
+				[
+					{
+						"node": "012_ERR_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"012_ERR_01": {
+			"main": [
+				[
+					{
+						"node": "012_NOT_01",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "012_NOT_02",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "012_OUT_02",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[
+					{
+						"node": "012_OUT_01",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	}
 }
